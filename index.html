@@ -3,788 +3,1074 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <meta name="description" content="Lifehut Solutions — Premium digital products that transform how you work, learn, and grow. Templates, tools, and systems built for modern entrepreneurs." />
-  <meta name="keywords" content="digital products, templates, tools, entrepreneur, productivity, online business, systeme.io" />
+
+  <!-- Primary Meta -->
+  <title>Lifehut Solutions™ | Affordable Business Automation Tools for Growing Businesses</title>
+  <meta name="description" content="Lifehut Solutions™ offers affordable business automation tools, templates, and SaaS software designed to help small businesses, solopreneurs, and freelancers work smarter and grow faster." />
+  <meta name="keywords" content="business automation software, small business tools, quote calculator software, lead capture software, SaaS solutions, business productivity tools, project management software, digital business tools" />
   <meta name="author" content="Lifehut Solutions" />
-  <meta property="og:title" content="Lifehut Solutions — Digital Products for Modern Builders" />
-  <meta property="og:description" content="Premium digital products that transform how you work, learn, and grow." />
+  <link rel="canonical" href="https://www.lifehutsolutions.com/" />
+
+  <!-- Open Graph -->
   <meta property="og:type" content="website" />
+  <meta property="og:url" content="https://www.lifehutsolutions.com/" />
+  <meta property="og:title" content="Lifehut Solutions™ | Affordable Business Automation Tools" />
+  <meta property="og:description" content="Smart, affordable business automation tools, templates, and software solutions designed to help growing businesses work smarter." />
+  <meta property="og:image" content="https://www.lifehutsolutions.com/og-image.jpg" />
+
+  <!-- Twitter Card -->
   <meta name="twitter:card" content="summary_large_image" />
-  <title>Lifehut Solutions — Digital Products for Modern Builders</title>
+  <meta name="twitter:title" content="Lifehut Solutions™ | Affordable Business Automation Tools" />
+  <meta name="twitter:description" content="Smart, affordable business automation tools for growing businesses." />
+  <meta name="twitter:image" content="https://www.lifehutsolutions.com/og-image.jpg" />
 
-  <!-- Fonts -->
-  <link rel="preconnect" href="https://fonts.googleapis.com" />
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-  <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&family=Inter:wght@300;400;500;600&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet" />
-
-  <!-- Tailwind CSS CDN -->
-  <script src="https://cdn.tailwindcss.com"></script>
-
-  <!-- Custom Tailwind Config -->
-  <script>
-    tailwind.config = {
-      theme: {
-        extend: {
-          colors: {
-            navy: {
-              950: '#030712',
-              900: '#0A0F1E',
-              800: '#0F172A',
-              700: '#1E293B',
-            },
-            violet: {
-              brand: '#7C3AED',
-              light: '#A78BFA',
-              glow: '#6D28D9',
-            },
-            lime: {
-              brand: '#A3E635',
-              soft: '#D9F99D',
-            },
-            pearl: '#F8FAFC',
-          },
-          fontFamily: {
-            display: ['Space Grotesk', 'sans-serif'],
-            body: ['Inter', 'sans-serif'],
-            mono: ['Space Mono', 'monospace'],
-          },
-          animation: {
-            'float': 'float 6s ease-in-out infinite',
-            'pulse-slow': 'pulse 4s cubic-bezier(0.4, 0, 0.6, 1) infinite',
-            'draw': 'draw 3s ease forwards',
-            'fade-up': 'fadeUp 0.7s ease forwards',
-          },
-          keyframes: {
-            float: {
-              '0%, 100%': { transform: 'translateY(0px)' },
-              '50%': { transform: 'translateY(-16px)' },
-            },
-            fadeUp: {
-              from: { opacity: '0', transform: 'translateY(30px)' },
-              to: { opacity: '1', transform: 'translateY(0)' },
-            },
-          },
-        },
-      },
-    };
+  <!-- Schema Markup -->
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "Organization",
+    "name": "Lifehut Solutions",
+    "url": "https://www.lifehutsolutions.com",
+    "logo": "https://www.lifehutsolutions.com/logo.jpg",
+    "description": "Affordable business automation tools, templates, and SaaS solutions for growing businesses.",
+    "email": "lifehutsolutions@gmail.com",
+    "sameAs": ["https://whatsapp.com/channel/0029VbDGeRV90x33TTIk071C"]
+  }
   </script>
 
-  <!-- Main Stylesheet -->
-  <link rel="stylesheet" href="assets/css/main.css" />
+  <style>
+    /* ===== CSS RESET & BASE ===== */
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    html { scroll-behavior: smooth; font-size: 16px; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Inter', sans-serif;
+      background: var(--bg-primary);
+      color: var(--text-primary);
+      line-height: 1.65;
+      transition: background 0.3s ease, color 0.3s ease;
+      overflow-x: hidden;
+    }
+
+    /* ===== DESIGN TOKENS ===== */
+    :root {
+      /* Brand palette — derived from logo blue swoosh */
+      --brand-blue: #1565C0;
+      --brand-blue-light: #1E88E5;
+      --brand-blue-xlight: #E3F0FF;
+      --brand-blue-dark: #0D47A1;
+      --brand-red: #D32F2F;
+      --brand-charcoal: #2C2C2C;
+
+      /* Light theme */
+      --bg-primary: #FFFFFF;
+      --bg-secondary: #F7F9FC;
+      --bg-tertiary: #EFF3F9;
+      --bg-card: #FFFFFF;
+      --text-primary: #1A1A2E;
+      --text-secondary: #4A5568;
+      --text-muted: #718096;
+      --border: #E2E8F0;
+      --border-strong: #CBD5E0;
+      --shadow-sm: 0 1px 3px rgba(0,0,0,0.06), 0 1px 2px rgba(0,0,0,0.04);
+      --shadow-md: 0 4px 16px rgba(0,0,0,0.08), 0 2px 6px rgba(0,0,0,0.04);
+      --shadow-lg: 0 10px 40px rgba(0,0,0,0.10), 0 4px 12px rgba(0,0,0,0.06);
+      --nav-bg: rgba(255,255,255,0.92);
+      --nav-shadow: 0 1px 0 rgba(0,0,0,0.08);
+    }
+
+    [data-theme="dark"] {
+      --bg-primary: #0F1117;
+      --bg-secondary: #161B27;
+      --bg-tertiary: #1C2333;
+      --bg-card: #1A2035;
+      --text-primary: #F0F4FF;
+      --text-secondary: #A8B4CC;
+      --text-muted: #6B7A99;
+      --border: #252D42;
+      --border-strong: #2F3A54;
+      --shadow-sm: 0 1px 3px rgba(0,0,0,0.3);
+      --shadow-md: 0 4px 16px rgba(0,0,0,0.4);
+      --shadow-lg: 0 10px 40px rgba(0,0,0,0.5);
+      --nav-bg: rgba(15,17,23,0.92);
+      --nav-shadow: 0 1px 0 rgba(255,255,255,0.06);
+    }
+
+    /* ===== TYPOGRAPHY ===== */
+    h1 { font-size: clamp(2rem, 5vw, 3.25rem); font-weight: 700; letter-spacing: -0.02em; line-height: 1.2; }
+    h2 { font-size: clamp(1.6rem, 3.5vw, 2.4rem); font-weight: 700; letter-spacing: -0.015em; line-height: 1.25; }
+    h3 { font-size: 1.2rem; font-weight: 600; line-height: 1.35; }
+    p { color: var(--text-secondary); }
+
+    /* ===== LAYOUT ===== */
+    .container { max-width: 1160px; margin: 0 auto; padding: 0 24px; }
+    section { padding: 96px 0; }
+
+    /* ===== NAVIGATION ===== */
+    #navbar {
+      position: fixed; top: 0; left: 0; right: 0; z-index: 1000;
+      background: var(--nav-bg);
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+      box-shadow: var(--nav-shadow);
+      transition: background 0.3s, box-shadow 0.3s;
+    }
+    #navbar.scrolled { box-shadow: var(--shadow-md); }
+    .nav-inner {
+      display: flex; align-items: center; justify-content: space-between;
+      height: 64px; max-width: 1160px; margin: 0 auto; padding: 0 24px;
+    }
+    .nav-logo img { height: 44px; width: auto; display: block; }
+    .nav-links {
+      display: flex; align-items: center; gap: 4px; list-style: none;
+    }
+    .nav-links a {
+      text-decoration: none; color: var(--text-secondary); font-size: 0.9rem;
+      font-weight: 500; padding: 8px 14px; border-radius: 8px;
+      transition: color 0.2s, background 0.2s;
+    }
+    .nav-links a:hover { color: var(--brand-blue); background: var(--brand-blue-xlight); }
+    .nav-links a.active { color: var(--brand-blue); }
+    .nav-right { display: flex; align-items: center; gap: 12px; }
+
+    /* Theme toggle */
+    .theme-btn {
+      background: var(--bg-tertiary); border: 1px solid var(--border);
+      border-radius: 50%; width: 38px; height: 38px;
+      cursor: pointer; font-size: 16px;
+      display: flex; align-items: center; justify-content: center;
+      transition: background 0.2s, border 0.2s; color: var(--text-primary);
+    }
+    .theme-btn:hover { background: var(--bg-secondary); }
+
+    .nav-cta {
+      background: var(--brand-blue); color: #fff; border: none;
+      padding: 9px 20px; border-radius: 8px; font-size: 0.875rem; font-weight: 600;
+      cursor: pointer; text-decoration: none;
+      transition: background 0.2s, transform 0.15s;
+    }
+    .nav-cta:hover { background: var(--brand-blue-dark); transform: translateY(-1px); }
+
+    /* Hamburger */
+    .hamburger { display: none; flex-direction: column; gap: 5px; cursor: pointer; padding: 6px; border: none; background: none; }
+    .hamburger span { display: block; width: 22px; height: 2px; background: var(--text-primary); border-radius: 2px; transition: all 0.3s; }
+    .hamburger.open span:nth-child(1) { transform: translateY(7px) rotate(45deg); }
+    .hamburger.open span:nth-child(2) { opacity: 0; }
+    .hamburger.open span:nth-child(3) { transform: translateY(-7px) rotate(-45deg); }
+
+    /* Mobile nav */
+    .mobile-nav {
+      display: none; position: fixed; top: 64px; left: 0; right: 0; bottom: 0;
+      background: var(--bg-primary); z-index: 999; padding: 24px;
+      flex-direction: column; gap: 8px;
+    }
+    .mobile-nav.open { display: flex; }
+    .mobile-nav a {
+      text-decoration: none; color: var(--text-primary); font-size: 1.1rem;
+      font-weight: 500; padding: 14px 16px; border-radius: 10px;
+      border: 1px solid var(--border); display: block;
+    }
+    .mobile-nav a:hover { background: var(--bg-secondary); }
+    .mobile-nav .mobile-cta {
+      margin-top: 8px; background: var(--brand-blue); color: #fff;
+      text-align: center; font-weight: 600; border-color: var(--brand-blue);
+    }
+
+    /* ===== HERO ===== */
+    #home {
+      padding-top: 140px; padding-bottom: 96px;
+      background: var(--bg-primary);
+      position: relative; overflow: hidden;
+    }
+    #home::before {
+      content: '';
+      position: absolute; top: -200px; right: -200px;
+      width: 700px; height: 700px;
+      background: radial-gradient(circle, rgba(21,101,192,0.07) 0%, transparent 70%);
+      border-radius: 50%; pointer-events: none;
+    }
+    .hero-grid {
+      display: grid; grid-template-columns: 1fr 1fr; gap: 64px; align-items: center;
+    }
+    .hero-badge {
+      display: inline-flex; align-items: center; gap: 8px;
+      background: var(--brand-blue-xlight); color: var(--brand-blue);
+      font-size: 0.78rem; font-weight: 600; letter-spacing: 0.06em; text-transform: uppercase;
+      padding: 6px 14px; border-radius: 100px; border: 1px solid rgba(21,101,192,0.2);
+      margin-bottom: 20px;
+    }
+    .hero-badge span { width: 6px; height: 6px; background: var(--brand-blue); border-radius: 50%; }
+    .hero-headline {
+      color: var(--text-primary); margin-bottom: 20px;
+    }
+    .hero-headline em {
+      font-style: normal; color: var(--brand-blue);
+    }
+    .hero-sub { font-size: 1.1rem; margin-bottom: 36px; max-width: 480px; line-height: 1.7; }
+    .hero-actions { display: flex; gap: 14px; flex-wrap: wrap; }
+    .btn-primary {
+      background: var(--brand-blue); color: #fff; border: none;
+      padding: 13px 28px; border-radius: 9px; font-size: 0.95rem; font-weight: 600;
+      cursor: pointer; text-decoration: none; display: inline-flex; align-items: center; gap: 8px;
+      transition: background 0.2s, transform 0.15s, box-shadow 0.2s;
+      box-shadow: 0 2px 8px rgba(21,101,192,0.25);
+    }
+    .btn-primary:hover { background: var(--brand-blue-dark); transform: translateY(-2px); box-shadow: 0 6px 20px rgba(21,101,192,0.3); }
+    .btn-secondary {
+      background: transparent; color: var(--text-primary);
+      border: 1.5px solid var(--border-strong); padding: 12px 26px; border-radius: 9px;
+      font-size: 0.95rem; font-weight: 600; cursor: pointer; text-decoration: none;
+      display: inline-flex; align-items: center; gap: 8px;
+      transition: border-color 0.2s, background 0.2s, transform 0.15s;
+    }
+    .btn-secondary:hover { border-color: var(--brand-blue); color: var(--brand-blue); background: var(--brand-blue-xlight); transform: translateY(-2px); }
+
+    /* Hero Visual — SaaS Dashboard SVG */
+    .hero-visual {
+      display: flex; align-items: center; justify-content: center;
+      position: relative;
+    }
+    .hero-visual svg { width: 100%; max-width: 520px; height: auto; filter: drop-shadow(0 20px 48px rgba(21,101,192,0.12)); }
+
+    /* Trust bar */
+    .trust-bar {
+      margin-top: 56px; display: flex; align-items: center; gap: 28px; flex-wrap: wrap;
+    }
+    .trust-item {
+      display: flex; align-items: center; gap: 8px;
+      font-size: 0.82rem; color: var(--text-muted); font-weight: 500;
+    }
+    .trust-item svg { color: var(--brand-blue); }
+
+    /* ===== SECTION LABELS ===== */
+    .section-eyebrow {
+      display: inline-block; font-size: 0.75rem; font-weight: 700;
+      letter-spacing: 0.1em; text-transform: uppercase;
+      color: var(--brand-blue); margin-bottom: 12px;
+    }
+    .section-title { color: var(--text-primary); margin-bottom: 16px; }
+    .section-sub { font-size: 1.05rem; color: var(--text-secondary); max-width: 560px; }
+    .section-header { margin-bottom: 56px; }
+    .section-header.center { text-align: center; }
+    .section-header.center .section-sub { margin: 0 auto; }
+
+    /* ===== WHY LIFEHUT ===== */
+    #why { background: var(--bg-secondary); }
+    .why-grid {
+      display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 24px;
+    }
+    .why-card {
+      background: var(--bg-card); border: 1px solid var(--border);
+      border-radius: 14px; padding: 28px 24px;
+      transition: transform 0.25s, box-shadow 0.25s, border-color 0.25s;
+    }
+    .why-card:hover { transform: translateY(-4px); box-shadow: var(--shadow-md); border-color: rgba(21,101,192,0.3); }
+    .why-icon {
+      width: 48px; height: 48px; background: var(--brand-blue-xlight); border-radius: 12px;
+      display: flex; align-items: center; justify-content: center; margin-bottom: 16px;
+    }
+    .why-icon svg { width: 22px; height: 22px; color: var(--brand-blue); }
+    .why-card h3 { color: var(--text-primary); margin-bottom: 8px; font-size: 1rem; }
+    .why-card p { font-size: 0.88rem; line-height: 1.6; }
+
+    /* ===== PRODUCTS ===== */
+    #solutions { background: var(--bg-primary); }
+    .products-grid {
+      display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: 28px;
+    }
+    .product-card {
+      background: var(--bg-card); border: 1px solid var(--border);
+      border-radius: 18px; padding: 36px 32px;
+      position: relative; overflow: hidden;
+      transition: transform 0.25s, box-shadow 0.25s;
+    }
+    .product-card:hover { transform: translateY(-6px); box-shadow: var(--shadow-lg); }
+    .product-card.featured { border-color: rgba(21,101,192,0.4); }
+    .product-card.featured::before {
+      content: ''; position: absolute; top: 0; left: 0; right: 0; height: 3px;
+      background: linear-gradient(90deg, var(--brand-blue), var(--brand-blue-light));
+    }
+    .product-badge {
+      display: inline-flex; align-items: center; gap: 6px;
+      font-size: 0.72rem; font-weight: 700; letter-spacing: 0.07em; text-transform: uppercase;
+      padding: 4px 12px; border-radius: 100px; margin-bottom: 20px;
+    }
+    .badge-live { background: #E8F5E9; color: #2E7D32; }
+    .badge-soon { background: #FFF3E0; color: #E65100; }
+    .badge-studio { background: var(--brand-blue-xlight); color: var(--brand-blue); }
+    .product-icon {
+      width: 56px; height: 56px; border-radius: 14px; margin-bottom: 20px;
+      display: flex; align-items: center; justify-content: center; font-size: 26px;
+    }
+    .product-icon.blue { background: var(--brand-blue-xlight); }
+    .product-icon.purple { background: #F3E8FF; }
+    .product-icon.teal { background: #E0F7FA; }
+    .product-tagline { font-size: 0.85rem; color: var(--brand-blue); font-weight: 600; margin-bottom: 8px; }
+    .product-card h3 { color: var(--text-primary); font-size: 1.35rem; margin-bottom: 12px; }
+    .product-card > p { font-size: 0.92rem; line-height: 1.65; margin-bottom: 24px; }
+    .feature-list { list-style: none; margin-bottom: 28px; display: flex; flex-direction: column; gap: 8px; }
+    .feature-list li {
+      display: flex; align-items: center; gap: 10px;
+      font-size: 0.85rem; color: var(--text-secondary);
+    }
+    .feature-list li::before {
+      content: ''; width: 16px; height: 16px; border-radius: 50%;
+      background: var(--brand-blue-xlight); border: 1.5px solid rgba(21,101,192,0.3);
+      flex-shrink: 0; display: flex; align-items: center; justify-content: center;
+      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 12 12'%3E%3Cpolyline points='2,6 5,9 10,3' stroke='%231565C0' stroke-width='1.8' fill='none' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+      background-size: 10px; background-repeat: no-repeat; background-position: center;
+    }
+    .btn-card-primary {
+      background: var(--brand-blue); color: #fff; border: none;
+      padding: 11px 22px; border-radius: 8px; font-size: 0.875rem; font-weight: 600;
+      cursor: pointer; text-decoration: none; display: inline-flex; align-items: center; gap: 6px;
+      transition: background 0.2s, transform 0.15s; width: 100%; justify-content: center;
+    }
+    .btn-card-primary:hover { background: var(--brand-blue-dark); transform: translateY(-1px); }
+    .btn-card-outline {
+      background: transparent; color: var(--text-muted);
+      border: 1.5px solid var(--border); padding: 10px 22px; border-radius: 8px;
+      font-size: 0.875rem; font-weight: 600; cursor: default;
+      display: inline-flex; align-items: center; gap: 6px;
+      width: 100%; justify-content: center;
+    }
+    .studio-card {
+      background: var(--bg-secondary); border: 1.5px dashed var(--border-strong);
+      border-radius: 18px; padding: 48px 32px; text-align: center; margin-top: 28px;
+    }
+    .studio-card h3 { color: var(--text-primary); font-size: 1.5rem; margin-bottom: 8px; }
+    .studio-card p { max-width: 480px; margin: 0 auto 24px; font-size: 0.95rem; }
+
+    /* ===== ABOUT ===== */
+    #about { background: var(--bg-secondary); }
+    .about-grid { display: grid; grid-template-columns: 1fr 1.1fr; gap: 72px; align-items: center; }
+    .about-visual {
+      background: var(--bg-card); border: 1px solid var(--border); border-radius: 20px;
+      padding: 36px; display: flex; flex-direction: column; gap: 24px;
+    }
+    .about-stat {
+      display: flex; flex-direction: column;
+    }
+    .about-stat .num { font-size: 2.4rem; font-weight: 800; color: var(--brand-blue); line-height: 1; }
+    .about-stat .label { font-size: 0.82rem; color: var(--text-muted); font-weight: 500; margin-top: 4px; }
+    .about-divider { height: 1px; background: var(--border); }
+    .about-content p { margin-bottom: 18px; line-height: 1.75; }
+    .about-content p:last-child { margin-bottom: 0; }
+    .about-values { display: flex; gap: 10px; flex-wrap: wrap; margin-top: 24px; }
+    .value-tag {
+      background: var(--brand-blue-xlight); color: var(--brand-blue);
+      border: 1px solid rgba(21,101,192,0.2); border-radius: 100px;
+      font-size: 0.8rem; font-weight: 600; padding: 6px 16px;
+    }
+
+    /* ===== CONTACT ===== */
+    #contact { background: var(--bg-primary); }
+    .contact-grid { display: grid; grid-template-columns: 1fr 1.2fr; gap: 64px; align-items: start; }
+    .contact-info-item {
+      display: flex; align-items: flex-start; gap: 14px; padding: 20px 0;
+      border-bottom: 1px solid var(--border);
+    }
+    .contact-info-item:last-child { border-bottom: none; }
+    .contact-info-icon {
+      width: 40px; height: 40px; background: var(--brand-blue-xlight);
+      border-radius: 10px; display: flex; align-items: center; justify-content: center; flex-shrink: 0;
+    }
+    .contact-info-icon svg { width: 18px; height: 18px; color: var(--brand-blue); }
+    .contact-info-item h4 { font-size: 0.8rem; color: var(--text-muted); font-weight: 600; text-transform: uppercase; letter-spacing: 0.06em; margin-bottom: 3px; }
+    .contact-info-item a, .contact-info-item p { font-size: 0.95rem; color: var(--text-primary); font-weight: 500; text-decoration: none; }
+    .contact-info-item a:hover { color: var(--brand-blue); }
+
+    /* Contact Form */
+    .contact-form {
+      background: var(--bg-card); border: 1px solid var(--border);
+      border-radius: 18px; padding: 36px;
+    }
+    .form-group { margin-bottom: 18px; }
+    .form-group label {
+      display: block; font-size: 0.82rem; font-weight: 600; color: var(--text-primary);
+      margin-bottom: 6px; letter-spacing: 0.02em;
+    }
+    .form-group input, .form-group textarea {
+      width: 100%; padding: 11px 14px;
+      border: 1.5px solid var(--border); border-radius: 9px;
+      background: var(--bg-secondary); color: var(--text-primary);
+      font-size: 0.92rem; font-family: inherit;
+      transition: border-color 0.2s, background 0.2s;
+      outline: none;
+    }
+    .form-group input:focus, .form-group textarea:focus {
+      border-color: var(--brand-blue); background: var(--bg-primary);
+    }
+    .form-group textarea { resize: vertical; min-height: 110px; line-height: 1.6; }
+    .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+    .btn-submit {
+      width: 100%; background: var(--brand-blue); color: #fff; border: none;
+      padding: 13px; border-radius: 9px; font-size: 0.95rem; font-weight: 600;
+      cursor: pointer; margin-top: 4px;
+      display: flex; align-items: center; justify-content: center; gap: 8px;
+      transition: background 0.2s, transform 0.15s, box-shadow 0.2s;
+      box-shadow: 0 2px 8px rgba(21,101,192,0.25);
+    }
+    .btn-submit:hover { background: var(--brand-blue-dark); transform: translateY(-2px); box-shadow: 0 6px 20px rgba(21,101,192,0.3); }
+    .form-success {
+      display: none; background: #E8F5E9; border: 1px solid #A5D6A7;
+      border-radius: 9px; padding: 14px 18px; margin-top: 14px;
+      font-size: 0.9rem; color: #2E7D32; font-weight: 500; text-align: center;
+    }
+
+    /* ===== FOOTER ===== */
+    footer {
+      background: var(--bg-secondary); border-top: 1px solid var(--border);
+      padding: 64px 0 32px;
+    }
+    .footer-grid {
+      display: grid; grid-template-columns: 2fr 1fr 1fr 1.2fr; gap: 48px; margin-bottom: 48px;
+    }
+    .footer-brand img { height: 40px; margin-bottom: 14px; }
+    .footer-brand p { font-size: 0.88rem; max-width: 260px; line-height: 1.65; }
+    .footer-col h4 { font-size: 0.8rem; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; color: var(--text-primary); margin-bottom: 16px; }
+    .footer-col ul { list-style: none; display: flex; flex-direction: column; gap: 10px; }
+    .footer-col ul li a { text-decoration: none; color: var(--text-muted); font-size: 0.88rem; transition: color 0.2s; }
+    .footer-col ul li a:hover { color: var(--brand-blue); }
+    .footer-contact-item { display: flex; align-items: center; gap: 10px; margin-bottom: 10px; }
+    .footer-contact-item svg { width: 15px; height: 15px; color: var(--brand-blue); flex-shrink: 0; }
+    .footer-contact-item a { font-size: 0.85rem; color: var(--text-muted); text-decoration: none; transition: color 0.2s; }
+    .footer-contact-item a:hover { color: var(--brand-blue); }
+    .footer-bottom {
+      border-top: 1px solid var(--border); padding-top: 24px;
+      display: flex; justify-content: space-between; align-items: center; flex-wrap: gap;
+    }
+    .footer-bottom p { font-size: 0.82rem; color: var(--text-muted); }
+
+    /* ===== BACK TO TOP ===== */
+    #back-top {
+      position: fixed; bottom: 28px; right: 28px; z-index: 800;
+      width: 44px; height: 44px; border-radius: 50%;
+      background: var(--brand-blue); color: #fff; border: none;
+      cursor: pointer; font-size: 18px;
+      display: flex; align-items: center; justify-content: center;
+      box-shadow: 0 4px 14px rgba(21,101,192,0.35);
+      opacity: 0; transform: translateY(8px);
+      transition: opacity 0.3s, transform 0.3s, background 0.2s;
+      pointer-events: none;
+    }
+    #back-top.visible { opacity: 1; transform: translateY(0); pointer-events: all; }
+    #back-top:hover { background: var(--brand-blue-dark); }
+
+    /* ===== RESPONSIVE ===== */
+    @media (max-width: 900px) {
+      .hero-grid { grid-template-columns: 1fr; gap: 48px; }
+      .hero-visual { order: -1; }
+      .hero-visual svg { max-width: 420px; }
+      .about-grid { grid-template-columns: 1fr; gap: 40px; }
+      .contact-grid { grid-template-columns: 1fr; }
+      .footer-grid { grid-template-columns: 1fr 1fr; }
+      .nav-links { display: none; }
+      .hamburger { display: flex; }
+      .nav-cta { display: none; }
+    }
+    @media (max-width: 600px) {
+      section { padding: 72px 0; }
+      .footer-grid { grid-template-columns: 1fr; gap: 32px; }
+      .form-row { grid-template-columns: 1fr; }
+      .products-grid { grid-template-columns: 1fr; }
+      .why-grid { grid-template-columns: 1fr 1fr; }
+      .hero-actions { flex-direction: column; }
+      .btn-primary, .btn-secondary { justify-content: center; }
+    }
+    @media (max-width: 380px) {
+      .why-grid { grid-template-columns: 1fr; }
+    }
+  </style>
 </head>
+<body>
 
-<body class="bg-navy-900 font-body text-pearl antialiased overflow-x-hidden">
-
-  <!-- ══════════════════════════════════════
-       SKIP TO CONTENT (Accessibility)
-  ══════════════════════════════════════ -->
-  <a href="#main-content" class="sr-only focus:not-sr-only focus:fixed focus:top-4 focus:left-4 focus:z-50 focus:bg-violet-brand focus:text-white focus:px-4 focus:py-2 focus:rounded-lg focus:font-display focus:font-semibold">
-    Skip to main content
-  </a>
-
-  <!-- ══════════════════════════════════════
-       ANNOUNCEMENT BAR
-  ══════════════════════════════════════ -->
-  <div class="announcement-bar" role="banner" aria-label="Announcement">
-    <div class="announcement-inner">
-      <span class="announcement-badge">🔥 NEW</span>
-      <span>Ultimate Business Bundle — <strong>67% OFF</strong> this week only</span>
-      <a href="#products" class="announcement-cta">Grab It Now →</a>
+<!-- ===== NAVIGATION ===== -->
+<nav id="navbar" role="navigation" aria-label="Main navigation">
+  <div class="nav-inner">
+    <a href="#home" class="nav-logo" aria-label="Lifehut Solutions — Home">
+      <img src="data:image/jpeg;base64,/9j/4AAQSkZJRgABAQEAYABgAAD/4QMyRXhpZgAATU0AKgAAAAgABAEOAAIAAAA8AAABSodpAAQAAAABAAABhpybAAEAAAB4AAACsuocAAcAAAEMAAAAPgAAAAAc6gAAAAEAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAATG9nbyBSZWZyZXNoOiBpRmVsaHV0IFNvbHV0aW9ucyB3aXRoIEJsdWUgSGFsZiBHZWFyIENhcCAtIDYAAAKQAAAHAAAABDAyMTDqHAAHAAABDAAAAaQAAAAAHOoAAAABAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAATABvAGcAbwAgAFIAZQBmAHIAZQBzAGgAOgAgAGkARgBlAGwAaAB1AHQAIABTAG8AbAB1AHQAaQBvAG4AcwAgAHcAaQB0AGgAIABCAGwAdQBlACAASABhAGwAZgAgAEcAZQBhAHIAIABDAGEAcAAgAC0AIAA2AAAA/+EEd2h0dHA6Ly9ucy5hZG9iZS5jb20veGFwLzEuMC8APD94cGFja2V0IGJlZ2luPSfvu78nIGlkPSdXNU0wTXBDZWhpSHpyZVN6TlRjemtjOWQnPz4NCjx4OnhtcG1ldGEgeG1sbnM6eD0iYWRvYmU6bnM6bWV0YS8iPjxyZGY6UkRGIHhtbG5zOnJkZj0iaHR0cDovL3d3dy53My5vcmcvMTk5OS8wMi8yMi1yZGYtc3ludGF4LW5zIyI+PHJkZjpEZXNjcmlwdGlvbiByZGY6YWJvdXQ9InV1aWQ6ZmFmNWJkZDUtYmEzZC0xMWRhLWFkMzEtZDMzZDc1MTgyZjFiIiB4bWxuczpkYz0iaHR0cDovL3B1cmwub3JnL2RjL2VsZW1lbnRzLzEuMS8iLz48cmRmOkRlc2NyaXB0aW9uIHJkZjphYm91dD0idXVpZDpmYWY1YmRkNS1iYTNkLTExZGEtYWQzMS1kMzNkNzUxODJmMWIiIHhtbG5zOmRjPSJodHRwOi8vcHVybC5vcmcvZGMvZWxlbWVudHMvMS4xLyI+PGRjOnRpdGxlPjxyZGY6QWx0IHhtbG5zOnJkZj0iaHR0cDovL3d3dy53My5vcmcvMTk5OS8wMi8yMi1yZGYtc3ludGF4LW5zIyI+PHJkZjpsaSB4bWw6bGFuZz0ieC1kZWZhdWx0Ij5Mb2dvIFJlZnJlc2g6IGlGZWxodXQgU29sdXRpb25zIHdpdGggQmx1ZSBIYWxmIEdlYXIgQ2FwIC0gNjwvcmRmOmxpPjwvcmRmOkFsdD4NCgkJCTwvZGM6dGl0bGU+PGRjOmRlc2NyaXB0aW9uPjxyZGY6QWx0IHhtbG5zOnJkZj0iaHR0cDovL3d3dy53My5vcmcvMTk5OS8wMi8yMi1yZGYtc3ludGF4LW5zIyI+PHJkZjpsaSB4bWw6bGFuZz0ieC1kZWZhdWx0Ij5Mb2dvIFJlZnJlc2g6IGlGZWxodXQgU29sdXRpb25zIHdpdGggQmx1ZSBIYWxmIEdlYXIgQ2FwIC0gNjwvcmRmOmxpPjwvcmRmOkFsdD4NCgkJCTwvZGM6ZGVzY3JpcHRpb24+PC9yZGY6RGVzY3JpcHRpb24+PC9yZGY6UkRGPjwveDp4bXBtZXRhPg0KICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAg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" alt="Lifehut Solutions Logo" />
+    </a>
+    <ul class="nav-links" role="list">
+      <li><a href="#home" class="active">Home</a></li>
+      <li><a href="#solutions">Solutions</a></li>
+      <li><a href="#about">About</a></li>
+      <li><a href="#contact">Contact</a></li>
+    </ul>
+    <div class="nav-right">
+      <button class="theme-btn" id="theme-toggle" aria-label="Toggle dark mode" title="Toggle theme">🌙</button>
+      <a href="#contact" class="nav-cta">Get In Touch</a>
+      <button class="hamburger" id="hamburger" aria-label="Open menu" aria-expanded="false">
+        <span></span><span></span><span></span>
+      </button>
     </div>
   </div>
+</nav>
 
-  <!-- ══════════════════════════════════════
-       NAVIGATION
-  ══════════════════════════════════════ -->
-  <header class="nav-wrapper" role="banner">
-    <nav class="nav-container" aria-label="Main navigation">
-      <!-- Logo -->
-      <a href="#" class="nav-logo" aria-label="Lifehut Solutions home">
-        <div class="logo-mark" aria-hidden="true">
-          <svg width="32" height="32" viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg">
-            <rect width="32" height="32" rx="8" fill="#7C3AED"/>
-            <path d="M8 22L14 10L18 17L21 13L24 22" stroke="#A3E635" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
-            <circle cx="24" cy="22" r="2" fill="#A3E635"/>
-          </svg>
+<!-- Mobile Nav -->
+<div class="mobile-nav" id="mobile-nav" role="dialog" aria-label="Mobile menu">
+  <a href="#home" onclick="closeMobileNav()">Home</a>
+  <a href="#solutions" onclick="closeMobileNav()">Solutions</a>
+  <a href="#about" onclick="closeMobileNav()">About</a>
+  <a href="#contact" onclick="closeMobileNav()">Contact</a>
+  <a href="#contact" class="mobile-cta" onclick="closeMobileNav()">Get In Touch →</a>
+</div>
+
+<!-- ===== HERO ===== -->
+<section id="home" aria-labelledby="hero-headline">
+  <div class="container">
+    <div class="hero-grid">
+      <div class="hero-content">
+        <div class="hero-badge"><span></span> Business Automation Platform</div>
+        <h1 class="hero-headline" id="hero-headline">
+          Technology Solutions Built for <em>Business Growth</em>
+        </h1>
+        <p class="hero-sub">
+          Affordable business automation tools, templates, and software solutions designed to help growing businesses work smarter — without the enterprise price tag.
+        </p>
+        <div class="hero-actions">
+          <a href="#contact" class="btn-primary">
+            Get In Touch
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
+          </a>
+          <a href="#solutions" class="btn-secondary">
+            Explore Solutions
+          </a>
         </div>
-        <span class="logo-text">Lifehut<span class="logo-accent">.</span></span>
-      </a>
+        <div class="trust-bar">
+          <div class="trust-item">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
+            Affordable Pricing
+          </div>
+          <div class="trust-item">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
+            Built for Small Business
+          </div>
+          <div class="trust-item">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
+            Mobile Responsive
+          </div>
+        </div>
+      </div>
 
-      <!-- Desktop Nav Links -->
-      <ul class="nav-links" role="list">
-        <li><a href="#products" class="nav-link">Products</a></li>
-        <li><a href="#how-it-works" class="nav-link">How It Works</a></li>
-        <li><a href="#testimonials" class="nav-link">Reviews</a></li>
-        <li><a href="#pricing" class="nav-link">Pricing</a></li>
-        <li><a href="#faq" class="nav-link">FAQ</a></li>
-      </ul>
+      <!-- Hero Visual: SaaS Dashboard Illustration -->
+      <div class="hero-visual" aria-hidden="true">
+        <svg viewBox="0 0 520 400" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <defs>
+            <linearGradient id="cardGrad" x1="0" y1="0" x2="0" y2="1">
+              <stop offset="0%" stop-color="#1565C0" stop-opacity="0.06"/>
+              <stop offset="100%" stop-color="#1565C0" stop-opacity="0.01"/>
+            </linearGradient>
+          </defs>
 
-      <!-- Nav CTA -->
-      <div class="nav-actions">
-        <a href="#products" class="btn-nav-cta" aria-label="Start building your business">
-          Get Started
-          <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true"><path d="M3 8H13M9 4L13 8L9 12" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          <!-- Main dashboard card -->
+          <rect x="20" y="20" width="480" height="360" rx="18" fill="var(--bg-card)" stroke="var(--border)" stroke-width="1.5"/>
+
+          <!-- Top bar -->
+          <rect x="20" y="20" width="480" height="46" rx="18" fill="var(--bg-secondary)"/>
+          <rect x="20" y="48" width="480" height="18" fill="var(--bg-secondary)"/>
+          <!-- Dots -->
+          <circle cx="48" cy="43" r="5" fill="#FF6B6B" opacity="0.8"/>
+          <circle cx="64" cy="43" r="5" fill="#FFD93D" opacity="0.8"/>
+          <circle cx="80" cy="43" r="5" fill="#6BCB77" opacity="0.8"/>
+          <!-- Title bar text -->
+          <rect x="106" y="38" width="80" height="10" rx="5" fill="var(--border)" opacity="0.7"/>
+          <rect x="360" y="36" width="60" height="14" rx="7" fill="#1565C0" opacity="0.85"/>
+          <rect x="430" y="38" width="50" height="10" rx="5" fill="var(--border)" opacity="0.5"/>
+
+          <!-- Left sidebar -->
+          <rect x="20" y="66" width="100" height="314" fill="var(--bg-secondary)" rx="0"/>
+          <rect x="20" y="66" width="2" height="314" fill="var(--border)"/>
+          <!-- Sidebar items -->
+          <rect x="34" y="82" width="72" height="28" rx="7" fill="#1565C0" opacity="0.12"/>
+          <rect x="44" y="91" width="8" height="8" rx="2" fill="#1565C0" opacity="0.8"/>
+          <rect x="58" y="92" width="38" height="6" rx="3" fill="#1565C0" opacity="0.6"/>
+          <rect x="44" y="122" width="8" height="8" rx="2" fill="var(--border)" opacity="0.7"/>
+          <rect x="58" y="123" width="32" height="6" rx="3" fill="var(--border)" opacity="0.7"/>
+          <rect x="44" y="144" width="8" height="8" rx="2" fill="var(--border)" opacity="0.7"/>
+          <rect x="58" y="145" width="40" height="6" rx="3" fill="var(--border)" opacity="0.7"/>
+          <rect x="44" y="166" width="8" height="8" rx="2" fill="var(--border)" opacity="0.7"/>
+          <rect x="58" y="167" width="28" height="6" rx="3" fill="var(--border)" opacity="0.7"/>
+          <rect x="44" y="188" width="8" height="8" rx="2" fill="var(--border)" opacity="0.7"/>
+          <rect x="58" y="189" width="36" height="6" rx="3" fill="var(--border)" opacity="0.7"/>
+
+          <!-- Main content area -->
+          <!-- Stat cards row -->
+          <rect x="128" y="78" width="100" height="62" rx="10" fill="var(--bg-secondary)" stroke="var(--border)" stroke-width="1"/>
+          <rect x="136" y="88" width="12" height="12" rx="3" fill="#1565C0" opacity="0.2"/>
+          <rect x="136" y="106" width="60" height="14" rx="4" fill="#1565C0" opacity="0.75"/>
+          <rect x="136" y="124" width="44" height="7" rx="3" fill="var(--border)" opacity="0.7"/>
+
+          <rect x="238" y="78" width="100" height="62" rx="10" fill="var(--bg-secondary)" stroke="var(--border)" stroke-width="1"/>
+          <rect x="246" y="88" width="12" height="12" rx="3" fill="#2E7D32" opacity="0.25"/>
+          <rect x="246" y="106" width="56" height="14" rx="4" fill="#43A047" opacity="0.7"/>
+          <rect x="246" y="124" width="48" height="7" rx="3" fill="var(--border)" opacity="0.7"/>
+
+          <rect x="348" y="78" width="134" height="62" rx="10" fill="var(--bg-secondary)" stroke="var(--border)" stroke-width="1"/>
+          <rect x="356" y="88" width="12" height="12" rx="3" fill="#E65100" opacity="0.25"/>
+          <rect x="356" y="106" width="52" height="14" rx="4" fill="#EF6C00" opacity="0.7"/>
+          <rect x="356" y="124" width="62" height="7" rx="3" fill="var(--border)" opacity="0.7"/>
+
+          <!-- Chart area -->
+          <rect x="128" y="152" width="230" height="140" rx="10" fill="var(--bg-secondary)" stroke="var(--border)" stroke-width="1"/>
+          <rect x="140" y="162" width="70" height="8" rx="4" fill="var(--border)" opacity="0.7"/>
+          <!-- Bar chart bars -->
+          <rect x="148" y="240" width="18" height="36" rx="4" fill="#1565C0" opacity="0.25"/>
+          <rect x="174" y="225" width="18" height="51" rx="4" fill="#1565C0" opacity="0.4"/>
+          <rect x="200" y="215" width="18" height="61" rx="4" fill="#1565C0" opacity="0.6"/>
+          <rect x="226" y="228" width="18" height="48" rx="4" fill="#1565C0" opacity="0.45"/>
+          <rect x="252" y="208" width="18" height="68" rx="4" fill="#1565C0" opacity="0.8"/>
+          <rect x="278" y="218" width="18" height="58" rx="4" fill="#1565C0" opacity="0.55"/>
+          <rect x="304" y="202" width="18" height="74" rx="4" fill="#1565C0"/>
+          <!-- X axis line -->
+          <line x1="138" y1="278" x2="342" y2="278" stroke="var(--border)" stroke-width="1"/>
+
+          <!-- Right side: activity feed -->
+          <rect x="368" y="152" width="114" height="140" rx="10" fill="var(--bg-secondary)" stroke="var(--border)" stroke-width="1"/>
+          <rect x="378" y="162" width="60" height="7" rx="3" fill="var(--border)" opacity="0.7"/>
+          <!-- Feed items -->
+          <circle cx="386" cy="186" r="6" fill="#1565C0" opacity="0.2"/>
+          <rect x="398" y="182" width="54" height="6" rx="3" fill="var(--border)" opacity="0.7"/>
+          <rect x="398" y="192" width="40" height="5" rx="2.5" fill="var(--border)" opacity="0.4"/>
+          <circle cx="386" cy="212" r="6" fill="#43A047" opacity="0.25"/>
+          <rect x="398" y="208" width="50" height="6" rx="3" fill="var(--border)" opacity="0.7"/>
+          <rect x="398" y="218" width="36" height="5" rx="2.5" fill="var(--border)" opacity="0.4"/>
+          <circle cx="386" cy="238" r="6" fill="#EF6C00" opacity="0.25"/>
+          <rect x="398" y="234" width="46" height="6" rx="3" fill="var(--border)" opacity="0.7"/>
+          <rect x="398" y="244" width="42" height="5" rx="2.5" fill="var(--border)" opacity="0.4"/>
+          <circle cx="386" cy="264" r="6" fill="#1565C0" opacity="0.2"/>
+          <rect x="398" y="260" width="52" height="6" rx="3" fill="var(--border)" opacity="0.7"/>
+          <rect x="398" y="270" width="38" height="5" rx="2.5" fill="var(--border)" opacity="0.4"/>
+
+          <!-- Bottom table -->
+          <rect x="128" y="304" width="354" height="66" rx="10" fill="var(--bg-secondary)" stroke="var(--border)" stroke-width="1"/>
+          <rect x="140" y="313" width="50" height="7" rx="3" fill="var(--border)" opacity="0.7"/>
+          <line x1="128" y1="330" x2="482" y2="330" stroke="var(--border)" stroke-width="1"/>
+          <rect x="140" y="338" width="80" height="6" rx="3" fill="var(--border)" opacity="0.6"/>
+          <rect x="260" y="338" width="50" height="6" rx="3" fill="var(--border)" opacity="0.6"/>
+          <rect x="360" y="336" width="40" height="10" rx="5" fill="#E8F5E9" opacity="0.9"/>
+          <rect x="140" y="352" width="70" height="6" rx="3" fill="var(--border)" opacity="0.5"/>
+          <rect x="260" y="352" width="44" height="6" rx="3" fill="var(--border)" opacity="0.5"/>
+          <rect x="360" y="350" width="40" height="10" rx="5" fill="#E3F0FF" opacity="0.9"/>
+        </svg>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ===== WHY LIFEHUT ===== -->
+<section id="why" aria-labelledby="why-title">
+  <div class="container">
+    <div class="section-header center">
+      <span class="section-eyebrow">Why Choose Us</span>
+      <h2 class="section-title" id="why-title">Built around what your business actually needs</h2>
+      <p class="section-sub">We understand the pressures of running a growing business. That's why every Lifehut product is designed with simplicity, affordability, and real-world impact in mind.</p>
+    </div>
+    <div class="why-grid">
+      <div class="why-card">
+        <div class="why-icon">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2L2 7l10 5 10-5-10-5z"/><path d="M2 17l10 5 10-5"/><path d="M2 12l10 5 10-5"/></svg>
+        </div>
+        <h3>Affordable by Design</h3>
+        <p>Professional-grade tools priced for small businesses and solopreneurs — no inflated enterprise fees, no hidden costs.</p>
+      </div>
+      <div class="why-card">
+        <div class="why-icon">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+        </div>
+        <h3>Easy to Use</h3>
+        <p>Ready to deploy in minutes. Our tools are built for business owners, not developers — no technical expertise required.</p>
+      </div>
+      <div class="why-card">
+        <div class="why-icon">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="3" width="20" height="14" rx="2"/><path d="M8 21h8M12 17v4"/></svg>
+        </div>
+        <h3>Business Focused</h3>
+        <p>Every feature solves a real business problem — from capturing leads to managing client projects and everything in between.</p>
+      </div>
+      <div class="why-card">
+        <div class="why-icon">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>
+        </div>
+        <h3>Modern Technology</h3>
+        <p>Built with current best practices — fast, secure, mobile-first tools that keep pace with your business as technology evolves.</p>
+      </div>
+      <div class="why-card">
+        <div class="why-icon">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
+        </div>
+        <h3>Scalable Solutions</h3>
+        <p>Start with what you need today. Our platform grows with your business, supporting your journey from startup to scale-up.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ===== SOLUTIONS / PRODUCTS ===== -->
+<section id="solutions" aria-labelledby="solutions-title">
+  <div class="container">
+    <div class="section-header">
+      <span class="section-eyebrow">Our Solutions</span>
+      <h2 class="section-title" id="solutions-title">Tools that do the heavy lifting for you</h2>
+      <p class="section-sub">From instant quote generation to full project management — Lifehut solutions are built to automate and streamline your business operations.</p>
+    </div>
+
+    <div class="products-grid">
+      <!-- Product 1: Smart Quote -->
+      <div class="product-card featured" aria-labelledby="sq-title">
+        <div class="product-badge badge-live">
+          <svg width="8" height="8" viewBox="0 0 8 8"><circle cx="4" cy="4" r="4" fill="#2E7D32"/></svg>
+          Available Now
+        </div>
+        <div class="product-icon blue" aria-hidden="true">💬</div>
+        <p class="product-tagline">Instant Quotes. Better Leads. Faster Conversions.</p>
+        <h3 id="sq-title">Lifehut Smart Quote™</h3>
+        <p>A customizable quote and lead capture system that helps businesses automate enquiries, improve website conversions, and generate more qualified leads — all without writing a single line of code.</p>
+        <ul class="feature-list" role="list">
+          <li>Instant Quote Generation</li>
+          <li>Lead Capture &amp; Management</li>
+          <li>Industry-specific Customization</li>
+          <li>Google Sheets Integration</li>
+          <li>White Label Options</li>
+          <li>Mobile Responsive</li>
+        </ul>
+        <a href="#contact" class="btn-card-primary">
+          View Details
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
         </a>
       </div>
 
-      <!-- Mobile Menu Toggle -->
-      <button class="mobile-menu-btn" id="menuToggle" aria-expanded="false" aria-controls="mobileMenu" aria-label="Toggle navigation menu">
-        <span class="hamburger-line"></span>
-        <span class="hamburger-line"></span>
-        <span class="hamburger-line"></span>
-      </button>
-    </nav>
-
-    <!-- Mobile Menu -->
-    <div class="mobile-menu hidden" id="mobileMenu" role="navigation" aria-label="Mobile navigation">
-      <ul role="list">
-        <li><a href="#products" class="mobile-nav-link">Products</a></li>
-        <li><a href="#how-it-works" class="mobile-nav-link">How It Works</a></li>
-        <li><a href="#testimonials" class="mobile-nav-link">Reviews</a></li>
-        <li><a href="#pricing" class="mobile-nav-link">Pricing</a></li>
-        <li><a href="#faq" class="mobile-nav-link">FAQ</a></li>
-        <li><a href="#products" class="btn-mobile-cta">Get Started →</a></li>
-      </ul>
+      <!-- Product 2: Workspace -->
+      <div class="product-card" aria-labelledby="ws-title">
+        <div class="product-badge badge-soon">
+          <svg width="8" height="8" viewBox="0 0 8 8"><circle cx="4" cy="4" r="4" fill="#E65100"/></svg>
+          Coming Soon
+        </div>
+        <div class="product-icon purple" aria-hidden="true">🏢</div>
+        <p class="product-tagline">Manage Projects, Clients, Documents, and Teams From One Place.</p>
+        <h3 id="ws-title">Lifehut Workspace™</h3>
+        <p>A business workspace platform that helps service providers manage projects, client communications, payments, approvals, documents, and operations efficiently — your business, fully organized.</p>
+        <ul class="feature-list" role="list">
+          <li>Project Management</li>
+          <li>Client Portal</li>
+          <li>Contractor Portal</li>
+          <li>Document Locker</li>
+          <li>Expense Tracking</li>
+          <li>Real-Time Notifications</li>
+        </ul>
+        <button class="btn-card-outline" disabled aria-label="Coming soon — not yet available">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+          Coming Soon
+        </button>
+      </div>
     </div>
-  </header>
 
-  <!-- ══════════════════════════════════════
-       MAIN CONTENT
-  ══════════════════════════════════════ -->
-  <main id="main-content">
-
-    <!-- ── HERO SECTION ── -->
-    <section class="hero-section" aria-labelledby="hero-heading">
-      <!-- Ambient background elements -->
-      <div class="hero-bg-orb hero-orb-1" aria-hidden="true"></div>
-      <div class="hero-bg-orb hero-orb-2" aria-hidden="true"></div>
-      <div class="hero-grid-overlay" aria-hidden="true"></div>
-
-      <div class="hero-content-wrapper">
-        <!-- Left: Copy -->
-        <div class="hero-copy">
-          <div class="hero-eyebrow" aria-label="Category">
-            <span class="eyebrow-dot" aria-hidden="true"></span>
-            Digital Products · Built for Builders
-          </div>
-
-          <h1 id="hero-heading" class="hero-headline">
-            Turn your <span class="headline-accent">ideas</span> into
-            <br class="hidden md:block"/>
-            income — with
-            <span class="headline-gradient">premium tools</span>
-          </h1>
-
-          <p class="hero-subhead">
-            Lifehut Solutions crafts high-converting templates, systems, and digital products
-            that help entrepreneurs launch faster, earn smarter, and scale without burning out.
-          </p>
-
-          <div class="hero-cta-group">
-            <a href="#products" class="btn-primary" aria-label="Browse all digital products">
-              Explore Products
-              <svg width="20" height="20" viewBox="0 0 20 20" fill="none" aria-hidden="true"><path d="M4 10H16M11 5L16 10L11 15" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
-            </a>
-            <a href="#how-it-works" class="btn-ghost" aria-label="See how it works">
-              <span class="play-icon" aria-hidden="true">▶</span>
-              See how it works
-            </a>
-          </div>
-
-          <!-- Social Proof Strip -->
-          <div class="hero-social-proof" aria-label="Social proof">
-            <div class="proof-avatars" aria-hidden="true">
-              <div class="proof-avatar" style="background:#7C3AED">A</div>
-              <div class="proof-avatar" style="background:#0891B2">M</div>
-              <div class="proof-avatar" style="background:#059669">R</div>
-              <div class="proof-avatar" style="background:#D97706">S</div>
-              <div class="proof-avatar proof-avatar-more">+</div>
-            </div>
-            <div class="proof-text">
-              <div class="proof-stars" aria-label="5 star rating">★★★★★</div>
-              <span>Trusted by <strong>2,400+</strong> entrepreneurs</span>
-            </div>
-          </div>
-        </div>
-
-        <!-- Right: Animated Growth Card Stack -->
-        <div class="hero-visual" aria-hidden="true">
-          <!-- Growth Chart Card -->
-          <div class="hero-card hero-card-main animate-float">
-            <div class="card-header-row">
-              <span class="card-label">Revenue Growth</span>
-              <span class="card-badge-up">↑ 312%</span>
-            </div>
-            <svg class="growth-chart" viewBox="0 0 280 120" fill="none" xmlns="http://www.w3.org/2000/svg">
-              <defs>
-                <linearGradient id="chartGrad" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="0%" stop-color="#7C3AED" stop-opacity="0.4"/>
-                  <stop offset="100%" stop-color="#7C3AED" stop-opacity="0"/>
-                </linearGradient>
-              </defs>
-              <!-- Grid lines -->
-              <line x1="0" y1="100" x2="280" y2="100" stroke="#1E293B" stroke-width="1"/>
-              <line x1="0" y1="70" x2="280" y2="70" stroke="#1E293B" stroke-width="1"/>
-              <line x1="0" y1="40" x2="280" y2="40" stroke="#1E293B" stroke-width="1"/>
-              <!-- Area fill -->
-              <path d="M0 100 L30 95 L70 88 L110 80 L150 65 L190 45 L230 25 L280 8 L280 120 L0 120 Z" fill="url(#chartGrad)"/>
-              <!-- Line -->
-              <path class="chart-line" d="M0 100 L30 95 L70 88 L110 80 L150 65 L190 45 L230 25 L280 8" stroke="#A3E635" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
-              <!-- Dot -->
-              <circle cx="280" cy="8" r="5" fill="#A3E635"/>
-              <circle cx="280" cy="8" r="10" fill="#A3E635" fill-opacity="0.3" class="chart-pulse"/>
-            </svg>
-            <div class="card-stats-row">
-              <div class="stat-item"><div class="stat-val">$48k</div><div class="stat-lbl">This Month</div></div>
-              <div class="stat-item"><div class="stat-val">2.4k</div><div class="stat-lbl">Customers</div></div>
-              <div class="stat-item"><div class="stat-val">98%</div><div class="stat-lbl">Satisfaction</div></div>
-            </div>
-          </div>
-
-          <!-- Floating mini cards -->
-          <div class="hero-card hero-card-mini hero-card-mini-1">
-            <span class="mini-icon">⚡</span>
-            <div>
-              <div class="mini-title">Instant Download</div>
-              <div class="mini-sub">Ready in 60 seconds</div>
-            </div>
-          </div>
-          <div class="hero-card hero-card-mini hero-card-mini-2">
-            <span class="mini-icon">🎯</span>
-            <div>
-              <div class="mini-title">New Sale!</div>
-              <div class="mini-sub">Business Kit — just now</div>
-            </div>
-          </div>
-        </div>
+    <!-- Studio: Future -->
+    <div class="studio-card" aria-labelledby="studio-title">
+      <div class="product-badge badge-studio" style="margin: 0 auto 16px;">
+        <svg width="8" height="8" viewBox="0 0 8 8"><circle cx="4" cy="4" r="4" fill="#1565C0"/></svg>
+        Coming Soon
       </div>
+      <div style="font-size: 32px; margin-bottom: 10px;" aria-hidden="true">🎨</div>
+      <h3 id="studio-title">Lifehut Studio™</h3>
+      <p class="product-tagline" style="color: var(--brand-blue); font-size: 0.9rem; margin-bottom: 12px;">Digital Products Marketplace</p>
+      <p>A growing collection of templates, website kits, automation tools, calculators, SaaS starters, and business systems — everything you need to build and grow, in one marketplace.</p>
+      <a href="#contact" class="btn-secondary" style="display: inline-flex; margin-top: 8px;">Get Notified When It Launches</a>
+    </div>
+  </div>
+</section>
 
-      <!-- Scroll Indicator -->
-      <div class="scroll-indicator" aria-hidden="true">
-        <div class="scroll-line"></div>
-        <span>Scroll</span>
-      </div>
-    </section>
-
-    <!-- ── TRUST LOGOS ── -->
-    <section class="trust-section" aria-label="Featured on">
-      <div class="trust-inner">
-        <p class="trust-label">As featured on</p>
-        <div class="trust-logos" aria-hidden="true">
-          <span class="trust-logo">Systeme.io</span>
-          <span class="trust-logo">ProductHunt</span>
-          <span class="trust-logo">Gumroad</span>
-          <span class="trust-logo">AppSumo</span>
-          <span class="trust-logo">Indie Hackers</span>
+<!-- ===== ABOUT ===== -->
+<section id="about" aria-labelledby="about-title">
+  <div class="container">
+    <div class="about-grid">
+      <div class="about-visual" role="presentation">
+        <div class="about-stat">
+          <span class="num">10+</span>
+          <span class="label">Products in Development</span>
         </div>
-      </div>
-    </section>
-
-    <!-- ── PRODUCTS SECTION ── -->
-    <section id="products" class="section-wrapper" aria-labelledby="products-heading">
-      <div class="section-inner">
-        <!-- Section Header -->
-        <div class="section-header">
-          <div class="section-eyebrow">Our Products</div>
-          <h2 id="products-heading" class="section-title">
-            Everything you need to
-            <span class="title-accent">build & sell</span> online
-          </h2>
-          <p class="section-subtitle">
-            Carefully crafted digital products that give you an unfair advantage.
-            Each one is plug-and-play — no guesswork, no overwhelm.
-          </p>
+        <div class="about-divider"></div>
+        <div class="about-stat">
+          <span class="num">100%</span>
+          <span class="label">Business-First Approach</span>
         </div>
-
-        <!-- Product Cards Grid -->
-        <div class="products-grid" role="list">
-
-          <!-- Product 1 -->
-          <article class="product-card product-card-featured" role="listitem" aria-labelledby="prod1-title">
-            <div class="product-card-badge">⭐ Best Seller</div>
-            <div class="product-icon-wrap product-icon-violet">
-              <svg width="28" height="28" viewBox="0 0 28 28" fill="none" aria-hidden="true"><rect x="4" y="4" width="9" height="9" rx="2" fill="#A78BFA"/><rect x="15" y="4" width="9" height="9" rx="2" fill="#A78BFA" fill-opacity="0.5"/><rect x="4" y="15" width="9" height="9" rx="2" fill="#A78BFA" fill-opacity="0.5"/><rect x="15" y="15" width="9" height="9" rx="2" fill="#A78BFA"/></svg>
-            </div>
-            <h3 id="prod1-title" class="product-title">Lifehut Smart Quote</h3>
-            <p class="product-desc">30+ templates covering branding, marketing, finance, and client onboarding. The complete launchpad for your digital business.</p>
-            <ul class="product-features" aria-label="Features">
-              <li>✓ 30+ plug-and-play templates</li>
-              <li>✓ Notion + Google Docs versions</li>
-              <li>✓ Lifetime updates included</li>
-              <li>✓ Step-by-step video guide</li>
-            </ul>
-            <div class="product-footer">
-              <div class="product-price-wrap">
-                <span class="price-old" aria-label="Original price">$97</span>
-                <span class="price-new" aria-label="Sale price">$37</span>
-              </div>
-              <a href="#pricing" class="btn-product" aria-label="Get Lifehut Smart Quote">Get It Now</a>
-            </div>
-          </article>
-
-          <!-- Product 2 -->
-          <article class="product-card" role="listitem" aria-labelledby="prod2-title">
-            <div class="product-icon-wrap product-icon-lime">
-              <svg width="28" height="28" viewBox="0 0 28 28" fill="none" aria-hidden="true"><path d="M14 4L4 10V18L14 24L24 18V10L14 4Z" stroke="#A3E635" stroke-width="2" fill="none"/><path d="M14 4V14M14 14L24 10M14 14L4 10" stroke="#A3E635" stroke-width="1.5"/></svg>
-            </div>
-            <h3 id="prod2-title" class="product-title">Content Creator OS</h3>
-            <p class="product-desc">A complete content machine — editorial calendars, hooks library, repurposing workflows, and analytics dashboards built for creators.</p>
-            <ul class="product-features" aria-label="Features">
-              <li>✓ 90-day content calendar</li>
-              <li>✓ 500+ viral hook templates</li>
-              <li>✓ Multi-platform repurposing kit</li>
-              <li>✓ Weekly analytics tracker</li>
-            </ul>
-            <div class="product-footer">
-              <div class="product-price-wrap">
-                <span class="price-old" aria-label="Original price">$67</span>
-                <span class="price-new" aria-label="Sale price">$27</span>
-              </div>
-              <a href="#pricing" class="btn-product" aria-label="Get Content Creator OS">Get It Now</a>
-            </div>
-          </article>
-
-          <!-- Product 3 -->
-          <article class="product-card" role="listitem" aria-labelledby="prod3-title">
-            <div class="product-icon-wrap product-icon-cyan">
-              <svg width="28" height="28" viewBox="0 0 28 28" fill="none" aria-hidden="true"><circle cx="14" cy="14" r="10" stroke="#22D3EE" stroke-width="2"/><path d="M10 14L13 17L18 11" stroke="#22D3EE" stroke-width="2" stroke-linecap="round"/></svg>
-            </div>
-            <h3 id="prod3-title" class="product-title">Sales Funnel Blueprint</h3>
-            <p class="product-desc">Swipe our proven 7-figure funnel framework. Includes copy templates, email sequences, and conversion optimization checklists.</p>
-            <ul class="product-features" aria-label="Features">
-              <li>✓ 7-stage funnel framework</li>
-              <li>✓ 21 email sequence templates</li>
-              <li>✓ VSL & sales page scripts</li>
-              <li>✓ A/B testing checklist</li>
-            </ul>
-            <div class="product-footer">
-              <div class="product-price-wrap">
-                <span class="price-old" aria-label="Original price">$79</span>
-                <span class="price-new" aria-label="Sale price">$29</span>
-              </div>
-              <a href="#pricing" class="btn-product" aria-label="Get Sales Funnel Blueprint">Get It Now</a>
-            </div>
-          </article>
-
+        <div class="about-divider"></div>
+        <div class="about-stat">
+          <span class="num">₹</span>
+          <span class="label">Affordable for Every Business</span>
         </div>
-
-        <!-- View All CTA -->
-        <div class="section-cta-wrap">
-          <a href="#pricing" class="btn-secondary" aria-label="See all products and bundles">See All Products & Bundles</a>
-        </div>
-      </div>
-    </section>
-
-    <!-- ── HOW IT WORKS ── -->
-    <section id="how-it-works" class="section-wrapper section-dark" aria-labelledby="hiw-heading">
-      <div class="hiw-diagonal-top" aria-hidden="true"></div>
-      <div class="section-inner">
-        <div class="section-header">
-          <div class="section-eyebrow">The Process</div>
-          <h2 id="hiw-heading" class="section-title">
-            From purchase to <span class="title-accent">profit</span> in 3 steps
-          </h2>
-          <p class="section-subtitle">No tech headaches. No steep learning curves. Just results.</p>
-        </div>
-
-        <div class="hiw-steps" role="list">
-          <div class="hiw-step" role="listitem">
-            <div class="hiw-step-number" aria-hidden="true">01</div>
-            <div class="hiw-step-icon" aria-hidden="true">🛒</div>
-            <h3 class="hiw-step-title">Pick Your Product</h3>
-            <p class="hiw-step-desc">Browse our curated library of digital products. Find the one that matches your current business goal.</p>
-          </div>
-          <div class="hiw-connector" aria-hidden="true">→</div>
-          <div class="hiw-step" role="listitem">
-            <div class="hiw-step-number" aria-hidden="true">02</div>
-            <div class="hiw-step-icon" aria-hidden="true">⚡</div>
-            <h3 class="hiw-step-title">Instant Access</h3>
-            <p class="hiw-step-desc">Download immediately after purchase. Everything is organized, labeled, and ready to deploy — no setup required.</p>
-          </div>
-          <div class="hiw-connector" aria-hidden="true">→</div>
-          <div class="hiw-step" role="listitem">
-            <div class="hiw-step-number" aria-hidden="true">03</div>
-            <div class="hiw-step-icon" aria-hidden="true">🚀</div>
-            <h3 class="hiw-step-title">Grow Your Business</h3>
-            <p class="hiw-step-desc">Implement the systems, watch the results. Join thousands of entrepreneurs who've transformed their business.</p>
-          </div>
-        </div>
-
-        <!-- Results Bar -->
-        <div class="results-bar" aria-label="Customer results">
-          <div class="result-stat">
-            <div class="result-num">2,400+</div>
-            <div class="result-lbl">Happy Customers</div>
-          </div>
-          <div class="result-divider" aria-hidden="true"></div>
-          <div class="result-stat">
-            <div class="result-num">$2.1M</div>
-            <div class="result-lbl">Revenue Generated</div>
-          </div>
-          <div class="result-divider" aria-hidden="true"></div>
-          <div class="result-stat">
-            <div class="result-num">4.9/5</div>
-            <div class="result-lbl">Average Rating</div>
-          </div>
-          <div class="result-divider" aria-hidden="true"></div>
-          <div class="result-stat">
-            <div class="result-num">30-Day</div>
-            <div class="result-lbl">Money-Back Guarantee</div>
-          </div>
-        </div>
-      </div>
-      <div class="hiw-diagonal-bottom" aria-hidden="true"></div>
-    </section>
-
-    <!-- ── TESTIMONIALS ── -->
-    <section id="testimonials" class="section-wrapper" aria-labelledby="testimonials-heading">
-      <div class="section-inner">
-        <div class="section-header">
-          <div class="section-eyebrow">Reviews</div>
-          <h2 id="testimonials-heading" class="section-title">
-            Real builders, <span class="title-accent">real results</span>
-          </h2>
-          <p class="section-subtitle">Don't take our word for it. Here's what our customers say.</p>
-        </div>
-
-        <div class="testimonials-grid" role="list">
-
-          <blockquote class="testimonial-card testimonial-featured" role="listitem">
-            <div class="testimonial-stars" aria-label="5 out of 5 stars">★★★★★</div>
-            <p class="testimonial-text">"I launched my first digital product in under a week using Lifehut's templates. The Business Starter Kit alone paid for itself 10x over in the first month. This is the real deal."</p>
-            <footer class="testimonial-footer">
-              <div class="testimonial-avatar" aria-hidden="true" style="background:linear-gradient(135deg,#7C3AED,#A78BFA)">AM</div>
-              <div>
-                <div class="testimonial-name">Ananya M.</div>
-                <div class="testimonial-role">Digital Course Creator, Bangalore</div>
-              </div>
-            </footer>
-          </blockquote>
-
-          <blockquote class="testimonial-card" role="listitem">
-            <div class="testimonial-stars" aria-label="5 out of 5 stars">★★★★★</div>
-            <p class="testimonial-text">"The Content Creator OS completely changed how I show up online. I went from posting randomly to having a system that generates consistent leads every week."</p>
-            <footer class="testimonial-footer">
-              <div class="testimonial-avatar" aria-hidden="true" style="background:linear-gradient(135deg,#059669,#34D399)">RK</div>
-              <div>
-                <div class="testimonial-name">Rahul K.</div>
-                <div class="testimonial-role">Freelance Consultant, Mumbai</div>
-              </div>
-            </footer>
-          </blockquote>
-
-          <blockquote class="testimonial-card" role="listitem">
-            <div class="testimonial-stars" aria-label="5 out of 5 stars">★★★★★</div>
-            <p class="testimonial-text">"I was skeptical at first, but the Sales Funnel Blueprint is genuinely outstanding. My conversion rate jumped from 1.2% to 4.8% after implementing their framework."</p>
-            <footer class="testimonial-footer">
-              <div class="testimonial-avatar" aria-hidden="true" style="background:linear-gradient(135deg,#D97706,#FCD34D)">SP</div>
-              <div>
-                <div class="testimonial-name">Sneha P.</div>
-                <div class="testimonial-role">E-commerce Entrepreneur, Chennai</div>
-              </div>
-            </footer>
-          </blockquote>
-
-          <blockquote class="testimonial-card" role="listitem">
-            <div class="testimonial-stars" aria-label="5 out of 5 stars">★★★★★</div>
-            <p class="testimonial-text">"Best investment I've made for my business. The quality of these templates is on par with products 5x the price. Lifehut Solutions is criminally underpriced."</p>
-            <footer class="testimonial-footer">
-              <div class="testimonial-avatar" aria-hidden="true" style="background:linear-gradient(135deg,#0891B2,#38BDF8)">VN</div>
-              <div>
-                <div class="testimonial-name">Vikram N.</div>
-                <div class="testimonial-role">SaaS Founder, Pune</div>
-              </div>
-            </footer>
-          </blockquote>
-
-          <blockquote class="testimonial-card" role="listitem">
-            <div class="testimonial-stars" aria-label="5 out of 5 stars">★★★★★</div>
-            <p class="testimonial-text">"As someone with zero design skills, these templates were a lifesaver. I built my entire brand identity in two days. My clients can't believe I did it myself."</p>
-            <footer class="testimonial-footer">
-              <div class="testimonial-avatar" aria-hidden="true" style="background:linear-gradient(135deg,#DB2777,#F472B6)">PT</div>
-              <div>
-                <div class="testimonial-name">Priya T.</div>
-                <div class="testimonial-role">Life Coach, Delhi</div>
-              </div>
-            </footer>
-          </blockquote>
-
-          <blockquote class="testimonial-card" role="listitem">
-            <div class="testimonial-stars" aria-label="5 out of 5 stars">★★★★★</div>
-            <p class="testimonial-text">"Incredible value. I've bought dozens of templates online and nothing comes close to Lifehut in terms of depth, usability, and the results I've seen. Absolutely recommend."</p>
-            <footer class="testimonial-footer">
-              <div class="testimonial-avatar" aria-hidden="true" style="background:linear-gradient(135deg,#7C3AED,#22D3EE)">MJ</div>
-              <div>
-                <div class="testimonial-name">Mohammed J.</div>
-                <div class="testimonial-role">Marketing Agency Owner, Hyderabad</div>
-              </div>
-            </footer>
-          </blockquote>
-
-        </div>
-      </div>
-    </section>
-
-    <!-- ── PRICING SECTION ── -->
-    <section id="pricing" class="section-wrapper section-dark" aria-labelledby="pricing-heading">
-      <div class="hiw-diagonal-top" aria-hidden="true"></div>
-      <div class="section-inner">
-        <div class="section-header">
-          <div class="section-eyebrow">Pricing</div>
-          <h2 id="pricing-heading" class="section-title">
-            Simple, transparent <span class="title-accent">pricing</span>
-          </h2>
-          <p class="section-subtitle">One-time payment. No subscriptions. No hidden fees. Lifetime access.</p>
-        </div>
-
-        <div class="pricing-grid" role="list">
-
-          <!-- Plan 1 -->
-          <article class="pricing-card" role="listitem" aria-labelledby="plan1-title">
-            <div class="pricing-tier">Starter</div>
-            <div class="pricing-amount">
-              <span class="pricing-currency">₹</span>
-              <span id="plan1-title" class="pricing-number">999</span>
-            </div>
-            <div class="pricing-note">One-time payment · Instant access</div>
-            <ul class="pricing-features" aria-label="Starter plan features">
-              <li class="pf-item pf-yes">1 Product of your choice</li>
-              <li class="pf-item pf-yes">Lifetime access & updates</li>
-              <li class="pf-item pf-yes">Step-by-step guide included</li>
-              <li class="pf-item pf-yes">Email support</li>
-              <li class="pf-item pf-no">Bundle discount</li>
-              <li class="pf-item pf-no">Community access</li>
-            </ul>
-            <a href="#" class="btn-pricing-secondary" aria-label="Get the Starter plan">Choose Starter</a>
-          </article>
-
-          <!-- Plan 2 (Featured) -->
-          <article class="pricing-card pricing-card-featured" role="listitem" aria-labelledby="plan2-title" aria-describedby="plan2-popular">
-            <div class="pricing-popular" id="plan2-popular">Most Popular</div>
-            <div class="pricing-tier">Builder</div>
-            <div class="pricing-amount">
-              <span class="pricing-currency">₹</span>
-              <span id="plan2-title" class="pricing-number">2,499</span>
-            </div>
-            <div class="pricing-note">One-time payment · Save ₹1,500</div>
-            <ul class="pricing-features" aria-label="Builder plan features">
-              <li class="pf-item pf-yes">All 3 Core Products</li>
-              <li class="pf-item pf-yes">Lifetime access & updates</li>
-              <li class="pf-item pf-yes">All guides & video walkthroughs</li>
-              <li class="pf-item pf-yes">Priority email support</li>
-              <li class="pf-item pf-yes">Bundle discount applied</li>
-              <li class="pf-item pf-no">Community access</li>
-            </ul>
-            <a href="#" class="btn-pricing-primary" aria-label="Get the Builder plan — most popular">Get Builder Bundle</a>
-          </article>
-
-          <!-- Plan 3 -->
-          <article class="pricing-card" role="listitem" aria-labelledby="plan3-title">
-            <div class="pricing-tier">Pro</div>
-            <div class="pricing-amount">
-              <span class="pricing-currency">₹</span>
-              <span id="plan3-title" class="pricing-number">4,999</span>
-            </div>
-            <div class="pricing-note">One-time payment · Full vault</div>
-            <ul class="pricing-features" aria-label="Pro plan features">
-              <li class="pf-item pf-yes">Everything in Builder</li>
-              <li class="pf-item pf-yes">All future products included</li>
-              <li class="pf-item pf-yes">1:1 onboarding call (30 min)</li>
-              <li class="pf-item pf-yes">VIP support (24hr response)</li>
-              <li class="pf-item pf-yes">Private community access</li>
-              <li class="pf-item pf-yes">Commercial license</li>
-            </ul>
-            <a href="#" class="btn-pricing-secondary" aria-label="Get the Pro plan">Go Pro</a>
-          </article>
-
-        </div>
-
-        <!-- Guarantee Badge -->
-        <div class="guarantee-badge" aria-label="30-day money back guarantee">
-          <div class="guarantee-icon" aria-hidden="true">🛡️</div>
+        <div class="about-divider"></div>
+        <div style="display: flex; align-items: center; gap: 12px;">
+          <div style="width: 40px; height: 40px; background: var(--brand-blue-xlight); border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 18px;">👤</div>
           <div>
-            <div class="guarantee-title">30-Day Money-Back Guarantee</div>
-            <div class="guarantee-text">If you're not completely satisfied, we'll refund every rupee — no questions asked.</div>
+            <p style="color: var(--text-primary); font-size: 0.9rem; font-weight: 600; margin: 0;">Founder-Led Company</p>
+            <p style="font-size: 0.78rem; color: var(--text-muted); margin: 0;">Built by someone who understands your challenges</p>
           </div>
         </div>
       </div>
-      <div class="hiw-diagonal-bottom" aria-hidden="true"></div>
-    </section>
 
-    <!-- ── FAQ SECTION ── -->
-    <section id="faq" class="section-wrapper" aria-labelledby="faq-heading">
-      <div class="section-inner">
-        <div class="section-header">
-          <div class="section-eyebrow">FAQ</div>
-          <h2 id="faq-heading" class="section-title">
-            Questions? <span class="title-accent">Answered.</span>
-          </h2>
-        </div>
-
-        <div class="faq-list" role="list">
-
-          <div class="faq-item" role="listitem">
-            <button class="faq-question" aria-expanded="false" aria-controls="faq1-answer">
-              <span>What format are the products delivered in?</span>
-              <span class="faq-icon" aria-hidden="true">+</span>
-            </button>
-            <div class="faq-answer" id="faq1-answer" hidden>
-              All products are delivered digitally as PDF, Notion templates, Google Docs, or Canva files — depending on the product. You'll get instant access to a download link after purchase.
-            </div>
-          </div>
-
-          <div class="faq-item" role="listitem">
-            <button class="faq-question" aria-expanded="false" aria-controls="faq2-answer">
-              <span>Do I need any special software to use these?</span>
-              <span class="faq-icon" aria-hidden="true">+</span>
-            </button>
-            <div class="faq-answer" id="faq2-answer" hidden>
-              No paid software required. Most products work with free tools like Notion (free tier), Google Docs/Sheets, or Canva (free tier). We'll tell you exactly what you need in the product description.
-            </div>
-          </div>
-
-          <div class="faq-item" role="listitem">
-            <button class="faq-question" aria-expanded="false" aria-controls="faq3-answer">
-              <span>Can I use these for client work?</span>
-              <span class="faq-icon" aria-hidden="true">+</span>
-            </button>
-            <div class="faq-answer" id="faq3-answer" hidden>
-              Starter and Builder plans include a personal use license. If you want to use these for client work or resell them, you'll need the Pro plan which includes a commercial license.
-            </div>
-          </div>
-
-          <div class="faq-item" role="listitem">
-            <button class="faq-question" aria-expanded="false" aria-controls="faq4-answer">
-              <span>What if I'm not satisfied with my purchase?</span>
-              <span class="faq-icon" aria-hidden="true">+</span>
-            </button>
-            <div class="faq-answer" id="faq4-answer" hidden>
-              We offer a full 30-day money-back guarantee. If you're not happy for any reason, email us and we'll process your refund within 24 hours — no questions asked.
-            </div>
-          </div>
-
-          <div class="faq-item" role="listitem">
-            <button class="faq-question" aria-expanded="false" aria-controls="faq5-answer">
-              <span>Do I get updates when new content is added?</span>
-              <span class="faq-icon" aria-hidden="true">+</span>
-            </button>
-            <div class="faq-answer" id="faq5-answer" hidden>
-              Yes! All purchases include lifetime access and free updates. When we add new templates or improve existing ones, you'll be notified and can download the updated files at no extra cost.
-            </div>
-          </div>
-
-          <div class="faq-item" role="listitem">
-            <button class="faq-question" aria-expanded="false" aria-controls="faq6-answer">
-              <span>How do I access my purchase on Systeme.io?</span>
-              <span class="faq-icon" aria-hidden="true">+</span>
-            </button>
-            <div class="faq-answer" id="faq6-answer" hidden>
-              After completing your purchase through Systeme.io, you'll receive an email with your download links and access instructions. You can also log in to your Systeme.io account to access your purchases anytime.
-            </div>
-          </div>
-
+      <div class="about-content">
+        <span class="section-eyebrow">Our Story</span>
+        <h2 class="section-title" id="about-title">Why we built Lifehut Solutions™</h2>
+        <p>Lifehut Solutions was founded with one clear observation: small businesses and growing service providers deserve the same powerful tools that large enterprises use — but at prices and complexity levels that actually make sense for them.</p>
+        <p>Too many business owners were losing leads because they had no way to provide instant quotes. Too many service businesses were juggling spreadsheets, WhatsApp threads, and scattered documents just to manage a handful of projects. The technology existed to solve all of this — it just wasn't accessible.</p>
+        <p>That's exactly the gap Lifehut Solutions was created to fill. We build practical, affordable software that removes operational friction, saves time, and helps businesses focus on what they do best — growing and serving their customers.</p>
+        <p>Every product we release starts from a real problem that real businesses face. No bloat, no unnecessary complexity — just smart tools that work.</p>
+        <div class="about-values">
+          <span class="value-tag">Founder-Led</span>
+          <span class="value-tag">Affordable</span>
+          <span class="value-tag">Problem-Solvers</span>
+          <span class="value-tag">India-Built</span>
+          <span class="value-tag">Scalable</span>
         </div>
       </div>
-    </section>
+    </div>
+  </div>
+</section>
 
-    <!-- ── FINAL CTA SECTION ── -->
-    <section class="cta-section" aria-labelledby="cta-heading">
-      <div class="cta-bg-orb" aria-hidden="true"></div>
-      <div class="cta-inner">
-        <div class="cta-eyebrow">Ready to Start?</div>
-        <h2 id="cta-heading" class="cta-headline">
-          Your business transformation<br/>
-          starts <span class="cta-accent">right now</span>
-        </h2>
-        <p class="cta-subtext">Join 2,400+ entrepreneurs who chose to build smarter. One-time payment. Instant access. Lifetime value.</p>
-        <div class="cta-buttons">
-          <a href="#pricing" class="btn-cta-main" aria-label="Start building your business today">
-            Start Building Today
-            <svg width="20" height="20" viewBox="0 0 20 20" fill="none" aria-hidden="true"><path d="M4 10H16M11 5L16 10L11 15" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+<!-- ===== CONTACT ===== -->
+<section id="contact" aria-labelledby="contact-title">
+  <div class="container">
+    <div class="section-header">
+      <span class="section-eyebrow">Get In Touch</span>
+      <h2 class="section-title" id="contact-title">Let's talk about your business</h2>
+      <p class="section-sub">Have a question, need a demo, or want to discuss how Lifehut can help automate your operations? We'd love to hear from you.</p>
+    </div>
+
+    <div class="contact-grid">
+      <div>
+        <div class="contact-info-item">
+          <div class="contact-info-icon">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="4" width="20" height="16" rx="2"/><path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7"/></svg>
+          </div>
+          <div>
+            <h4>Email Us</h4>
+            <a href="mailto:lifehutsolutions@gmail.com">lifehutsolutions@gmail.com</a>
+          </div>
+        </div>
+        <div class="contact-info-item">
+          <div class="contact-info-icon">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"/></svg>
+          </div>
+          <div>
+            <h4>WhatsApp Channel</h4>
+            <a href="https://whatsapp.com/channel/0029VbDGeRV90x33TTIk071C" target="_blank" rel="noopener noreferrer">Join Lifehut Solutions on WhatsApp</a>
+          </div>
+        </div>
+        <div class="contact-info-item">
+          <div class="contact-info-icon">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M2 12h20M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg>
+          </div>
+          <div>
+            <h4>Website</h4>
+            <a href="https://www.lifehutsolutions.com" target="_blank" rel="noopener noreferrer">www.lifehutsolutions.com</a>
+          </div>
+        </div>
+        <div style="margin-top: 32px; padding: 24px; background: var(--brand-blue-xlight); border-radius: 14px; border: 1px solid rgba(21,101,192,0.2);">
+          <p style="font-size: 0.9rem; color: var(--brand-blue); font-weight: 600; margin-bottom: 8px;">📣 Stay Updated</p>
+          <p style="font-size: 0.85rem; color: var(--text-secondary); margin: 0;">Join our WhatsApp channel to get the latest updates on new product launches, features, and offers from Lifehut Solutions.</p>
+          <a href="https://whatsapp.com/channel/0029VbDGeRV90x33TTIk071C" target="_blank" rel="noopener noreferrer" class="btn-primary" style="margin-top: 16px; display: inline-flex; font-size: 0.875rem;">
+            Join WhatsApp Channel
           </a>
-          <div class="cta-badges" aria-label="Trust badges">
-            <span class="cta-badge">🔒 Secure Payment</span>
-            <span class="cta-badge">⚡ Instant Access</span>
-            <span class="cta-badge">🛡️ 30-Day Guarantee</span>
-          </div>
         </div>
       </div>
-    </section>
 
-  </main>
+      <div class="contact-form">
+        <form id="enquiry-form" novalidate>
+          <div class="form-row">
+            <div class="form-group">
+              <label for="fname">Your Name *</label>
+              <input type="text" id="fname" name="name" placeholder="John Smith" required autocomplete="name" />
+            </div>
+            <div class="form-group">
+              <label for="femail">Email Address *</label>
+              <input type="email" id="femail" name="email" placeholder="john@company.com" required autocomplete="email" />
+            </div>
+          </div>
+          <div class="form-group">
+            <label for="fbusiness">Business Name</label>
+            <input type="text" id="fbusiness" name="business" placeholder="Your Company Ltd." autocomplete="organization" />
+          </div>
+          <div class="form-group">
+            <label for="fmessage">Message *</label>
+            <textarea id="fmessage" name="message" placeholder="Tell us about your business and how we can help..." required></textarea>
+          </div>
+          <button type="submit" class="btn-submit">
+            Submit Enquiry
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
+          </button>
+          <div class="form-success" id="form-success" role="alert">
+            ✅ Thank you! Your enquiry has been received. We'll get back to you within 24 hours.
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+</section>
 
-  <!-- ══════════════════════════════════════
-       FOOTER
-  ══════════════════════════════════════ -->
-  <footer class="site-footer" role="contentinfo">
-    <div class="footer-inner">
-
+<!-- ===== FOOTER ===== -->
+<footer role="contentinfo">
+  <div class="container">
+    <div class="footer-grid">
       <div class="footer-brand">
-        <a href="#" class="nav-logo footer-logo" aria-label="Lifehut Solutions home">
-          <div class="logo-mark" aria-hidden="true">
-            <svg width="28" height="28" viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg">
-              <rect width="32" height="32" rx="8" fill="#7C3AED"/>
-              <path d="M8 22L14 10L18 17L21 13L24 22" stroke="#A3E635" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
-              <circle cx="24" cy="22" r="2" fill="#A3E635"/>
-            </svg>
-          </div>
-          <span class="logo-text">Lifehut<span class="logo-accent">.</span></span>
-        </a>
-        <p class="footer-tagline">Premium digital products for builders who mean business.</p>
-        <div class="footer-social" aria-label="Social media links">
-          <a href="#" class="social-link" aria-label="Follow us on Twitter">
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/></svg>
-          </a>
-          <a href="#" class="social-link" aria-label="Follow us on Instagram">
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><rect x="2" y="2" width="20" height="20" rx="5" ry="5"/><circle cx="12" cy="12" r="4"/><circle cx="17.5" cy="6.5" r="1" fill="currentColor" stroke="none"/></svg>
-          </a>
-          <a href="#" class="social-link" aria-label="Follow us on LinkedIn">
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M20.447 20.452h-3.554v-5.569c0-1.328-.027-3.037-1.852-3.037-1.853 0-2.136 1.445-2.136 2.939v5.667H9.351V9h3.414v1.561h.046c.477-.9 1.637-1.85 3.37-1.85 3.601 0 4.267 2.37 4.267 5.455v6.286zM5.337 7.433a2.062 2.062 0 01-2.063-2.065 2.064 2.064 0 112.063 2.065zm1.782 13.019H3.555V9h3.564v11.452zM22.225 0H1.771C.792 0 0 .774 0 1.729v20.542C0 23.227.792 24 1.771 24h20.451C23.2 24 24 23.227 24 22.271V1.729C24 .774 23.2 0 22.222 0h.003z"/></svg>
-          </a>
+        <img src="data:image/jpeg;base64,/9j/4AAQSkZJRgABAQEAYABgAAD/4QMyRXhpZgAATU0AKgAAAAgABAEOAAIAAAA8AAABSodpAAQAAAABAAABhpybAAEAAAB4AAACsuocAAcAAAEMAAAAPgAAAAAc6gAAAAEAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAATG9nbyBSZWZyZXNoOiBpRmVsaHV0IFNvbHV0aW9ucyB3aXRoIEJsdWUgSGFsZiBHZWFyIENhcCAtIDYAAAKQAAAHAAAABDAyMTDqHAAHAAABDAAAAaQAAAAAHOoAAAABAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAATABvAGcAbwAgAFIAZQBmAHIAZQBzAGgAOgAgAGkARgBlAGwAaAB1AHQAIABTAG8AbAB1AHQAaQBvAG4AcwAgAHcAaQB0AGgAIABCAGwAdQBlACAASABhAGwAZgAgAEcAZQBhAHIAIABDAGEAcAAgAC0AIAA2AAAA/+EEd2h0dHA6Ly9ucy5hZG9iZS5jb20veGFwLzEuMC8APD94cGFja2V0IGJlZ2luPSfvu78nIGlkPSdXNU0wTXBDZWhpSHpyZVN6TlRjemtjOWQnPz4NCjx4OnhtcG1ldGEgeG1sbnM6eD0iYWRvYmU6bnM6bWV0YS8iPjxyZGY6UkRGIHhtbG5zOnJkZj0iaHR0cDovL3d3dy53My5vcmcvMTk5OS8wMi8yMi1yZGYtc3ludGF4LW5zIyI+PHJkZjpEZXNjcmlwdGlvbiByZGY6YWJvdXQ9InV1aWQ6ZmFmNWJkZDUtYmEzZC0xMWRhLWFkMzEtZDMzZDc1MTgyZjFiIiB4bWxuczpkYz0iaHR0cDovL3B1cmwub3JnL2RjL2VsZW1lbnRzLzEuMS8iLz48cmRmOkRlc2NyaXB0aW9uIHJkZjphYm91dD0idXVpZDpmYWY1YmRkNS1iYTNkLTExZGEtYWQzMS1kMzNkNzUxODJmMWIiIHhtbG5zOmRjPSJodHRwOi8vcHVybC5vcmcvZGMvZWxlbWVudHMvMS4xLyI+PGRjOnRpdGxlPjxyZGY6QWx0IHhtbG5zOnJkZj0iaHR0cDovL3d3dy53My5vcmcvMTk5OS8wMi8yMi1yZGYtc3ludGF4LW5zIyI+PHJkZjpsaSB4bWw6bGFuZz0ieC1kZWZhdWx0Ij5Mb2dvIFJlZnJlc2g6IGlGZWxodXQgU29sdXRpb25zIHdpdGggQmx1ZSBIYWxmIEdlYXIgQ2FwIC0gNjwvcmRmOmxpPjwvcmRmOkFsdD4NCgkJCTwvZGM6dGl0bGU+PGRjOmRlc2NyaXB0aW9uPjxyZGY6QWx0IHhtbG5zOnJkZj0iaHR0cDovL3d3dy53My5vcmcvMTk5OS8wMi8yMi1yZGYtc3ludGF4LW5zIyI+PHJkZjpsaSB4bWw6bGFuZz0ieC1kZWZhdWx0Ij5Mb2dvIFJlZnJlc2g6IGlGZWxodXQgU29sdXRpb25zIHdpdGggQmx1ZSBIYWxmIEdlYXIgQ2FwIC0gNjwvcmRmOmxpPjwvcmRmOkFsdD4NCgkJCTwvZGM6ZGVzY3JpcHRpb24+PC9yZGY6RGVzY3JpcHRpb24+PC9yZGY6UkRGPjwveDp4bXBtZXRhPg0KICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAg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" alt="Lifehut Solutions" />
+        <p>Affordable Business Automation Tools for Growing Businesses. Smart technology built for small businesses, solopreneurs, and service providers.</p>
+      </div>
+      <div class="footer-col">
+        <h4>Company</h4>
+        <ul role="list">
+          <li><a href="#home">Home</a></li>
+          <li><a href="#solutions">Solutions</a></li>
+          <li><a href="#about">About</a></li>
+          <li><a href="#contact">Contact</a></li>
+        </ul>
+      </div>
+      <div class="footer-col">
+        <h4>Solutions</h4>
+        <ul role="list">
+          <li><a href="#solutions">Smart Quote™</a></li>
+          <li><a href="#solutions">Workspace™</a></li>
+          <li><a href="#solutions">Studio™</a></li>
+        </ul>
+      </div>
+      <div class="footer-col">
+        <h4>Contact</h4>
+        <div class="footer-contact-item">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="4" width="20" height="16" rx="2"/><path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7"/></svg>
+          <a href="mailto:lifehutsolutions@gmail.com">lifehutsolutions@gmail.com</a>
+        </div>
+        <div class="footer-contact-item">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"/></svg>
+          <a href="https://whatsapp.com/channel/0029VbDGeRV90x33TTIk071C" target="_blank" rel="noopener noreferrer">WhatsApp Channel</a>
+        </div>
+        <div class="footer-contact-item">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M2 12h20M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg>
+          <a href="https://www.lifehutsolutions.com" target="_blank" rel="noopener noreferrer">www.lifehutsolutions.com</a>
         </div>
       </div>
-
-      <nav class="footer-nav" aria-label="Footer navigation">
-        <div class="footer-nav-col">
-          <h3 class="footer-nav-title">Products</h3>
-          <ul role="list">
-            <li><a href="#products" class="footer-link">Business Starter Kit</a></li>
-            <li><a href="#products" class="footer-link">Content Creator OS</a></li>
-            <li><a href="#products" class="footer-link">Sales Funnel Blueprint</a></li>
-            <li><a href="#pricing" class="footer-link">Bundle Deals</a></li>
-          </ul>
-        </div>
-        <div class="footer-nav-col">
-          <h3 class="footer-nav-title">Company</h3>
-          <ul role="list">
-            <li><a href="#how-it-works" class="footer-link">How It Works</a></li>
-            <li><a href="#testimonials" class="footer-link">Reviews</a></li>
-            <li><a href="#faq" class="footer-link">FAQ</a></li>
-            <li><a href="mailto:hello@lifehut.in" class="footer-link">Contact Us</a></li>
-          </ul>
-        </div>
-        <div class="footer-nav-col">
-          <h3 class="footer-nav-title">Legal</h3>
-          <ul role="list">
-            <li><a href="#" class="footer-link">Privacy Policy</a></li>
-            <li><a href="#" class="footer-link">Terms of Service</a></li>
-            <li><a href="#" class="footer-link">Refund Policy</a></li>
-            <li><a href="license.txt" class="footer-link">License</a></li>
-          </ul>
-        </div>
-      </nav>
-
     </div>
-
     <div class="footer-bottom">
-      <p class="footer-copy">© <span id="currentYear"></span> Lifehut Solutions. All rights reserved.</p>
-      <p class="footer-systeme">Powered by <a href="https://lifehutsolution.com" class="footer-link-inline" rel="noopener noreferrer" target="_blank">Systeme.io</a></p>
+      <p>© 2025 Lifehut Solutions™. All rights reserved.</p>
+      <p>Affordable Business Automation Tools for Growing Businesses</p>
     </div>
-  </footer>
+  </div>
+</footer>
 
-  <!-- ══════════════════════════════════════
-       SCRIPTS
-  ══════════════════════════════════════ -->
-  <script src="assets/js/main.js"></script>
+<!-- ===== BACK TO TOP ===== -->
+<button id="back-top" aria-label="Back to top" title="Back to top">
+  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="18 15 12 9 6 15"/></svg>
+</button>
+
+<script>
+  /* ===== THEME TOGGLE ===== */
+  (function() {
+    var saved = localStorage.getItem('lh-theme');
+    var prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+    var isDark = saved ? saved === 'dark' : prefersDark;
+    if (isDark) document.documentElement.setAttribute('data-theme', 'dark');
+
+    var btn = document.getElementById('theme-toggle');
+    function updateIcon() {
+      var dark = document.documentElement.getAttribute('data-theme') === 'dark';
+      btn.textContent = dark ? '☀️' : '🌙';
+      btn.setAttribute('aria-label', dark ? 'Switch to light mode' : 'Switch to dark mode');
+    }
+    updateIcon();
+    btn.addEventListener('click', function() {
+      var dark = document.documentElement.getAttribute('data-theme') === 'dark';
+      if (dark) {
+        document.documentElement.removeAttribute('data-theme');
+        localStorage.setItem('lh-theme', 'light');
+      } else {
+        document.documentElement.setAttribute('data-theme', 'dark');
+        localStorage.setItem('lh-theme', 'dark');
+      }
+      updateIcon();
+    });
+  })();
+
+  /* ===== STICKY NAV ===== */
+  var navbar = document.getElementById('navbar');
+  window.addEventListener('scroll', function() {
+    navbar.classList.toggle('scrolled', window.scrollY > 20);
+  }, { passive: true });
+
+  /* ===== ACTIVE NAV LINKS ===== */
+  var sections = document.querySelectorAll('section[id]');
+  var navLinks = document.querySelectorAll('.nav-links a');
+  function updateActiveLink() {
+    var scrollY = window.scrollY + 100;
+    sections.forEach(function(s) {
+      if (scrollY >= s.offsetTop && scrollY < s.offsetTop + s.offsetHeight) {
+        navLinks.forEach(function(a) { a.classList.remove('active'); });
+        var active = document.querySelector('.nav-links a[href="#' + s.id + '"]');
+        if (active) active.classList.add('active');
+      }
+    });
+  }
+  window.addEventListener('scroll', updateActiveLink, { passive: true });
+
+  /* ===== HAMBURGER / MOBILE NAV ===== */
+  var hamburger = document.getElementById('hamburger');
+  var mobileNav = document.getElementById('mobile-nav');
+  hamburger.addEventListener('click', function() {
+    var open = mobileNav.classList.toggle('open');
+    hamburger.classList.toggle('open', open);
+    hamburger.setAttribute('aria-expanded', open);
+    document.body.style.overflow = open ? 'hidden' : '';
+  });
+  function closeMobileNav() {
+    mobileNav.classList.remove('open');
+    hamburger.classList.remove('open');
+    hamburger.setAttribute('aria-expanded', 'false');
+    document.body.style.overflow = '';
+  }
+
+  /* ===== BACK TO TOP ===== */
+  var backTop = document.getElementById('back-top');
+  window.addEventListener('scroll', function() {
+    backTop.classList.toggle('visible', window.scrollY > 400);
+  }, { passive: true });
+  backTop.addEventListener('click', function() {
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  });
+
+  /* ===== CONTACT FORM ===== */
+  document.getElementById('enquiry-form').addEventListener('submit', function(e) {
+    e.preventDefault();
+    var name = document.getElementById('fname').value.trim();
+    var email = document.getElementById('femail').value.trim();
+    var message = document.getElementById('fmessage').value.trim();
+    if (!name || !email || !message) {
+      alert('Please fill in your name, email, and message.');
+      return;
+    }
+    var re = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!re.test(email)) {
+      alert('Please enter a valid email address.');
+      return;
+    }
+    var btn = this.querySelector('.btn-submit');
+    btn.textContent = 'Sending…';
+    btn.disabled = true;
+    setTimeout(function() {
+      document.getElementById('form-success').style.display = 'block';
+      btn.textContent = '✓ Sent';
+      btn.style.background = '#2E7D32';
+    }, 900);
+  });
+
+  /* ===== SMOOTH SCROLL FOR ANCHOR LINKS ===== */
+  document.querySelectorAll('a[href^="#"]').forEach(function(a) {
+    a.addEventListener('click', function(e) {
+      var target = document.querySelector(this.getAttribute('href'));
+      if (target) {
+        e.preventDefault();
+        var offset = 72;
+        var top = target.getBoundingClientRect().top + window.scrollY - offset;
+        window.scrollTo({ top: top, behavior: 'smooth' });
+      }
+    });
+  });
+</script>
 </body>
 </html>
