@@ -968,7 +968,7 @@ footer{border-top:1px solid var(--border2);padding:64px 0 40px;background:var(--
           <li class="price-item no">Remove Lifehut branding</li>
         </ul>
         <!-- ✏️ CHANGE: Replace # with your Gumroad link -->
-        <a href="#" class="price-cta cta-outline">Buy Starter</a>
+        <a href="#" class="price-cta cta-outline" onclick="buyPlan('Starter'); return false;">Buy Starter</a>
       </div>
 
       <!-- PRO -->
@@ -1270,5 +1270,68 @@ window.addEventListener('scroll',function(){
   });
 },{passive:true});
 </script>
+/* ── RAZORPAY LINK EMBED ────────────────────────────────────────── */
+<script>
+async function buyPlan(plan){
+
+    const api =
+    "https://script.google.com/macros/s/AKfycbyZdJFqWm314nvlpSFQkB7EhHi7gMsCTeinTBiXI-UX1LkvtSaqjHBkWeeYdHK5MhEN/exec";
+
+    const token = "lsq_7mK3xQ9pL5vR2nW8";
+
+    const res = await fetch(
+        api +
+        "?action=createOrder" +
+        "&token=" + encodeURIComponent(token) +
+        "&plan=" + encodeURIComponent(plan)
+    );
+
+    const data = await res.json();
+
+    if(!data.success){
+
+        alert(data.message);
+
+        return;
+
+    }
+
+    const order = data.order;
+
+    var options = {
+
+        key: "rzp_test_T6WvI12V4SbeHm",
+
+        amount: order.amount,
+
+        currency: order.currency,
+
+        name: "Lifehut Solutions",
+
+        description: plan,
+
+        order_id: order.id,
+
+        handler: function(response){
+
+            alert("Payment Successful!\nPayment ID : " + response.razorpay_payment_id);
+
+        },
+
+        theme: {
+
+            color: "#3b82f6"
+
+        }
+
+    };
+
+    var rzp = new Razorpay(options);
+
+    rzp.open();
+
+}
+</script>
+<script src="https://checkout.razorpay.com/v1/checkout.js"></script>
 </body>
 </html>
