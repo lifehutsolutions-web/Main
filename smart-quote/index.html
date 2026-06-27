@@ -1356,7 +1356,9 @@ const res = await fetch(
     "&phone=" + encodeURIComponent(phone)
 );
 
-    const data = await res.json();
+   const txt = await res.text();
+   alert(txt);
+   const data = JSON.parse(txt);
 
     if(!data.success){
 
