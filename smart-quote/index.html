@@ -1296,12 +1296,16 @@ function buyPlan(plan){
 
 }
 
+window.onload=function(){
+
 document.getElementById("buyerEmail").addEventListener("input",function(){
 
     document.getElementById("emailPreview").innerHTML=
     "✓ Licence key will be sent to:<br><b>"+this.value+"</b>";
 
 });
+
+};
 
 function continueCheckout(){
 
@@ -1333,7 +1337,6 @@ function continueCheckout(){
 
     startCheckout(selectedPlan);
 }
-};
       // Existing code
 async function startCheckout(plan){
 
@@ -1343,7 +1346,7 @@ async function startCheckout(plan){
     const token = "lsq_7mK3xQ9pL5vR2nW8";
 
     const email = document.getElementById("buyerEmail").value.trim();
-const phone = document.getElementById("buyerPhone").value.trim();
+   const phone = document.getElementById("buyerPhone").value.trim();
 
 const res = await fetch(
     api +
@@ -1354,9 +1357,7 @@ const res = await fetch(
     "&phone=" + encodeURIComponent(phone)
 );
 
-   const txt = await res.text();
-   alert(txt);
-   const data = JSON.parse(txt);
+   const data = await res.json();
 
     if(!data.success){
 
