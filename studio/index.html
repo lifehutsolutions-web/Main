@@ -8,7 +8,7 @@
 <meta name="keywords" content="website themes, HTML templates, startup themes, freelancer portfolio, Lifehut Studio, Lifehut Solutions">
 <meta property="og:title" content="Lifehut Studio™ — Premium Website Themes">
 <meta property="og:description" content="Customize, preview, and buy premium website themes. One-time payment, instant download.">
-<meta property="og:url" content="https://studio.lifehutsolutions.com">
+<meta property="og:url" content="https://lifehutsolutions/studio.com">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
@@ -1350,16 +1350,6 @@ function openModal(i) {
 
 function closeModal() { document.getElementById('modalBg').classList.remove('open'); }
 function closeMBg(e)  { if (e.target === document.getElementById('modalBg')) closeModal(); }
-
-   // 🚀 Tell the code which industry and template this product belongs to
-  const industry = p.industry || 'construction'; // falls back to construction if missing
-  const template = p.template || 'apex-classic';  // falls back to apex-classic if missing
-  
-  // 🔗 Create the custom URL dynamically for this specific product
-  const dynamicUrl = `https://lifehutsolutions.com/studio/builder/?industry=${industry}&template=${template}&freeze=true`;
-  
-  // 🎯 Update the Customize button's link!
-  document.getElementById('modalCustomizeLink').href = dynamicUrl;
 
 /* ---------- DARK MODE ---------- */
 let isDark = false;
