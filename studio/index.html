@@ -1121,21 +1121,31 @@ const PRODUCTS = [
     title: 'SaaS Launch Pro', cat: 'SaaS / Startup',
     price: '₹1,499', old: '₹2,999',
     desc: 'A bold, conversion-focused landing page for SaaS founders. Hero, feature grid, pricing table, testimonials, and FAQ. Figma source file included.',
-     / 💡 ADD THESE TWO LINES TO THIS PRODUCT:
+     // 💡 ADD THESE TWO LINES TO THIS PRODUCT:
     industry: "SaaS & Tech Companies",
     template: "SaaS Minimalist",
      
     features: ['Figma source file','Dark mode toggle','Mobile responsive','Conversion optimised','SEO ready','Fast page load'],
     slides: ['Hero section','Features section','Pricing table','Mobile view'],
     colors: ['#0f172a','#1e3a8a','#1d4ed8','#0369a1']
+     <!-- Card 1 (SaaS Product) -->
+<div class="product-card" data-industry="SaaS & Tech Companies" data-template="SaaS Minimalist">
+  <h3>SaaS Launch Pro</h3>
+  <button class="customize-btn">Customize & Preview</button>
+</div>
   },
   {
-    title: 'Freelancer Folio', cat: 'Portfolio',
+    title: 'Apex Classic', cat: 'Construction',
     price: '₹999', old: '₹1,999',
     desc: 'Minimal, elegant portfolio with smooth page transitions, case study layout, animated scroll effects, and a built-in contact form.',
     features: ['Video walkthrough','Smooth animations','Case study layout','Blog ready','Contact form','CMS friendly'],
     slides: ['Home','Work','About','Contact'],
     colors: ['#1c1c2e','#2e1065','#4a1d96','#6d28d9']
+     <!-- Card 2 (Construction Product) -->
+<div class="product-card" data-industry="Construction & Remodeling" data-template="Apex Classic">
+  <h3>Apex Classic</h3>
+  <button class="customize-btn">Customize & Preview</button>
+</div>
   },
   {
     title: 'Agency Starter', cat: 'Agency',
@@ -1338,13 +1348,12 @@ function openModal(i) {
   // 2. Dynamically update the Customize button URL
   var customizeBtn = document.getElementById('customize-link');
   if (customizeBtn) {
-    // If the product has a specific industry and template, use them; otherwise, default to construction
     var industry = p.industry || 'construction';
     var template = p.template || 'apex-classic';
     customizeBtn.href = "https://lifehutsolutions.com/studio/builder/?industry=" + industry + "&template=" + template + "&freeze=true";
   }
 
-  // 3. Open the modal (your remaining carousel/slides code goes below)
+  // 3. Build and initialize the modal screenshots carousel
   var track = document.getElementById('mct');
   track.innerHTML = p.slides.map((s, si) => {
     var c1 = p.colors[si % p.colors.length];
@@ -1354,15 +1363,17 @@ function openModal(i) {
     </div>`;
   }).join('');
   
-  c = { cur: 0 };
-  Dots('mct', p.slides.length, 'mcd');
-  Slide('mct', 0, 'mct', 'mcd');
+  // ✅ 4. Actually show the popup on the screen
+  document.getElementById('modalBg').classList.add('open');
   
-  // Call your code to show the modal container
+  // ✅ 5. Initialize the carousel using your existing lowercase helper functions
+  CS['mc'] = { cur: 0 };
+  buildDots('mc', p.slides.length, 'mcd');
+  applySlide('mc', 0, 'mct', 'mcd');
+  
   document.getElementById('modalBox').focus(); 
 }
-   
-function closeModal() { document.getElementById('modalBg').classList.remove('open'); }
+   function closeModal() { document.getElementById('modalBg').classList.remove('open'); }
 function closeMBg(e)  { if (e.target === document.getElementById('modalBg')) closeModal(); }
 
 /* ---------- DARK MODE ---------- */
@@ -1533,5 +1544,19 @@ function updateLiveBanner(count) {
 // Run on page load
 renderLiveProducts();
 </script>
+<!-- The Customization Modal Popup Wrapper -->
+<div id="customize-modal" class="custom-modal" style="display: none; position: fixed; inset: 0; z-index: 9999; background: rgba(15,23,42,0.6); backdrop-filter: blur(4px); align-items: center; justify-content: center;">
+  <div class="modal-content" style="background: #ffffff; width: 90%; max-width: 1200px; height: 85vh; border-radius: 16px; display: flex; flex-direction: column; overflow: hidden; position: relative; box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);">
+    
+    <!-- Modal Header -->
+    <div style="padding: 16px 24px; border-b: 1px solid #f1f5f9; display: flex; align-items: center; justify-content: space-between;">
+      <h3 style="margin: 0; font-size: 16px; font-weight: 700; color: #0f172a;">Lifehut Studio™ Live Customizer</h3>
+      <button id="close-modal-btn" style="background: none; border: none; font-size: 24px; color: #94a3b8; cursor: pointer; transition: color 0.2s;">&times;</button>
+    </div>
+
+    <!-- Live Builder Workspace Frame -->
+    <iframe id="builder-iframe" src="" style="width: 100%; flex-grow: 1; border: none;" allow="camera; microphone; geolocation"></iframe>
+  </div>
+</div>
 </body>
 </html>
