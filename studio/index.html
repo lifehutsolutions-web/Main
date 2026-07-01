@@ -1322,32 +1322,31 @@ function setView(v, el) {
 
 /* ---------- MODAL ---------- */
 function openModal(i) {
-  const p = PRODUCTS[i];
-  document.getElementById('modalCat').textContent   = p.cat;
+  p = PRODUCTS[i];
+  document.getElementById('modalCat').textContent = p.cat;
   document.getElementById('modalTitle').textContent = p.title;
-  document.getElementById('modalDesc').textContent  = p.desc;
+  document.getElementById('modalDesc').textContent = p.desc;
   document.getElementById('modalPrice').textContent = p.price;
-  document.getElementById('modalOld').textContent   = p.old;
-  document.getElementById('modalFeats').innerHTML   = p.features.map(f =>
+  document.getElementById('modalOld').textContent = p.old;
+  document.getElementById('modalFeats').innerHTML = p.features.map(f =>
     `<div class="mfeat"><i class="ti ti-check" aria-hidden="true"></i>${f}</div>`
   ).join('');
-   
+
   // Build modal carousel
-  const track = document.getElementById('mct');
+  track = document.getElementById('mct');
   track.innerHTML = p.slides.map((s, si) => {
     const c1 = p.colors[si % p.colors.length];
-    const c2 = p.colors[(si+1) % p.colors.length];
+    const c2 = p.colors[(si + 1) % p.colors.length];
     return `<div class="carousel-slide" style="background:linear-gradient(135deg,${c1},${c2})">
       <div class="slide-label">${s}</div>
     </div>`;
   }).join('');
-  CS['mc'] = { cur: 0 };
-  buildDots('mc', p.slides.length, 'mcd');
-  applySlide('mc', 0, 'mct', 'mcd');
+  
+  carousels['mct'] = { cur: 0 };
+  Dots('mct', p.slides.length, 'mcd');
+  Slide('mct', 0, 'mct', 'mcd');
 
-  document.getElementById('modalBg').classList.add('open');
-  document.getElementById('modalBox').focus();
-}
+  document.getElementById('modalBox').focus();}
 
 function closeModal() { document.getElementById('modalBg').classList.remove('open'); }
 function closeMBg(e)  { if (e.target === document.getElementById('modalBg')) closeModal(); }
