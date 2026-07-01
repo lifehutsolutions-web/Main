@@ -1331,15 +1331,6 @@ function openModal(i) {
   document.getElementById('modalFeats').innerHTML   = p.features.map(f =>
     `<div class="mfeat"><i class="ti ti-check" aria-hidden="true"></i>${f}</div>`
   ).join('');
-// 🚀 Tell the code which industry and template this product belongs to
-  const industry = p.industry || 'construction'; // falls back to construction if missing
-  const template = p.template || 'apex-classic';  // falls back to apex-classic if missing
-  
-  // 🔗 Create the custom URL dynamically for this specific product
-  const dynamicUrl = `https://lifehutsolutions.com/studio/builder/?industry=${industry}&template=${template}&freeze=true`;
-  
-  // 🎯 Update the Customize button's link!
-  document.getElementById('modalCustomizeLink').href = dynamicUrl;
    
   // Build modal carousel
   const track = document.getElementById('mct');
@@ -1360,6 +1351,16 @@ function openModal(i) {
 
 function closeModal() { document.getElementById('modalBg').classList.remove('open'); }
 function closeMBg(e)  { if (e.target === document.getElementById('modalBg')) closeModal(); }
+
+   // 🚀 Tell the code which industry and template this product belongs to
+  const industry = p.industry || 'construction'; // falls back to construction if missing
+  const template = p.template || 'apex-classic';  // falls back to apex-classic if missing
+  
+  // 🔗 Create the custom URL dynamically for this specific product
+  const dynamicUrl = `https://lifehutsolutions.com/studio/builder/?industry=${industry}&template=${template}&freeze=true`;
+  
+  // 🎯 Update the Customize button's link!
+  document.getElementById('modalCustomizeLink').href = dynamicUrl;
 
 /* ---------- DARK MODE ---------- */
 let isDark = false;
