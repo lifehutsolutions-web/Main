@@ -1400,12 +1400,13 @@ function doLogin() {
   const email    = (document.getElementById('loginEmail').value || '').trim().toLowerCase();
   const pass     = document.getElementById('loginPass').value || '';
   const remember = document.getElementById('rememberMe').checked;
-  const btn      = document.getElementById('loginBtn');
   const errEl    = document.getElementById('loginError');
+  const errMsg   = document.getElementById('loginErrorMsg');
 
   if (!email || !pass) {
-    errEl.querySelector('span').textContent = 'Please enter your email and password';
-    errEl.classList.add('show'); return;
+    if (errMsg) errMsg.textContent = 'Please enter your email and password';
+    if (errEl)  errEl.classList.add('show');
+    return;
   }
 
   const emailMatch = email === CRED_EMAIL.trim().toLowerCase();
@@ -1413,15 +1414,13 @@ function doLogin() {
 
   if (emailMatch && passMatch) {
     startSession(remember);
-    errEl.classList.remove('show');
+    if (errEl) errEl.classList.remove('show');
     document.getElementById('loginScreen').style.display = 'none';
     document.getElementById('appShell').style.display   = 'flex';
     initApp();
   } else {
-    errEl.querySelector('span').textContent = 'Invalid email or password. Please try again.';
-    errEl.classList.add('show');
-    btn.disabled = false;
-    btn.innerHTML = '<i class="ti ti-login"></i> Sign in';
+    if (errMsg) errMsg.textContent = 'Invalid email or password. Please try again.';
+    if (errEl)  errEl.classList.add('show');
     document.getElementById('loginPass').value = '';
     document.getElementById('loginPass').focus();
   }
