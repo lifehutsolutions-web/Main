@@ -431,9 +431,14 @@ button,input,textarea,select{font-family:var(--font)}
                 <textarea id="f-desc" placeholder="Describe who this theme is for and what sections it includes..." oninput="livePreview()"></textarea>
               </div>
               <div class="field">
-                <label>Product page URL <span class="req">*</span></label>
-                <input type="url" id="f-url" placeholder="https://lifehutsolutions.com/studio/theme-name">
-                <div class="field-hint">Where clicking "Explore theme" or "Customize & preview" will take customers</div>
+                <label>Template ID <span class="req">*</span></label>
+                <input type="text" id="f-template" placeholder="e.g. apex-classic" oninput="livePreview()">
+                <div class="field-hint">The template slug for your builder (e.g. apex-classic, nova-pro)</div>
+              </div>
+              <div class="field" style="pointer-events:none;opacity:.7">
+                <label>Generated Customize URL</label>
+                <input type="text" id="f-genurl" readonly placeholder="Enter Template ID above to generate URL" style="background:var(--bg);font-size:12px;color:var(--text2)">
+                <div class="field-hint">https://lifehutsolutions.com/studio/builder/?industry=SLUG&template=TEMPLATE_ID&freeze=true</div>
               </div>
             </div>
 
@@ -789,7 +794,7 @@ function editProduct(id) {
   document.getElementById('f-name').value      = p.name || '';
   document.getElementById('f-cat').value       = p.cat  || 'SaaS / Startup';
   document.getElementById('f-desc').value      = p.desc || '';
-  document.getElementById('f-url').value       = p.url  || '';
+  document.getElementById('f-template').value  = p.template || '';
   document.getElementById('f-price').value     = p.price || '';
   document.getElementById('f-oldprice').value  = p.oldprice || '';
   document.getElementById('f-mediatype').value = p.mediatype || 'carousel';
@@ -822,7 +827,7 @@ function saveProduct() {
   const name = document.getElementById('f-name').value.trim();
   const cat  = document.getElementById('f-cat').value;
   const desc = document.getElementById('f-desc').value.trim();
-  const url  = document.getElementById('f-url').value.trim();
+  const url  = document.getElementById('f-genurl').value || '';
 
   if (!name || !desc) {
     document.getElementById('formAlert').innerHTML = `<div class="alert alert-info"><i class="ti ti-alert-circle"></i> Please fill in at least Theme name and Description.</div>`;
@@ -831,9 +836,12 @@ function saveProduct() {
 
   const p = {
     id:        editingId || uid(),
-    name, cat, desc, url,
+    name, cat, desc,
+    url:       url,  // generated builder URL
     price:     document.getElementById('f-price').value,
     oldprice:  document.getElementById('f-oldprice').value,
+    template:  document.getElementById('f-template').value,
+    genurl:    url,
     badge:     selBadge,
     color:     selColor,
     mediatype: document.getElementById('f-mediatype').value,
@@ -872,7 +880,7 @@ function cancelForm() {
 }
 
 function resetForm() {
-  ['f-name','f-desc','f-url','f-price','f-oldprice','f-videourl'].forEach(id => {
+  ['f-name','f-desc','f-template','f-price','f-oldprice','f-videourl'].forEach(id => {
     const el = document.getElementById(id); if(el) el.value = '';
   });
   document.getElementById('f-cat').value = '';
@@ -968,12 +976,41 @@ function renderSlides() {
    LIVE PREVIEW
    ===================================================== */
 let pcIdx = 0;
+
+/* category → industry slug map */
+const CAT_SLUG = {
+  'saas / startup':'saas','saas':'saas','startup':'saas',
+  'portfolio':'portfolio','agency':'agency','business':'business',
+  'e-commerce':'ecommerce','ecommerce':'ecommerce','restaurant':'restaurant',
+  'personal brand':'personalbrand','education':'education',
+  'healthcare':'healthcare','real estate':'realestate',
+  'event / wedding':'event','ngo / non-profit':'ngo',
+};
+function catToSlug(cat) {
+  const key = (cat||'').toLowerCase().trim();
+  return CAT_SLUG[key] || key.replace(/[^a-z0-9]/g,'-').replace(/-+/g,'-').replace(/^-|-$/g,'');
+}
+
 function livePreview() {
   const name     = document.getElementById('f-name').value || 'Theme name';
   const cat      = document.getElementById('f-cat').value;
   const desc     = document.getElementById('f-desc').value || 'Your description will appear here...';
   const price    = document.getElementById('f-price').value;
   const oldprice = document.getElementById('f-oldprice').value;
+
+  // Auto-generate builder URL — base is fixed
+  const BUILDER_BASE = 'https://lifehutsolutions.com/studio/builder';
+  const template = (document.getElementById('f-template').value || '').trim();
+  const industry = catToSlug(cat);
+  const genUrlEl = document.getElementById('f-genurl');
+  if (genUrlEl) {
+    if (template) {
+      genUrlEl.value = `${BUILDER_BASE}/?industry=${industry}&template=${template}&freeze=true`;
+    } else {
+      genUrlEl.value = '';
+      genUrlEl.placeholder = 'Enter Template ID above to generate URL';
+    }
+  }
 
   document.getElementById('pcCat').textContent   = cat;
   document.getElementById('pcTitle').textContent = name;
@@ -1053,7 +1090,7 @@ function generateCode() {
   const name      = document.getElementById('f-name').value || 'Theme name';
   const cat       = document.getElementById('f-cat').value;
   const desc      = document.getElementById('f-desc').value || '';
-  const url       = document.getElementById('f-url').value || '#';
+  const url       = document.getElementById('f-genurl').value || '#';
   const price     = document.getElementById('f-price').value;
   const oldprice  = document.getElementById('f-oldprice').value;
   const mediatype = document.getElementById('f-mediatype').value;
@@ -1305,14 +1342,15 @@ document.addEventListener('keydown', e => {
    Hash format: sha256( email.toLowerCase() + ":" + password )
    Default → email: admin@lifehutsolutions.com  password: Lifehut@2026
    ===================================================== */
-const CRED_HASH = '843fa765323a4b257d669561f35d8d1669ef1f3a44a9d488d712c65664cd7160';
+/* =====================================================
+   CREDENTIALS — change CRED_EMAIL and CRED_PASS below
+   to update your login. No hashing needed — file is
+   private and never publicly linked.
+   ===================================================== */
+const CRED_EMAIL   = 'admin@lifehutsolutions.com'; // ← change your email here
+const CRED_PASS    = 'Lifehut@2026';               // ← change your password here
 const SESSION_KEY  = 'ls-auth-session';
 const SESSION_DAYS = 7;
-
-async function sha256(str) {
-  const buf = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(str));
-  return Array.from(new Uint8Array(buf)).map(b => b.toString(16).padStart(2,'0')).join('');
-}
 
 function isLoggedIn() {
   try {
@@ -1344,24 +1382,22 @@ function clearSession() {
   localStorage.removeItem(SESSION_KEY);
 }
 
-async function doLogin() {
-  const email = (document.getElementById('loginEmail').value || '').trim().toLowerCase();
-  const pass  = document.getElementById('loginPass').value || '';
+function doLogin() {
+  const email    = (document.getElementById('loginEmail').value || '').trim().toLowerCase();
+  const pass     = document.getElementById('loginPass').value || '';
   const remember = document.getElementById('rememberMe').checked;
-  const btn   = document.getElementById('loginBtn');
-  const errEl = document.getElementById('loginError');
+  const btn      = document.getElementById('loginBtn');
+  const errEl    = document.getElementById('loginError');
 
   if (!email || !pass) {
     errEl.querySelector('span').textContent = 'Please enter your email and password';
     errEl.classList.add('show'); return;
   }
 
-  btn.disabled = true;
-  btn.innerHTML = '<i class="ti ti-loader-2" style="animation:spin .7s linear infinite"></i> Signing in...';
+  const emailMatch = email === CRED_EMAIL.trim().toLowerCase();
+  const passMatch  = pass  === CRED_PASS;
 
-  const hash = await sha256(email + ':' + pass);
-
-  if (hash === CRED_HASH) {
+  if (emailMatch && passMatch) {
     startSession(remember);
     errEl.classList.remove('show');
     document.getElementById('loginScreen').style.display = 'none';
@@ -1393,10 +1429,7 @@ function togglePassVis() {
   else { inp.type = 'password'; ico.className = 'ti ti-eye'; }
 }
 
-/* spin keyframe */
-const _ks = document.createElement('style');
-_ks.textContent = '@keyframes spin{to{transform:rotate(360deg)}}';
-document.head.appendChild(_ks);
+
 
 /* =====================================================
    GO LIVE — publish to localStorage for index.html
