@@ -1096,9 +1096,10 @@ button { font-family: var(--font); cursor: pointer; }
         </div>
         <div class="modal-btns">
           <button class="btn-modal-s" onclick="closeModal()">Back</button>
-          <a class="btn-modal-p" id="customizeBtn" href="#" target="_blank" rel="noopener">
-            <i class="ti ti-eye" aria-hidden="true"></i> Customize & preview
-          </a>
+          <a class="btn-modal-p" id="customize-link" href="https://lifehutsolutions.com/studio/builder/?industry=construction&template=apex-classic&freeze=true" target="_blank" rel="noopener">
+    <i class="ti ti-eye" aria-hidden="true"></i> Customize & preview
+</a>
+      
         </div>
       </div>
     </div>
@@ -1322,7 +1323,9 @@ function setView(v, el) {
 
 /* ---------- MODAL ---------- */
 function openModal(i) {
-  p = PRODUCTS[i];
+  var p = PRODUCTS[i];
+  
+  // 1. Fill in the popup text details
   document.getElementById('modalCat').textContent = p.cat;
   document.getElementById('modalTitle').textContent = p.title;
   document.getElementById('modalDesc').textContent = p.desc;
@@ -1332,22 +1335,33 @@ function openModal(i) {
     `<div class="mfeat"><i class="ti ti-check" aria-hidden="true"></i>${f}</div>`
   ).join('');
 
-  // Build modal carousel
-  track = document.getElementById('mct');
+  // 2. Dynamically update the Customize button URL
+  var customizeBtn = document.getElementById('customize-link');
+  if (customizeBtn) {
+    // If the product has a specific industry and template, use them; otherwise, default to construction
+    var industry = p.industry || 'construction';
+    var template = p.template || 'apex-classic';
+    customizeBtn.href = "https://lifehutsolutions.com/studio/builder/?industry=" + industry + "&template=" + template + "&freeze=true";
+  }
+
+  // 3. Open the modal (your remaining carousel/slides code goes below)
+  var track = document.getElementById('mct');
   track.innerHTML = p.slides.map((s, si) => {
-    const c1 = p.colors[si % p.colors.length];
-    const c2 = p.colors[(si + 1) % p.colors.length];
+    var c1 = p.colors[si % p.colors.length];
+    var c2 = p.colors[(si+1) % p.colors.length];
     return `<div class="carousel-slide" style="background:linear-gradient(135deg,${c1},${c2})">
       <div class="slide-label">${s}</div>
     </div>`;
   }).join('');
   
-  carousels['mct'] = { cur: 0 };
+  c = { cur: 0 };
   Dots('mct', p.slides.length, 'mcd');
   Slide('mct', 0, 'mct', 'mcd');
-
-  document.getElementById('modalBox').focus();}
-
+  
+  // Call your code to show the modal container
+  document.getElementById('modalBox').focus(); 
+}
+   
 function closeModal() { document.getElementById('modalBg').classList.remove('open'); }
 function closeMBg(e)  { if (e.target === document.getElementById('modalBg')) closeModal(); }
 
