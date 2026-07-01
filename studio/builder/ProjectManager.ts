@@ -8,6 +8,43 @@ export class ProjectManager {
   public static TEMPLATE_VERSION = '1.0.0';
 
   /**
+   * Resolve user-friendly industry names/IDs to strict system-level industry IDs.
+   */
+  public static resolveIndustryId(industryId: string): string {
+    const clean = industryId.trim().toLowerCase();
+    if (clean === 'construction' || clean === 'construction & remodeling' || clean === 'construction-and-remodeling') {
+      return 'construction';
+    }
+    if (clean === 'services' || clean === 'professional services' || clean === 'professional-services') {
+      return 'services';
+    }
+    if (clean === 'tech_saas' || clean === 'saas' || clean === 'saas & tech companies' || clean === 'saas-and-tech-companies' || clean === 'saas & tech' || clean === 'saas-tech') {
+      return 'tech_saas';
+    }
+    return 'construction'; // Default fallback
+  }
+
+  /**
+   * Resolve user-friendly template names/IDs to strict system-level template IDs.
+   */
+  public static resolveTemplateId(templateId: string): string {
+    const clean = templateId.trim().toLowerCase();
+    if (clean === 'apex-classic' || clean === 'apex classic' || clean === 'classic construction') {
+      return 'apex-classic';
+    }
+    if (clean === 'brick-modern' || clean === 'brick modernist') {
+      return 'brick-modern';
+    }
+    if (clean === 'consult-pro' || clean === 'consult pro') {
+      return 'consult-pro';
+    }
+    if (clean === 'saas-modern' || clean === 'saas minimalist' || clean === 'saas modern') {
+      return 'saas-modern';
+    }
+    return 'apex-classic'; // Default fallback
+  }
+
+  /**
    * Create a new project instance from default industry, template, and theme.
    */
   public static createProject(
@@ -15,26 +52,27 @@ export class ProjectManager {
     templateId?: string,
     themeId?: string
   ): Project {
-    // Dynamically find a valid template for this industry if not provided
-    const matchingTemplates = TEMPLATES.filter(t => t.industryId === industryId);
-    const resolvedTemplateId = templateId || (matchingTemplates.length > 0 ? matchingTemplates[0].id : 'apex-classic');
+    const resolvedIndustryId = this.resolveIndustryId(industryId);
+    const resolvedTemplateId = templateId 
+      ? this.resolveTemplateId(templateId) 
+      : (TEMPLATES.filter(t => t.industryId === resolvedIndustryId)[0]?.id || 'apex-classic');
     
     // Dynamically find a valid theme for this industry
-    const resolvedThemeId = themeId || (industryId === 'tech_saas' ? 'dark-violet' : 'slate');
+    const resolvedThemeId = themeId || (resolvedIndustryId === 'tech_saas' ? 'dark-violet' : 'slate');
 
-    const config = DEFAULT_CONTENTS[industryId] || DEFAULT_CONTENTS['construction'];
+    const config = DEFAULT_CONTENTS[resolvedIndustryId] || DEFAULT_CONTENTS['construction'];
     
     // Copy default config so mutations don't alter the library reference
     const clonedConfig = JSON.parse(JSON.stringify(config)) as WebsiteConfig;
 
-    const defaultAssets = INDUSTRY_DEFAULT_ASSETS[industryId] || DEFAULT_ASSETS;
+    const defaultAssets = INDUSTRY_DEFAULT_ASSETS[resolvedIndustryId] || DEFAULT_ASSETS;
 
     return {
       metadata: {
         schemaVersion: this.SCHEMA_VERSION,
         builderVersion: this.BUILDER_VERSION,
         templateVersion: this.TEMPLATE_VERSION,
-        industryId,
+        industryId: resolvedIndustryId,
         templateId: resolvedTemplateId,
         themeId: resolvedThemeId,
         lastSaved: new Date().toISOString()
