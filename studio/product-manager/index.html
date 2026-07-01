@@ -552,13 +552,25 @@ button,input,textarea,select{font-family:var(--font)}
 
             <!-- Tags -->
             <div class="form-card">
-              <div class="form-card-title"><i class="ti ti-tags" aria-hidden="true"></i> Feature tags</div>
+              <div class="form-card-title"><i class="ti ti-tags" aria-hidden="true"></i> Card tags</div>
               <div class="field">
-                <label>Tags</label>
+                <label>Tags <span style="font-weight:400;text-transform:none;letter-spacing:0">(shown on product card)</span></label>
                 <div class="tags-wrap" id="tagsWrap" onclick="document.getElementById('tagInput').focus()">
-                  <input id="tagInput" placeholder="Type a tag, press Enter" onkeydown="addTag(event)" aria-label="Add feature tag">
+                  <input id="tagInput" placeholder="Type a tag, press Enter" onkeydown="addTag(event)" aria-label="Add card tag">
                 </div>
                 <div class="field-hint">Press <strong>Enter</strong> after each tag. E.g. Mobile ready, Dark mode, Figma included</div>
+              </div>
+            </div>
+
+            <!-- Features -->
+            <div class="form-card">
+              <div class="form-card-title"><i class="ti ti-circle-check" aria-hidden="true"></i> Modal features</div>
+              <div class="field">
+                <label>Features <span style="font-weight:400;text-transform:none;letter-spacing:0">(shown as ✓ checklist in popup)</span></label>
+                <div class="tags-wrap" id="featuresWrap" onclick="document.getElementById('featInput').focus()">
+                  <input id="featInput" placeholder="Type a feature, press Enter" onkeydown="addFeature(event)" aria-label="Add modal feature">
+                </div>
+                <div class="field-hint">Press <strong>Enter</strong> after each feature. E.g. Figma source file, WhatsApp CTA, SEO optimized</div>
               </div>
             </div>
 
@@ -673,6 +685,7 @@ let editingId      = null;
 let selBadge       = 'New';
 let selColor       = 'linear-gradient(135deg,#0f172a,#1e3a8a)';
 let tags           = [];
+let features       = [];
 let slides         = ['Hero section','Features','Pricing'];
 let pcCur          = 0;
 let deleteTarget   = null;
@@ -769,6 +782,7 @@ function startAdd() {
   selBadge       = 'New';
   selColor       = 'linear-gradient(135deg,#0f172a,#1e3a8a)';
   tags           = [];
+  features       = [];
   slides         = ['Hero section','Features','Pricing'];
   uploadedImages = [];
   uploadedThumb  = '';
@@ -787,8 +801,9 @@ function editProduct(id) {
   editingId = id;
   selBadge  = p.badge || '';
   selColor  = p.color || 'linear-gradient(135deg,#0f172a,#1e3a8a)';
-  tags      = [...(p.tags || [])];
-  slides    = [...(p.slides || ['Hero section'])];
+  tags      = [...(p.tags     || [])];
+  features  = [...(p.features || [])];
+  slides    = [...(p.slides   || ['Hero section'])];
   uploadedImages = [...(p.images || [])];
   uploadedThumb  = p.thumb || '';
 
@@ -832,6 +847,7 @@ function editProduct(id) {
 
   toggleMediaFields();
   renderTags();
+  renderFeatures();
   renderSlides();
   document.getElementById('formAlert').innerHTML = '';
   livePreview();
@@ -861,6 +877,7 @@ function saveProduct() {
     mediatype: document.getElementById('f-mediatype').value,
     videourl:  document.getElementById('f-videourl').value,
     tags:      [...tags],
+    features:  [...features],
     slides:    [...slides],
     images:    [...uploadedImages],
     thumb:     uploadedThumb,
@@ -905,10 +922,12 @@ function resetForm() {
   });
   document.querySelectorAll('.swatch').forEach((s,i) => s.classList.toggle('selected', i===0));
   uploadedImages = []; uploadedThumb = '';
+  features = [];
   const pr = document.getElementById('imgPreviewRow'); if(pr) pr.innerHTML = '';
   const tp = document.getElementById('thumbPreview'); if(tp) tp.innerHTML = '';
   renderImgPreviews();
   renderTags();
+  renderFeatures();
   renderSlides();
 }
 
@@ -954,11 +973,44 @@ function removeTag(i) {
 function renderTags() {
   const inp = document.getElementById('tagInput');
   const wrap = document.getElementById('tagsWrap');
+  if (!wrap) return;
   wrap.innerHTML = '';
   tags.forEach((t, i) => {
     const chip = document.createElement('span');
     chip.className = 'tag-chip';
     chip.innerHTML = `${esc(t)}<button onclick="removeTag(${i})" aria-label="Remove tag ${t}">×</button>`;
+    wrap.appendChild(chip);
+  });
+  wrap.appendChild(inp);
+}
+
+function addFeature(e) {
+  if (e.key !== 'Enter') return;
+  e.preventDefault();
+  const v = e.target.value.trim();
+  if (v && !features.includes(v)) {
+    features.push(v);
+    renderFeatures();
+  }
+  e.target.value = '';
+}
+
+function removeFeature(i) {
+  features.splice(i, 1);
+  renderFeatures();
+}
+
+function renderFeatures() {
+  const inp = document.getElementById('featInput');
+  const wrap = document.getElementById('featuresWrap');
+  if (!wrap) return;
+  wrap.innerHTML = '';
+  features.forEach((f, i) => {
+    const chip = document.createElement('span');
+    chip.className = 'tag-chip';
+    chip.style.background = '#dcfce7';
+    chip.style.color = '#166534';
+    chip.innerHTML = `<i class="ti ti-check" style="font-size:11px"></i>${esc(f)}<button onclick="removeFeature(${i})" aria-label="Remove feature ${f}">×</button>`;
     wrap.appendChild(chip);
   });
   wrap.appendChild(inp);
