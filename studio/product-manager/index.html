@@ -297,24 +297,38 @@ button,input,textarea,select{font-family:var(--font)}
 
 <!-- ══ LOGIN SCREEN ══ -->
 <div class="login-screen" id="loginScreen">
-  <div class="login-card">
+  <div class="login-box">
     <div class="login-logo">
-      <div class="login-logo-box"><i class="ti ti-layout-grid" aria-hidden="true"></i></div>
-      <span class="login-logo-name">Lifehut <span>Studio™</span></span>
+      <div class="login-logo-icon" aria-hidden="true"><i class="ti ti-layout-grid"></i></div>
+      <div>
+        <div class="login-logo-name">Lifehut <span>Studio™</span></div>
+        <div class="login-logo-sub">Product Manager · Private</div>
+      </div>
     </div>
-    <div class="login-title">Admin login</div>
-    <div class="login-sub">Product Manager · Private access only</div>
+    <div class="login-title">Welcome back</div>
+    <div class="login-sub">Sign in to manage your product catalogue</div>
+    <div class="login-error" id="loginError" role="alert">
+      <i class="ti ti-alert-circle" aria-hidden="true"></i>
+      <span id="loginErrorMsg">Invalid email or password</span>
+    </div>
     <div class="login-field">
-      <label>Username</label>
-      <input type="text" id="loginUser" placeholder="Enter username" autocomplete="username" onkeydown="if(event.key==='Enter')doLogin()">
+      <label for="loginEmail">Email</label>
+      <input type="email" id="loginEmail" placeholder="admin@lifehutsolutions.com" autocomplete="email" onkeydown="if(event.key==='Enter')doLogin()">
     </div>
-    <div class="login-field">
-      <label>Password</label>
-      <input type="password" id="loginPass" placeholder="Enter password" autocomplete="current-password" onkeydown="if(event.key==='Enter')doLogin()">
+    <div class="login-field has-icon">
+      <label for="loginPass">Password</label>
+      <input type="password" id="loginPass" placeholder="Your password" autocomplete="current-password" onkeydown="if(event.key==='Enter')doLogin()">
+      <button class="login-eye" onclick="togglePassVis()" aria-label="Toggle password visibility" type="button">
+        <i class="ti ti-eye" id="eyeIcon" aria-hidden="true"></i>
+      </button>
     </div>
-    <button class="login-btn" onclick="doLogin()"><i class="ti ti-lock-open" aria-hidden="true"></i> Sign in</button>
-    <div class="login-err" id="loginErr"></div>
-    <div class="login-footer">Lifehut Solutions · Studio Admin v1.0</div>
+    <label class="login-remember">
+      <input type="checkbox" id="rememberMe" checked> Remember me for 7 days
+    </label>
+    <button class="login-btn" id="loginBtn" onclick="doLogin()">
+      <i class="ti ti-login" aria-hidden="true"></i> Sign in
+    </button>
+    <div class="login-footer">Lifehut Solutions · Studio Admin · Private access only</div>
   </div>
 </div>
 
