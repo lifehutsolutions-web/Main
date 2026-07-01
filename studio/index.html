@@ -1096,7 +1096,7 @@ button { font-family: var(--font); cursor: pointer; }
         </div>
         <div class="modal-btns">
           <button class="btn-modal-s" onclick="closeModal()">Back</button>
-          <a class="btn-modal-p" href="https://lifehutsolutions.com/studio/builder/?industry=construction&template=apex-classic&freeze=true" target="_blank" rel="noopener">
+          <a class="btn-modal-p" id="customizeBtn" href="#" target="_blank" rel="noopener">
             <i class="ti ti-eye" aria-hidden="true"></i> Customize & preview
           </a>
         </div>
@@ -1327,7 +1327,16 @@ function openModal(i) {
   document.getElementById('modalFeats').innerHTML   = p.features.map(f =>
     `<div class="mfeat"><i class="ti ti-check" aria-hidden="true"></i>${f}</div>`
   ).join('');
-
+// 🚀 Tell the code which industry and template this product belongs to
+  const industry = p.industry || 'construction'; // falls back to construction if missing
+  const template = p.template || 'apex-classic';  // falls back to apex-classic if missing
+  
+  // 🔗 Create the custom URL dynamically for this specific product
+  const dynamicUrl = `https://lifehutsolutions.com/studio/builder/?industry=${industry}&template=${template}&freeze=true`;
+  
+  // 🎯 Update the Customize button's link!
+  document.getElementById('modalCustomizeLink').href = dynamicUrl;
+   
   // Build modal carousel
   const track = document.getElementById('mct');
   track.innerHTML = p.slides.map((s, si) => {
