@@ -797,164 +797,8 @@ button { font-family: var(--font); cursor: pointer; }
 
     <div class="products-grid" id="productsGrid" role="list">
 
-      <!-- ── CARD 1 — SaaS Launch Pro (Carousel) ── -->
-      <article class="pcard" data-badge="hot" data-price="1499" data-cat="saas" onclick="openModal(0)" role="listitem" aria-label="SaaS Launch Pro theme">
-        <div class="card-media">
-          <div class="carousel" id="c0">
-            <div class="carousel-track" id="ct0">
-              <div class="carousel-slide" style="background:linear-gradient(135deg,#0f172a,#1e3a8a)"><div class="slide-label"><i class="ti ti-layout-dashboard" aria-hidden="true"></i><span>Hero section</span></div></div>
-              <div class="carousel-slide" style="background:linear-gradient(135deg,#1e3a8a,#3b82f6)"><div class="slide-label"><i class="ti ti-list" aria-hidden="true"></i><span>Features section</span></div></div>
-              <div class="carousel-slide" style="background:linear-gradient(135deg,#1d4ed8,#0ea5e9)"><div class="slide-label"><i class="ti ti-credit-card" aria-hidden="true"></i><span>Pricing table</span></div></div>
-              <div class="carousel-slide" style="background:linear-gradient(135deg,#0369a1,#0f172a)"><div class="slide-label"><i class="ti ti-device-mobile" aria-hidden="true"></i><span>Mobile view</span></div></div>
-            </div>
-            <button class="car-prev" onclick="slide(event,'c0',-1)" aria-label="Previous screenshot"><i class="ti ti-chevron-left" aria-hidden="true"></i></button>
-            <button class="car-next" onclick="slide(event,'c0',1)"  aria-label="Next screenshot"><i class="ti ti-chevron-right" aria-hidden="true"></i></button>
-            <div class="car-dots" id="cd0"></div>
-          </div>
-          <span class="media-tl badge-hot">Hot</span>
-          <div class="media-tr"><button class="wish-btn" onclick="toggleWish(event,this)" aria-label="Save to wishlist"><i class="ti ti-heart" aria-hidden="true"></i></button></div>
-          <div class="media-pill" aria-hidden="true"><i class="ti ti-photo"></i> 4 screens</div>
-        </div>
-        <div class="card-body">
-          <div class="card-top">
-            <div><div class="card-cat">SaaS / Startup</div><div class="card-title">SaaS Launch Pro</div></div>
-            <div class="card-stars" aria-label="5 stars, 24 reviews"><i class="ti ti-star-filled" aria-hidden="true"></i><i class="ti ti-star-filled" aria-hidden="true"></i><i class="ti ti-star-filled" aria-hidden="true"></i><i class="ti ti-star-filled" aria-hidden="true"></i><i class="ti ti-star-filled" aria-hidden="true"></i><span>(24)</span></div>
-          </div>
-          <p class="card-desc">Bold, conversion-focused landing for SaaS founders. Hero, features grid, pricing table, and testimonials all included.</p>
-          <div class="card-tags"><span class="card-tag">Figma included</span><span class="card-tag">Dark mode</span><span class="card-tag">Mobile ready</span></div>
-          <div class="card-footer">
-            <div><span class="price-now">₹1,499</span><span class="price-was">₹2,999</span><span class="price-save">50% off</span></div>
-            <button class="btn-explore" onclick="event.stopPropagation();openModal(0)"><i class="ti ti-eye" aria-hidden="true"></i> Explore</button>
-          </div>
-        </div>
-      </article>
-
-      <!-- ── CARD 2 — Freelancer Folio (Video) ── -->
-      <article class="pcard" data-badge="new" data-price="999" data-cat="portfolio" onclick="openModal(1)" role="listitem" aria-label="Freelancer Folio theme">
-        <div class="card-media">
-          <div class="video-thumb" id="vw1">
-            <div style="width:100%;height:100%;background:linear-gradient(135deg,#1c1c2e,#4a1d96);display:flex;align-items:center;justify-content:center;flex-direction:column;gap:10px;color:rgba(255,255,255,.7)">
-              <i class="ti ti-player-play" style="font-size:44px;opacity:.4" aria-hidden="true"></i>
-              <span style="font-size:12px">Video preview</span>
-            </div>
-            <!-- Replace the div above with: <video src="videos/freelancer-folio.mp4" muted loop playsinline></video> -->
-            <div class="play-overlay" onclick="playVid(event,'vw1')" role="button" aria-label="Play video preview">
-              <div class="play-circle"><i class="ti ti-player-play" aria-hidden="true"></i></div>
-            </div>
-          </div>
-          <span class="media-tl badge-new">New</span>
-          <div class="media-tr"><button class="wish-btn" onclick="toggleWish(event,this)" aria-label="Save to wishlist"><i class="ti ti-heart" aria-hidden="true"></i></button></div>
-          <div class="media-pill" aria-hidden="true"><i class="ti ti-video"></i> Video preview</div>
-        </div>
-        <div class="card-body">
-          <div class="card-top">
-            <div><div class="card-cat">Portfolio</div><div class="card-title">Freelancer Folio</div></div>
-            <div class="card-stars" aria-label="4 stars, 11 reviews"><i class="ti ti-star-filled" aria-hidden="true"></i><i class="ti ti-star-filled" aria-hidden="true"></i><i class="ti ti-star-filled" aria-hidden="true"></i><i class="ti ti-star-filled" aria-hidden="true"></i><i class="ti ti-star" aria-hidden="true"></i><span>(11)</span></div>
-          </div>
-          <p class="card-desc">Minimal portfolio with smooth animations, case study layout, and a contact form. Watch the video to see it in action.</p>
-          <div class="card-tags"><span class="card-tag">Animated</span><span class="card-tag">Blog ready</span><span class="card-tag">CMS friendly</span></div>
-          <div class="card-footer">
-            <div><span class="price-now">₹999</span><span class="price-was">₹1,999</span><span class="price-save">50% off</span></div>
-            <button class="btn-explore" onclick="event.stopPropagation();openModal(1)"><i class="ti ti-eye" aria-hidden="true"></i> Explore</button>
-          </div>
-        </div>
-      </article>
-
-      <!-- ── CARD 3 — Agency Starter (Carousel) ── -->
-      <article class="pcard" data-badge="free" data-price="0" data-cat="agency" onclick="openModal(2)" role="listitem" aria-label="Agency Starter theme">
-        <div class="card-media">
-          <div class="carousel" id="c2">
-            <div class="carousel-track" id="ct2">
-              <div class="carousel-slide" style="background:linear-gradient(135deg,#064e3b,#059669)"><div class="slide-label"><i class="ti ti-home" aria-hidden="true"></i><span>Home page</span></div></div>
-              <div class="carousel-slide" style="background:linear-gradient(135deg,#065f46,#10b981)"><div class="slide-label"><i class="ti ti-users" aria-hidden="true"></i><span>Team page</span></div></div>
-              <div class="carousel-slide" style="background:linear-gradient(135deg,#047857,#34d399)"><div class="slide-label"><i class="ti ti-photo" aria-hidden="true"></i><span>Portfolio grid</span></div></div>
-            </div>
-            <button class="car-prev" onclick="slide(event,'c2',-1)" aria-label="Previous screenshot"><i class="ti ti-chevron-left" aria-hidden="true"></i></button>
-            <button class="car-next" onclick="slide(event,'c2',1)"  aria-label="Next screenshot"><i class="ti ti-chevron-right" aria-hidden="true"></i></button>
-            <div class="car-dots" id="cd2"></div>
-          </div>
-          <span class="media-tl badge-free">Free</span>
-          <div class="media-tr"><button class="wish-btn" onclick="toggleWish(event,this)" aria-label="Save to wishlist"><i class="ti ti-heart" aria-hidden="true"></i></button></div>
-          <div class="media-pill" aria-hidden="true"><i class="ti ti-photo"></i> 3 screens</div>
-        </div>
-        <div class="card-body">
-          <div class="card-top">
-            <div><div class="card-cat">Agency</div><div class="card-title">Agency Starter</div></div>
-            <div class="card-stars" aria-label="4.5 stars, 38 reviews"><i class="ti ti-star-filled" aria-hidden="true"></i><i class="ti ti-star-filled" aria-hidden="true"></i><i class="ti ti-star-filled" aria-hidden="true"></i><i class="ti ti-star-filled" aria-hidden="true"></i><i class="ti ti-star-half" aria-hidden="true"></i><span>(38)</span></div>
-          </div>
-          <p class="card-desc">Free starter for digital agencies. Includes services section, team page, and portfolio grid — no payment needed.</p>
-          <div class="card-tags"><span class="card-tag">Free forever</span><span class="card-tag">SEO optimized</span><span class="card-tag">Fast load</span></div>
-          <div class="card-footer">
-            <div><span class="price-free-lbl">Free</span></div>
-            <button class="btn-explore" onclick="event.stopPropagation();openModal(2)"><i class="ti ti-eye" aria-hidden="true"></i> Explore</button>
-          </div>
-        </div>
-      </article>
-
-      <!-- ── CARD 4 — Business Edge (Carousel) ── -->
-      <article class="pcard" data-badge="hot" data-price="1999" data-cat="business" onclick="openModal(3)" role="listitem" aria-label="Business Edge theme">
-        <div class="card-media">
-          <div class="carousel" id="c3">
-            <div class="carousel-track" id="ct3">
-              <div class="carousel-slide" style="background:linear-gradient(135deg,#7c2d12,#c2410c)"><div class="slide-label"><i class="ti ti-building" aria-hidden="true"></i><span>Home page</span></div></div>
-              <div class="carousel-slide" style="background:linear-gradient(135deg,#92400e,#f59e0b)"><div class="slide-label"><i class="ti ti-forms" aria-hidden="true"></i><span>Quote form</span></div></div>
-              <div class="carousel-slide" style="background:linear-gradient(135deg,#b45309,#fbbf24)"><div class="slide-label"><i class="ti ti-map-pin" aria-hidden="true"></i><span>Contact page</span></div></div>
-              <div class="carousel-slide" style="background:linear-gradient(135deg,#78350f,#d97706)"><div class="slide-label"><i class="ti ti-device-mobile" aria-hidden="true"></i><span>Mobile view</span></div></div>
-            </div>
-            <button class="car-prev" onclick="slide(event,'c3',-1)" aria-label="Previous screenshot"><i class="ti ti-chevron-left" aria-hidden="true"></i></button>
-            <button class="car-next" onclick="slide(event,'c3',1)"  aria-label="Next screenshot"><i class="ti ti-chevron-right" aria-hidden="true"></i></button>
-            <div class="car-dots" id="cd3"></div>
-          </div>
-          <span class="media-tl badge-hot">Hot</span>
-          <div class="media-tr"><button class="wish-btn" onclick="toggleWish(event,this)" aria-label="Save to wishlist"><i class="ti ti-heart" aria-hidden="true"></i></button></div>
-          <div class="media-pill" aria-hidden="true"><i class="ti ti-photo"></i> 4 screens</div>
-        </div>
-        <div class="card-body">
-          <div class="card-top">
-            <div><div class="card-cat">Business</div><div class="card-title">Business Edge</div></div>
-            <div class="card-stars" aria-label="5 stars, 17 reviews"><i class="ti ti-star-filled" aria-hidden="true"></i><i class="ti ti-star-filled" aria-hidden="true"></i><i class="ti ti-star-filled" aria-hidden="true"></i><i class="ti ti-star-filled" aria-hidden="true"></i><i class="ti ti-star-filled" aria-hidden="true"></i><span>(17)</span></div>
-          </div>
-          <p class="card-desc">WhatsApp CTA, quote form, Google Maps, and mobile-first navigation. Built for Indian service businesses.</p>
-          <div class="card-tags"><span class="card-tag">WhatsApp CTA</span><span class="card-tag">Multi-page</span><span class="card-tag">Lead form</span></div>
-          <div class="card-footer">
-            <div><span class="price-now">₹1,999</span><span class="price-was">₹3,499</span><span class="price-save">43% off</span></div>
-            <button class="btn-explore" onclick="event.stopPropagation();openModal(3)"><i class="ti ti-eye" aria-hidden="true"></i> Explore</button>
-          </div>
-        </div>
-      </article>
-
-      <!-- ── CARD 5 — Analytics Dash (Video) ── -->
-      <article class="pcard" data-badge="new" data-price="1799" data-cat="saas" onclick="openModal(4)" role="listitem" aria-label="Analytics Dash theme">
-        <div class="card-media">
-          <div class="video-thumb" id="vw4">
-            <div style="width:100%;height:100%;background:linear-gradient(135deg,#0c1445,#2563eb);display:flex;align-items:center;justify-content:center;flex-direction:column;gap:10px;color:rgba(255,255,255,.7)">
-              <i class="ti ti-chart-bar" style="font-size:44px;opacity:.4" aria-hidden="true"></i>
-              <span style="font-size:12px">Video walkthrough</span>
-            </div>
-            <!-- Replace the div above with: <video src="videos/analytics-dash.mp4" muted loop playsinline></video> -->
-            <div class="play-overlay" onclick="playVid(event,'vw4')" role="button" aria-label="Play video preview">
-              <div class="play-circle"><i class="ti ti-player-play" aria-hidden="true"></i></div>
-            </div>
-          </div>
-          <span class="media-tl badge-new">New</span>
-          <div class="media-tr"><button class="wish-btn" onclick="toggleWish(event,this)" aria-label="Save to wishlist"><i class="ti ti-heart" aria-hidden="true"></i></button></div>
-          <div class="media-pill" aria-hidden="true"><i class="ti ti-video"></i> Video preview</div>
-        </div>
-        <div class="card-body">
-          <div class="card-top">
-            <div><div class="card-cat">SaaS / Startup</div><div class="card-title">Analytics Dash</div></div>
-            <div class="card-stars" aria-label="4 stars, 9 reviews"><i class="ti ti-star-filled" aria-hidden="true"></i><i class="ti ti-star-filled" aria-hidden="true"></i><i class="ti ti-star-filled" aria-hidden="true"></i><i class="ti ti-star-filled" aria-hidden="true"></i><i class="ti ti-star" aria-hidden="true"></i><span>(9)</span></div>
-          </div>
-          <p class="card-desc">Dark SaaS landing with a live dashboard preview section. Waitlist form and feature highlights included.</p>
-          <div class="card-tags"><span class="card-tag">Dark hero</span><span class="card-tag">Dashboard UI</span><span class="card-tag">Waitlist form</span></div>
-          <div class="card-footer">
-            <div><span class="price-now">₹1,799</span><span class="price-was">₹2,999</span><span class="price-save">40% off</span></div>
-            <button class="btn-explore" onclick="event.stopPropagation();openModal(4)"><i class="ti ti-eye" aria-hidden="true"></i> Explore</button>
-          </div>
-        </div>
-      </article>
-
-      <!-- ── CARD 6 — Coming soon ── -->
+      <!-- Products injected dynamically from GitHub Gist -->
+            <!-- ── CARD 6 — Coming soon ── -->
       <!-- ADD NEW CARD HERE -->
       <div class="coming-soon-card" data-cat="portfolio" role="listitem" aria-label="More themes coming soon">
         <div class="cs-icon" aria-hidden="true"><i class="ti ti-clock"></i></div>
@@ -1167,11 +1011,7 @@ const PRODUCTS = [
 const CS = {};
 
 function initCarousels() {
-  ['c0','c2','c3'].forEach(id => {
-    CS[id] = { cur: 0 };
-    const p = PRODUCTS[ id==='c0'?0 : id==='c2'?2 : 3 ];
-    buildDots(id, p.slides.length, 'cd'+id.slice(1));
-  });
+  // Only initialise modal carousel state — product carousels built dynamically
   CS['mc'] = { cur: 0 };
 }
 
@@ -1527,25 +1367,63 @@ function updateLiveBanner(count) {
 // Run on page load — try Gist first, fallback to localStorage
 (async function loadProducts() {
   const GIST_CFG_KEY = 'ls-gist-config';
-  const LIVE_KEY     = 'ls-live-products';
+
+  // Show loading state in grid
+  const grid = document.getElementById('productsGrid');
+  const cs   = grid ? grid.querySelector('.coming-soon-card') : null;
+  const loader = document.createElement('div');
+  loader.id = 'gridLoader';
+  loader.style.cssText = 'grid-column:1/-1;text-align:center;padding:48px;color:var(--text3);font-size:14px;display:flex;align-items:center;justify-content:center;gap:10px';
+  loader.innerHTML = '<i class="ti ti-loader-2" style="font-size:22px;animation:spin .8s linear infinite"></i> Loading products...';
+  if (grid && cs) grid.insertBefore(loader, cs);
+
   let loaded = false;
   try {
     const cfg = JSON.parse(localStorage.getItem(GIST_CFG_KEY) || 'null');
-    if (cfg && cfg.gistId) {
-      // Fetch raw Gist — public read, no token needed for secret gists via raw URL
-      const r = await fetch(`https://gist.githubusercontent.com/raw/${cfg.gistId}/products.json`,
-        { cache: 'no-store' });
+    if (cfg && cfg.gistId && cfg.token) {
+      // Use GitHub API with token — works for both public and secret gists
+      const r = await fetch(`https://api.github.com/gists/${cfg.gistId}`, {
+        headers: {
+          'Authorization': `token ${cfg.token}`,
+          'Accept': 'application/vnd.github.v3+json'
+        },
+        cache: 'no-store'
+      });
       if (r.ok) {
-        const remote = await r.json();
-        if (Array.isArray(remote) && remote.length > 0) {
-          localStorage.setItem(LIVE_KEY, JSON.stringify(remote));
-          loaded = true;
+        const data = await r.json();
+        const file = data.files && data.files['products.json'];
+        if (file && file.content) {
+          const remote = JSON.parse(file.content);
+          if (Array.isArray(remote) && remote.length > 0) {
+            localStorage.setItem(LIVE_KEY, JSON.stringify(remote));
+            loaded = true;
+          }
         }
       }
     }
-  } catch(e) { /* fall through to localStorage */ }
-  renderLiveProducts(); // always render (uses localStorage as source)
+  } catch(e) { /* fall through to localStorage cache */ }
+
+  // Remove loader
+  const l = document.getElementById('gridLoader');
+  if (l) l.remove();
+
+  renderLiveProducts(); // render from localStorage (populated above or from last session)
+
+  if (!loaded) {
+    // Show empty state if no products at all
+    const g = document.getElementById('productsGrid');
+    if (g && g.querySelectorAll('.pcard').length === 0) {
+      const empty = document.createElement('div');
+      empty.style.cssText = 'grid-column:1/-1;text-align:center;padding:48px 24px;color:var(--text3)';
+      empty.innerHTML = '<i class="ti ti-box-off" style="font-size:36px;opacity:.4;display:block;margin-bottom:12px"></i><div style="font-size:14px">Products coming soon — check back shortly</div>';
+      const cs2 = g.querySelector('.coming-soon-card');
+      if (cs2) g.insertBefore(empty, cs2); else g.appendChild(empty);
+    }
+  }
 })();
+
+/* spin keyframe for loader */
+(function(){const s=document.createElement('style');s.textContent='@keyframes spin{to{transform:rotate(360deg)}}';document.head.appendChild(s);})();
 </script>
 </body>
 </html>
