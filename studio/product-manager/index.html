@@ -291,6 +291,17 @@ button,input,textarea,select{font-family:var(--font)}
 @keyframes pulse-dot{0%,100%{opacity:1;transform:scale(1)}50%{opacity:.5;transform:scale(.7)}}
 .logout-btn{display:flex;align-items:center;gap:8px;padding:8px 14px;margin:2px 8px;border-radius:8px;font-size:12px;color:rgba(255,255,255,.45);cursor:pointer;transition:all .15s;border:none;background:none;width:calc(100% - 16px)}
 .logout-btn:hover{background:rgba(255,60,60,.15);color:#fca5a5}
+
+/* ── GIST SETTINGS PANEL ── */
+.gist-status{display:flex;align-items:center;gap:8px;padding:10px 14px;border-radius:9px;font-size:13px;margin-bottom:14px}
+.gist-status.ok{background:#dcfce7;color:#166534}
+.gist-status.err{background:#fee2e2;color:#991b1b}
+.gist-status.loading{background:#eff6ff;color:#1e40af}
+.gist-status.warn{background:#fef9c3;color:#854d0e}
+.sync-btn{width:100%;padding:10px;background:#1f2937;color:#fff;border:none;border-radius:9px;font-size:13px;font-weight:600;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:7px;transition:all .15s;margin-bottom:8px}
+.sync-btn:hover{background:#111827}
+.sync-btn.loading{opacity:.7;pointer-events:none}
+.field-secret input{font-family:monospace;letter-spacing:.04em;font-size:12px}
 </style>
 </head>
 <body>
@@ -354,6 +365,10 @@ button,input,textarea,select{font-family:var(--font)}
     </button>
 
     <hr class="sb-divider">
+    <div class="sb-section">Settings</div>
+    <button class="sb-link" id="nav-settings" onclick="showPanel('settings',this)">
+      <i class="ti ti-settings" aria-hidden="true"></i> GitHub Gist sync
+    </button>
     <div class="sb-section">Help</div>
     <button class="sb-link" onclick="showPanel('help',this)">
       <i class="ti ti-help" aria-hidden="true"></i> How to use
@@ -452,7 +467,7 @@ button,input,textarea,select{font-family:var(--font)}
               <div class="field" style="pointer-events:none;opacity:.7">
                 <label>Generated Customize URL</label>
                 <input type="text" id="f-genurl" readonly placeholder="Enter Template ID above to generate URL" style="background:var(--bg);font-size:12px;color:var(--text2)">
-                <div class="field-hint">https://builder.lifehutsolutions.com/?industry=SLUG&template=TEMPLATE_ID&freeze=true</div>
+                <div class="field-hint">https://studio.lifehutsolutions.com/?industry=SLUG&template=TEMPLATE_ID&freeze=true</div>
               </div>
             </div>
 
@@ -645,10 +660,72 @@ button,input,textarea,select{font-family:var(--font)}
           <div class="form-card" style="margin-top:16px">
             <div class="form-card-title"><i class="ti ti-alert-triangle" aria-hidden="true"></i> Important notes</div>
             <div style="font-size:13px;color:var(--text2);line-height:1.9">
-              <p style="margin-bottom:8px">⚠️ Products saved here are stored in your <strong>browser's local storage</strong>. If you clear browser data, they will be lost — always keep your copied code safe.</p>
-              <p style="margin-bottom:8px">📁 Both <code style="background:#f1f5f9;padding:2px 6px;border-radius:4px">index.html</code> and <code style="background:#f1f5f9;padding:2px 6px;border-radius:4px">product-manager.html</code> should be in the same folder on your computer and on your hosting.</p>
+              <p style="margin-bottom:8px">⚠️ Products are now synced to GitHub Gist — accessible from any browser once set up.</p>
+              <p style="margin-bottom:8px">📁 Both <code style="background:#f1f5f9;padding:2px 6px;border-radius:4px">index.html</code> and <code style="background:#f1f5f9;padding:2px 6px;border-radius:4px">product-manager.html</code> should be on the same domain.</p>
               <p>🖼️ For real screenshots, put your image files inside an <code style="background:#f1f5f9;padding:2px 6px;border-radius:4px">images/</code> folder next to index.html.</p>
             </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ── PANEL: SETTINGS (GitHub Gist) ── -->
+      <div class="panel" id="panel-settings">
+        <div style="max-width:560px">
+          <div id="gistStatusBar"></div>
+
+          <div class="form-card">
+            <div class="form-card-title"><i class="ti ti-brand-github" aria-hidden="true"></i> GitHub Gist sync</div>
+            <p style="font-size:13px;color:var(--text2);line-height:1.7;margin-bottom:16px">
+              Your products are stored in a <strong>private GitHub Gist</strong> — accessible from any browser, any device. Set this up once and you're done.
+            </p>
+
+            <div class="field field-secret">
+              <label>Personal Access Token (PAT)</label>
+              <input type="password" id="gistToken" placeholder="ghp_xxxxxxxxxxxxxxxxxxxx" autocomplete="off">
+              <div class="field-hint">GitHub → Settings → Developer settings → Personal access tokens → Classic → tick <strong>gist</strong> scope only</div>
+            </div>
+            <div class="field">
+              <label>Gist ID</label>
+              <input type="text" id="gistId" placeholder="e.g. 3d4f8a9b2c1e5f6a7b8c9d0e1f2a3b4c">
+              <div class="field-hint">From your Gist URL: gist.github.com/yourusername/<strong>THIS_PART</strong> · filename must be <strong>products.json</strong></div>
+            </div>
+
+            <div style="display:flex;gap:8px;margin-top:4px">
+              <button class="btn-primary" style="flex:1" onclick="saveGistConfig()">
+                <i class="ti ti-device-floppy" aria-hidden="true"></i> Save config
+              </button>
+              <button class="btn-outline" style="flex:1" onclick="testGistConnection()">
+                <i class="ti ti-plug" aria-hidden="true"></i> Test connection
+              </button>
+            </div>
+          </div>
+
+          <div class="form-card" style="margin-top:16px">
+            <div class="form-card-title"><i class="ti ti-refresh" aria-hidden="true"></i> Manual sync</div>
+            <p style="font-size:13px;color:var(--text2);line-height:1.7;margin-bottom:14px">Products auto-sync when you hit <strong>Go Live</strong>. Use these buttons if you need to manually push or pull.</p>
+            <button class="sync-btn" onclick="pushToGist()">
+              <i class="ti ti-cloud-upload" aria-hidden="true"></i> Push products → GitHub Gist
+            </button>
+            <button class="sync-btn" style="background:#1a56db" onclick="pullFromGist()">
+              <i class="ti ti-cloud-download" aria-hidden="true"></i> Pull products ← GitHub Gist
+            </button>
+          </div>
+
+          <div class="form-card" style="margin-top:16px">
+            <div class="form-card-title"><i class="ti ti-info-circle" aria-hidden="true"></i> Quick setup guide</div>
+            <ol style="font-size:13px;color:var(--text2);line-height:2;padding-left:18px">
+              <li>Go to <strong>github.com</strong> and sign in</li>
+              <li>Click your avatar → <strong>Settings</strong> → <strong>Developer settings</strong></li>
+              <li>Click <strong>Personal access tokens</strong> → <strong>Tokens (classic)</strong></li>
+              <li>Click <strong>Generate new token (classic)</strong></li>
+              <li>Give it a name (e.g. "Lifehut Studio"), tick only <strong>gist</strong>, click Generate</li>
+              <li>Copy the token (starts with <code style="background:#f1f5f9;padding:1px 5px;border-radius:3px">ghp_</code>) — paste it above</li>
+              <li>Go to <strong>gist.github.com</strong> → New gist</li>
+              <li>Filename: <code style="background:#f1f5f9;padding:1px 5px;border-radius:3px">products.json</code>, Content: <code style="background:#f1f5f9;padding:1px 5px;border-radius:3px">[]</code></li>
+              <li>Click <strong>Create secret gist</strong></li>
+              <li>Copy the Gist ID from the URL → paste it above</li>
+              <li>Click <strong>Save config</strong> then <strong>Test connection</strong></li>
+            </ol>
           </div>
         </div>
       </div>
@@ -693,14 +770,124 @@ let uploadedImages = [];
 let uploadedThumb  = '';
 
 /* =====================================================
-   STORAGE
+   GIST CONFIG
    ===================================================== */
-function save()   { localStorage.setItem('ls-products', JSON.stringify(products)); }
-function load()   {
+const GIST_CFG_KEY = 'ls-gist-config';
+const LIVE_KEY     = 'ls-live-products';
+
+function getGistConfig() {
+  try { return JSON.parse(localStorage.getItem(GIST_CFG_KEY) || 'null'); }
+  catch { return null; }
+}
+function saveGistConfig() {
+  const token  = document.getElementById('gistToken').value.trim();
+  const gistId = document.getElementById('gistId').value.trim();
+  if (!token || !gistId) { setGistStatus('warn','Please enter both Token and Gist ID'); return; }
+  localStorage.setItem(GIST_CFG_KEY, JSON.stringify({ token, gistId }));
+  setGistStatus('ok','✓ Config saved — click Test connection to verify');
+  showToast('✅ Gist config saved');
+}
+function setGistStatus(type, msg) {
+  const el = document.getElementById('gistStatusBar');
+  if (!el) return;
+  const icons = { ok:'ti-check', err:'ti-alert-circle', loading:'ti-loader-2', warn:'ti-alert-triangle' };
+  el.innerHTML = `<div class="gist-status ${type}"><i class="ti ${icons[type]||'ti-info-circle'}"></i>${msg}</div>`;
+}
+async function testGistConnection() {
+  const cfg = getGistConfig();
+  if (!cfg) { setGistStatus('warn','Save your Token and Gist ID first'); return; }
+  setGistStatus('loading','Testing connection...');
+  try {
+    const r = await fetch(`https://api.github.com/gists/${cfg.gistId}`, {
+      headers: { 'Authorization': `token ${cfg.token}`, 'Accept': 'application/vnd.github.v3+json' }
+    });
+    if (r.ok) {
+      const data = await r.json();
+      const hasFile = !!data.files['products.json'];
+      setGistStatus('ok', hasFile
+        ? '✓ Connected! products.json found in your Gist'
+        : '⚠ Connected but products.json not found — create a file named products.json in your Gist');
+    } else {
+      setGistStatus('err', `Connection failed (${r.status}) — check your Token and Gist ID`);
+    }
+  } catch(e) {
+    setGistStatus('err', 'Network error — check your internet connection');
+  }
+}
+async function pushToGist(silent) {
+  const cfg = getGistConfig();
+  if (!cfg) { if(!silent) showToast('⚠️ Set up GitHub Gist in Settings first'); return false; }
+  if (!silent) setGistStatus('loading','Pushing to GitHub Gist...');
+  try {
+    const r = await fetch(`https://api.github.com/gists/${cfg.gistId}`, {
+      method: 'PATCH',
+      headers: {
+        'Authorization': `token ${cfg.token}`,
+        'Accept': 'application/vnd.github.v3+json',
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({ files: { 'products.json': { content: JSON.stringify(products, null, 2) } } })
+    });
+    if (r.ok) {
+      if (!silent) { setGistStatus('ok','✓ Products pushed to GitHub Gist'); showToast('☁️ Synced to GitHub Gist'); }
+      return true;
+    } else {
+      if (!silent) { setGistStatus('err',`Push failed (${r.status})`); showToast('❌ Gist push failed'); }
+      return false;
+    }
+  } catch(e) {
+    if (!silent) { setGistStatus('err','Network error during push'); showToast('❌ Network error'); }
+    return false;
+  }
+}
+async function pullFromGist() {
+  const cfg = getGistConfig();
+  if (!cfg) { showToast('⚠️ Set up GitHub Gist in Settings first'); return; }
+  setGistStatus('loading','Pulling from GitHub Gist...');
+  try {
+    const r = await fetch(`https://api.github.com/gists/${cfg.gistId}`, {
+      headers: { 'Authorization': `token ${cfg.token}`, 'Accept': 'application/vnd.github.v3+json' }
+    });
+    if (r.ok) {
+      const data = await r.json();
+      const file = data.files['products.json'];
+      if (file) {
+        products = JSON.parse(file.content || '[]');
+        save();
+        renderList();
+        setGistStatus('ok',`✓ Pulled ${products.length} product(s) from GitHub Gist`);
+        showToast(`✅ Pulled ${products.length} product(s) from Gist`);
+      } else {
+        setGistStatus('err','products.json not found in your Gist');
+      }
+    } else {
+      setGistStatus('err',`Pull failed (${r.status})`);
+    }
+  } catch(e) {
+    setGistStatus('err','Network error during pull');
+  }
+}
+
+/* =====================================================
+   LOCAL STORAGE (fallback + cache)
+   ===================================================== */
+function save()  { localStorage.setItem('ls-products', JSON.stringify(products)); }
+function load()  {
   try { products = JSON.parse(localStorage.getItem('ls-products') || '[]'); }
   catch(e) { products = []; }
 }
-function uid()    { return 'p' + Date.now() + Math.random().toString(36).slice(2,6); }
+function uid()   { return 'p' + Date.now() + Math.random().toString(36).slice(2,6); }
+
+/* Pre-fill settings fields if config already saved */
+function loadGistConfigUI() {
+  const cfg = getGistConfig();
+  if (!cfg) return;
+  const t = document.getElementById('gistToken');
+  const g = document.getElementById('gistId');
+  if (t) t.value = cfg.token || '';
+  if (g) g.value = cfg.gistId || '';
+  setGistStatus('ok','✓ Gist config loaded — ready to sync');
+}
 
 /* =====================================================
    NAVIGATION
@@ -711,7 +898,7 @@ function showPanel(id, btn) {
   document.querySelectorAll('.sb-link').forEach(l => l.classList.remove('active'));
   if (btn) btn.classList.add('active');
 
-  const titles = { list:'All Products', form: editingId ? 'Edit Product' : 'Add New Product', help:'How to use' };
+  const titles = { list:'All Products', form: editingId ? 'Edit Product' : 'Add New Product', help:'How to use', settings:'GitHub Gist sync' };
   document.getElementById('tbTitle').textContent = titles[id] || '';
 
   const tbRight = document.getElementById('tbRight');
@@ -1065,7 +1252,7 @@ function livePreview() {
   const oldprice = document.getElementById('f-oldprice').value;
 
   // Auto-generate builder URL — base is fixed
-  const BUILDER_BASE = 'https://builder.lifehutsolutions.com';
+  const BUILDER_BASE = 'https://studio.lifehutsolutions.com';
   const template = (document.getElementById('f-template').value || '').trim();
   const industry = catToSlug(cat);
   const genUrlEl = document.getElementById('f-genurl');
@@ -1499,16 +1686,29 @@ function togglePassVis() {
 /* =====================================================
    GO LIVE — publish to localStorage for index.html
    ===================================================== */
-const LIVE_KEY = 'ls-live-products';
 
-function goLive() {
+async function goLive() {
   if (products.length === 0) { showToast('⚠️ Add at least one product first'); return; }
+  // 1. Save to localStorage for same-browser preview
   localStorage.setItem(LIVE_KEY, JSON.stringify(products));
   updateLiveIndicator();
-  const badge = document.getElementById('goLiveBadge');
-  badge.classList.add('show');
-  setTimeout(() => badge.classList.remove('show'), 3000);
-  showToast('🚀 ' + products.length + ' product(s) are now live on the store!');
+  // 2. Push to GitHub Gist for cross-browser / cross-device access
+  const cfg = getGistConfig();
+  if (cfg) {
+    showToast('🚀 Publishing... syncing to GitHub Gist');
+    const ok = await pushToGist(true);
+    const badge = document.getElementById('goLiveBadge');
+    badge.classList.add('show');
+    setTimeout(() => badge.classList.remove('show'), 3000);
+    showToast(ok
+      ? '🚀 ' + products.length + ' product(s) live! Synced to GitHub Gist ✓'
+      : '🚀 Live locally — Gist sync failed, check Settings');
+  } else {
+    const badge = document.getElementById('goLiveBadge');
+    badge.classList.add('show');
+    setTimeout(() => badge.classList.remove('show'), 3000);
+    showToast('🚀 Live locally · Set up GitHub Gist in Settings for cross-browser access');
+  }
 }
 
 function updateLiveIndicator() {
@@ -1528,12 +1728,43 @@ function updateLiveIndicator() {
 /* =====================================================
    APP INIT — called after successful login
    ===================================================== */
-function initApp() {
-  load();
+async function initApp() {
+  load();           // load from localStorage first (instant)
   renderList();
   renderSlides();
+  renderFeatures();
   livePreview();
   updateLiveIndicator();
+  loadGistConfigUI(); // pre-fill settings fields
+  // Auto-pull from Gist if configured (gives cross-device sync on login)
+  const cfg = getGistConfig();
+  if (cfg) {
+    await pullFromGistSilent();
+  }
+}
+
+async function pullFromGistSilent() {
+  const cfg = getGistConfig();
+  if (!cfg) return;
+  try {
+    const r = await fetch(`https://api.github.com/gists/${cfg.gistId}`, {
+      headers: { 'Authorization': `token ${cfg.token}`, 'Accept': 'application/vnd.github.v3+json' }
+    });
+    if (r.ok) {
+      const data = await r.json();
+      const file = data.files['products.json'];
+      if (file) {
+        const remote = JSON.parse(file.content || '[]');
+        if (remote.length >= 0) {
+          products = remote;
+          save();
+          renderList();
+          updateLiveIndicator();
+          showToast('☁️ Products synced from GitHub Gist');
+        }
+      }
+    }
+  } catch(e) { /* silent fail — use local cache */ }
 }
 
 /* =====================================================
