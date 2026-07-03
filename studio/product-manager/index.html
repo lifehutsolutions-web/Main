@@ -1343,7 +1343,11 @@ function generateCode() {
   const name      = document.getElementById('f-name').value || 'Theme name';
   const cat       = document.getElementById('f-cat').value;
   const desc      = document.getElementById('f-desc').value || '';
-  const url       = document.getElementById('f-genurl').value || '#';
+  const template = document.getElementById('f-template').value.trim();
+const industry = catToSlug(cat);
+
+const url =
+`https://builder.lifehutsolutions.com/?industry=${industry}&template=${template}&freeze=true`;
   const price     = document.getElementById('f-price').value;
   const oldprice  = document.getElementById('f-oldprice').value;
   const mediatype = document.getElementById('f-mediatype').value;
