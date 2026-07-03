@@ -1364,11 +1364,11 @@ function updateLiveBanner(count) {
   header.insertBefore(badge, header.firstChild);
 }
 
-// Run on page load — try Gist first, fallback to localStorage
-(async function loadProducts() {
-  const GIST_CFG_KEY = 'ls-gist-config';
+// Public Gist raw URL — no token needed, works for every customer
+const GIST_RAW_URL = 'https://gist.githubusercontent.com/lifehutsolutions-web/828dd1e72bda69c0f64cbafaa45f3e11/raw/products.json';
 
-  // Show loading state in grid
+(async function loadProducts() {
+  // Show loading spinner
   const grid = document.getElementById('productsGrid');
   const cs   = grid ? grid.querySelector('.coming-soon-card') : null;
   const loader = document.createElement('div');
@@ -1379,38 +1379,28 @@ function updateLiveBanner(count) {
 
   let loaded = false;
   try {
-    const cfg = JSON.parse(localStorage.getItem(GIST_CFG_KEY) || 'null');
-    if (cfg && cfg.gistId && cfg.token) {
-      // Use GitHub API with token — works for both public and secret gists
-      const r = await fetch(`https://api.github.com/gists/${cfg.gistId}`, {
-        headers: {
-          'Authorization': `token ${cfg.token}`,
-          'Accept': 'application/vnd.github.v3+json'
-        },
-        cache: 'no-store'
-      });
-      if (r.ok) {
-        const data = await r.json();
-        const file = data.files && data.files['products.json'];
-        if (file && file.content) {
-          const remote = JSON.parse(file.content);
-          if (Array.isArray(remote) && remote.length > 0) {
-            localStorage.setItem(LIVE_KEY, JSON.stringify(remote));
-            loaded = true;
-          }
-        }
+    // Fetch directly from public Gist — no token, no config, works on every browser
+    const r = await fetch(GIST_RAW_URL, { cache: 'no-store' });
+    if (r.ok) {
+      const remote = await r.json();
+      if (Array.isArray(remote) && remote.length > 0) {
+        localStorage.setItem(LIVE_KEY, JSON.stringify(remote));
+        loaded = true;
       }
     }
-  } catch(e) { /* fall through to localStorage cache */ }
+  } catch(e) {
+    // Network error — fall back to localStorage cache from last successful load
+  }
 
   // Remove loader
   const l = document.getElementById('gridLoader');
   if (l) l.remove();
 
-  renderLiveProducts(); // render from localStorage (populated above or from last session)
+  // Render from localStorage (either freshly fetched or cached)
+  renderLiveProducts();
 
+  // If still nothing — show empty state
   if (!loaded) {
-    // Show empty state if no products at all
     const g = document.getElementById('productsGrid');
     if (g && g.querySelectorAll('.pcard').length === 0) {
       const empty = document.createElement('div');
