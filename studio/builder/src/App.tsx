@@ -16,19 +16,6 @@ function BuilderApp() {
   const [isSaving, setIsSaving] = useState(false);
 
   const [project, setProject] = useState<Project>(() => {
-    try {
-      const params = new URLSearchParams(window.location.search);
-      const urlIndustry = params.get('industry');
-      const urlTemplate = params.get('template');
-      if (urlIndustry || urlTemplate) {
-        return ProjectManager.createProject(
-          urlIndustry || 'construction',
-          urlTemplate || undefined
-        );
-      }
-    } catch (e) {
-      console.warn('Could not parse URL query parameters', e);
-    }
     return ProjectManager.loadProject();
   });
 
