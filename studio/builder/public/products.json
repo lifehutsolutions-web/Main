@@ -1,0 +1,26 @@
+{
+  "apex-classic": {
+    "id": "apex-classic",
+    "name": "Apex Classic Template",
+    "priceINR": 499,
+    "description": "Lifetime access to Apex Classic template with unlimited downloads."
+  },
+  "brick-modern": {
+    "id": "brick-modern",
+    "name": "Brick Modernist Template",
+    "priceINR": 499,
+    "description": "Lifetime access to Brick Modernist template with unlimited downloads."
+  },
+  "consult-pro": {
+    "id": "consult-pro",
+    "name": "Consult Pro Template",
+    "priceINR": 599,
+    "description": "Lifetime access to Consult Pro template with unlimited downloads."
+  },
+  "saas-modern": {
+    "id": "saas-modern",
+    "name": "SaaS Minimalist Template",
+    "priceINR": 699,
+    "description": "Lifetime access to SaaS Minimalist template with unlimited downloads."
+  }
+}
