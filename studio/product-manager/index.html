@@ -467,7 +467,7 @@ button,input,textarea,select{font-family:var(--font)}
               <div class="field" style="pointer-events:none;opacity:.7">
                 <label>Generated Customize URL</label>
                 <input type="text" id="f-genurl" readonly placeholder="Enter Template ID above to generate URL" style="background:var(--bg);font-size:12px;color:var(--text2)">
-                <div class="field-hint">https://studio.lifehutsolutions.com/?industry=SLUG&template=TEMPLATE_ID&freeze=true</div>
+                <div class="field-hint">https://builder.lifehutsolutions.com/?industry=SLUG&template=TEMPLATE_ID&freeze=true</div>
               </div>
             </div>
 
@@ -1252,7 +1252,7 @@ function livePreview() {
   const oldprice = document.getElementById('f-oldprice').value;
 
   // Auto-generate builder URL — base is fixed
-  const BUILDER_BASE = 'https://studio.lifehutsolutions.com';
+  const BUILDER_BASE = 'https://builder.lifehutsolutions.com';
   const template = (document.getElementById('f-template').value || '').trim();
   const industry = catToSlug(cat);
   const genUrlEl = document.getElementById('f-genurl');
