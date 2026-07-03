@@ -1126,7 +1126,7 @@ function updateBuilderUrl() {
   const cat = document.getElementById('f-cat').value;
   const template = (document.getElementById('f-template').value || '').trim();
 
-  const industry = catToSlug(cat);
+  const industry = INDUSTRY_MAP[cat] || "construction";
 
   const genUrlEl = document.getElementById('f-genurl');
 
@@ -1265,6 +1265,17 @@ function catToSlug(cat) {
   const key = (cat||'').toLowerCase().trim();
   return CAT_SLUG[key] || key.replace(/[^a-z0-9]/g,'-').replace(/-+/g,'-').replace(/^-|-$/g,'');
 }
+  const INDUSTRY_MAP = {
+  "Construction": "construction",
+  "Restaurant": "restaurant",
+  "Beauty Salon": "beauty-salon",
+  "Real Estate": "real-estate",
+  "Healthcare": "healthcare",
+  "Education": "education",
+  "Photography": "photography",
+  "Gym & Fitness": "gym-fitness",
+  "SaaS / Startup": "saas-tech"
+};
 
 function livePreview() {
   const name     = document.getElementById('f-name').value || 'Theme name';
