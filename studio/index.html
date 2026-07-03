@@ -1383,25 +1383,27 @@ function updateLiveBanner(count) {
 }
 
 // GitHub API — always live, no CDN caching
-const GIST_API_URL    = 'https://api.github.com/gists/828dd1e72bda69c0f64cbafaa45f3e11';
-const GIST_READ_TOKEN = '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';
+const GIST_RAW_URL =
+'https://gist.githubusercontent.com/lifehutsolutions-web/828dd1e72bda69c0f64cbafaa45f3e11/raw/products.json';
 
 async function fetchFromGist() {
-  const r = await fetch(GIST_API_URL, {
-    headers: {
-      'Authorization': 'token ' + GIST_READ_TOKEN,
-      'Accept': 'application/vnd.github.v3+json'
-    }
+  const r = await fetch(GIST_RAW_URL, {
+    cache: 'no-cache'
   });
-  if (!r.ok) throw new Error('API error ' + r.status);
-  const data = await r.json();
-  const file = data.files && data.files['products.json'];
-  if (!file || !file.content) throw new Error('products.json not found');
-  const remote = JSON.parse(file.content);
-  if (!Array.isArray(remote)) throw new Error('Invalid JSON');
+
+  if (!r.ok) {
+    throw new Error('HTTP ' + r.status);
+  }
+
+  const remote = await r.json();
+
+  if (!Array.isArray(remote)) {
+    throw new Error('Invalid JSON');
+  }
+
   return remote;
 }
-
+   
 (async function loadProducts() {
   // Show loading spinner
   const grid = document.getElementById('productsGrid');
