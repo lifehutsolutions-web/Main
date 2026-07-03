@@ -1232,6 +1232,7 @@ async function hardRefresh() {
   if (grid && cs) grid.insertBefore(loader, cs);
   try {
     const remote = await fetchFromGist();
+     console.log("Fetched products:", remote);
     if (remote.length > 0) localStorage.setItem(LIVE_KEY, JSON.stringify(remote));
   } catch(e) {}
   const l = document.getElementById('gridLoader');
