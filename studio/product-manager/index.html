@@ -1689,25 +1689,42 @@ function togglePassVis() {
 
 async function goLive() {
   if (products.length === 0) { showToast('⚠️ Add at least one product first'); return; }
-  // 1. Save to localStorage for same-browser preview
+
+  // 1. Always save to localStorage
   localStorage.setItem(LIVE_KEY, JSON.stringify(products));
   updateLiveIndicator();
-  // 2. Push to GitHub Gist for cross-browser / cross-device access
+
+  // 2. Push to Gist — always show result (never silent)
   const cfg = getGistConfig();
-  if (cfg) {
-    showToast('🚀 Publishing... syncing to GitHub Gist');
-    const ok = await pushToGist(true);
-    const badge = document.getElementById('goLiveBadge');
-    badge.classList.add('show');
-    setTimeout(() => badge.classList.remove('show'), 3000);
-    showToast(ok
-      ? '🚀 ' + products.length + ' product(s) live! Synced to GitHub Gist ✓'
-      : '🚀 Live locally — Gist sync failed, check Settings');
-  } else {
-    const badge = document.getElementById('goLiveBadge');
-    badge.classList.add('show');
-    setTimeout(() => badge.classList.remove('show'), 3000);
-    showToast('🚀 Live locally · Set up GitHub Gist in Settings for cross-browser access');
+  if (!cfg || !cfg.token || !cfg.gistId) {
+    showToast('⚠️ No Gist config found — go to Settings and save your Token + Gist ID');
+    return;
+  }
+
+  showToast('🔄 Pushing to GitHub Gist...');
+  try {
+    const r = await fetch(`https://api.github.com/gists/${cfg.gistId}`, {
+      method: 'PATCH',
+      headers: {
+        'Authorization': `token ${cfg.token}`,
+        'Accept': 'application/vnd.github.v3+json',
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({
+        files: { 'products.json': { content: JSON.stringify(products, null, 2) } }
+      })
+    });
+
+    if (r.ok) {
+      const badge = document.getElementById('goLiveBadge');
+      if (badge) { badge.classList.add('show'); setTimeout(() => badge.classList.remove('show'), 3000); }
+      showToast('🚀 ' + products.length + ' product(s) live! Synced to GitHub ✓');
+    } else {
+      const err = await r.json().catch(() => ({}));
+      showToast('❌ Gist push failed (' + r.status + '): ' + (err.message || 'Check your Token and Gist ID in Settings'));
+    }
+  } catch(e) {
+    showToast('❌ Network error — check your internet connection');
   }
 }
 
@@ -1755,16 +1772,18 @@ async function pullFromGistSilent() {
       const file = data.files['products.json'];
       if (file) {
         const remote = JSON.parse(file.content || '[]');
-        if (remote.length >= 0) {
+        // ONLY overwrite local if Gist has actual products — never replace with empty
+        if (Array.isArray(remote) && remote.length > 0) {
           products = remote;
           save();
           renderList();
           updateLiveIndicator();
-          showToast('☁️ Products synced from GitHub Gist');
+          showToast('☁️ ' + remote.length + ' product(s) synced from GitHub Gist');
         }
+        // If Gist is empty, keep local products as source of truth
       }
     }
-  } catch(e) { /* silent fail — use local cache */ }
+  } catch(e) { /* silent fail — keep local cache */ }
 }
 
 /* =====================================================
