@@ -791,6 +791,7 @@ button { font-family: var(--font); cursor: pointer; }
         <div class="view-toggle" role="group" aria-label="Switch view">
           <button class="vtbtn active" id="gridBtn" onclick="setView('grid',this)" title="Grid view" aria-label="Grid view"><i class="ti ti-layout-grid" aria-hidden="true"></i></button>
           <button class="vtbtn"        id="listBtn" onclick="setView('list',this)" title="List view" aria-label="List view"><i class="ti ti-layout-list" aria-hidden="true"></i></button>
+          <button class="vtbtn" onclick="hardRefresh()" title="Reload products from server" aria-label="Refresh products"><i class="ti ti-refresh" aria-hidden="true"></i></button>
         </div>
       </div>
     </div>
@@ -1219,8 +1220,34 @@ document.addEventListener('keydown', e => {
   if (e.key === 'Escape') closeModal();
 });
 
-/* ---------- INIT ---------- */
-initCarousels();
+/* ---------- HARD REFRESH — force reload from Gist ---------- */
+async function hardRefresh() {
+  localStorage.removeItem(LIVE_KEY); // clear local cache
+  Array.from(document.querySelectorAll('#productsGrid .pcard')).forEach(c => c.remove());
+  const grid = document.getElementById('productsGrid');
+  const cs   = grid ? grid.querySelector('.coming-soon-card') : null;
+  const loader = document.createElement('div');
+  loader.id = 'gridLoader';
+  loader.style.cssText = 'grid-column:1/-1;text-align:center;padding:48px;color:var(--text3);font-size:14px;display:flex;align-items:center;justify-content:center;gap:10px';
+  loader.innerHTML = '<i class="ti ti-loader-2" style="font-size:22px;animation:spin .8s linear infinite"></i> Refreshing products...';
+  if (grid && cs) grid.insertBefore(loader, cs);
+  try {
+    const r = await fetch(GIST_RAW_URL + '?t=' + Date.now(), {
+      cache: 'no-store',
+      headers: { 'Cache-Control': 'no-cache, no-store, must-revalidate', 'Pragma': 'no-cache' }
+    });
+    if (r.ok) {
+      const remote = await r.json();
+      if (Array.isArray(remote) && remote.length > 0) {
+        localStorage.setItem(LIVE_KEY, JSON.stringify(remote));
+      }
+    }
+  } catch(e) {}
+  const l = document.getElementById('gridLoader');
+  if (l) l.remove();
+  renderLiveProducts();
+  buildFilters();
+}
 buildFilters(); // build category tabs from static cards
 
 /* =====================================================
@@ -1364,7 +1391,7 @@ function updateLiveBanner(count) {
   header.insertBefore(badge, header.firstChild);
 }
 
-// Public Gist raw URL — no token needed, works for every customer
+// Public Gist raw URL — always fetches latest version, no token needed
 const GIST_RAW_URL = 'https://gist.githubusercontent.com/lifehutsolutions-web/828dd1e72bda69c0f64cbafaa45f3e11/raw/products.json';
 
 (async function loadProducts() {
@@ -1380,7 +1407,14 @@ const GIST_RAW_URL = 'https://gist.githubusercontent.com/lifehutsolutions-web/82
   let loaded = false;
   try {
     // Fetch directly from public Gist — no token, no config, works on every browser
-    const r = await fetch(GIST_RAW_URL, { cache: 'no-store' });
+    // Add timestamp to bust GitHub's aggressive CDN cache
+    const r = await fetch(GIST_RAW_URL + '?t=' + Date.now(), {
+      cache: 'no-store',
+      headers: {
+        'Cache-Control': 'no-cache, no-store, must-revalidate',
+        'Pragma': 'no-cache'
+      }
+    });
     if (r.ok) {
       const remote = await r.json();
       if (Array.isArray(remote) && remote.length > 0) {
