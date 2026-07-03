@@ -1012,6 +1012,7 @@ function editProduct(id) {
   document.getElementById('f-desc').value      = p.desc || '';
   document.getElementById('f-template').value  = p.template || '';
   updateBuilderUrl();
+  console.log("Generated URL:", document.getElementById('f-genurl').value);
   document.getElementById('f-price').value     = p.price || '';
   document.getElementById('f-oldprice').value  = p.oldprice || '';
   document.getElementById('f-mediatype').value = p.mediatype || 'carousel';
