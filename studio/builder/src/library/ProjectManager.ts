@@ -1,4 +1,6 @@
 import { Project, WebsiteConfig } from '../types';
+import { supabase } from '../lib/supabase';
+import { saveProjectToDb, getUserProjects } from '../services/projectService';
 import { INDUSTRIES, TEMPLATES, THEMES, DEFAULT_CONTENTS, DEFAULT_ASSETS, INDUSTRY_DEFAULT_ASSETS } from './TemplateLibrary';
 
 export class ProjectManager {
@@ -131,6 +133,38 @@ export class ProjectManager {
   }
 
   /**
+   * Save the project to browser local storage and optionally to Supabase if logged in.
+   */
+  public static async saveProjectAsync(
+    project: Project,
+    existingDbId?: string
+  ): Promise<{ dbId?: string }> {
+    const updatedProject = {
+      ...project,
+      metadata: {
+        ...project.metadata,
+        lastSaved: new Date().toISOString()
+      }
+    };
+
+    // 1. Always backup to localStorage
+    this.saveProject(updatedProject);
+
+    // 2. Sync with Supabase if user is authenticated
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (session?.user) {
+        const dbId = await saveProjectToDb(session.user.id, updatedProject, existingDbId);
+        return { dbId };
+      }
+    } catch (e) {
+      console.warn('Failed to sync project to Supabase database (offline fallback active):', e);
+    }
+
+    return { dbId: existingDbId };
+  }
+
+  /**
    * Load the active project from local storage, fallback to a default project if none exists.
    */
   public static loadProject(): Project {
@@ -148,6 +182,47 @@ export class ProjectManager {
     }
 
     return this.createProject();
+  }
+
+  /**
+   * Load the active project asynchronously.
+   * If user is authenticated, pulls their saved project from Supabase first,
+   * otherwise falls back to browser localStorage.
+   */
+  public static async loadProjectAsync(
+    activeTemplateId?: string
+  ): Promise<{ project: Project; dbId?: string }> {
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      
+      if (session?.user) {
+        const dbProjects = await getUserProjects(session.user.id);
+        
+        let matchedDbProj = null;
+        if (activeTemplateId) {
+          matchedDbProj = dbProjects.find(p => p.template_id === activeTemplateId);
+        } else {
+          // Default to the most recently modified database project
+          matchedDbProj = dbProjects[0];
+        }
+
+        if (matchedDbProj) {
+          const parsed = matchedDbProj.config as Project;
+          if (parsed && parsed.metadata && parsed.config) {
+            const upgraded = this.upgradeIfNeeded(parsed);
+            // Save local storage backup copy
+            this.saveProject(upgraded);
+            return { project: upgraded, dbId: matchedDbProj.id };
+          }
+        }
+      }
+    } catch (e) {
+      console.warn('Supabase project loading failed or user is offline. Falling back to local storage...', e);
+    }
+
+    // Offline / Guest fallback to localStorage
+    const localProj = this.loadProject();
+    return { project: localProj };
   }
 
   /**
