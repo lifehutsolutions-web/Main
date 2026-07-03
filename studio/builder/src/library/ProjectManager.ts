@@ -183,10 +183,22 @@ export class ProjectManager {
       }
     }
 
-    // 1. If a template parameter is specified in the URL
-    if (templateParam) {
-      const resolvedTemplate = this.resolveTemplateId(templateParam);
+    // Determine the active/requested template from URL
+    let requestedTemplate: string | null = null;
+    let resolvedIndustry: string | null = null;
 
+    if (industryParam) {
+      resolvedIndustry = this.resolveIndustryId(industryParam);
+    }
+
+    if (templateParam) {
+      requestedTemplate = this.resolveTemplateId(templateParam);
+    } else if (resolvedIndustry) {
+      requestedTemplate = TEMPLATES.filter(t => t.industryId === resolvedIndustry)[0]?.id || 'apex-classic';
+    }
+
+    // 1. If we have a requested template (either explicitly or implicitly from industry parameter)
+    if (requestedTemplate) {
       // Check whether a saved project already exists for that template
       try {
         const saved = localStorage.getItem(this.STORAGE_KEY);
@@ -194,7 +206,7 @@ export class ProjectManager {
           const parsed = JSON.parse(saved) as Project;
           if (parsed && parsed.metadata && parsed.config) {
             // If a matching project exists for this template, restore it
-            if (parsed.metadata.templateId === resolvedTemplate) {
+            if (parsed.metadata.templateId === requestedTemplate) {
               return this.upgradeIfNeeded(parsed);
             }
           }
@@ -204,10 +216,10 @@ export class ProjectManager {
       }
 
       // If no matching project exists, create a fresh project from the template
-      return this.createProject(industryParam || 'construction', resolvedTemplate);
+      return this.createProject(resolvedIndustry || 'construction', requestedTemplate);
     }
 
-    // 2. Otherwise (no template specified in the URL), use standard localStorage restore behavior
+    // 2. Otherwise (no Builder URL parameters at all), use standard localStorage restore behavior
     try {
       const saved = localStorage.getItem(this.STORAGE_KEY);
       if (saved) {
@@ -220,7 +232,7 @@ export class ProjectManager {
       console.warn('Could not parse local storage project state, resetting to defaults.', e);
     }
 
-    return this.createProject(industryParam || 'construction');
+    return this.createProject(resolvedIndustry || 'construction');
   }
 
   /**
