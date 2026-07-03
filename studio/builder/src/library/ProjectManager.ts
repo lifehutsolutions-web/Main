@@ -14,13 +14,29 @@ export class ProjectManager {
    */
   public static resolveIndustryId(industryId: string): string {
     const clean = industryId.trim().toLowerCase();
-    if (clean === 'construction' || clean === 'construction & remodeling' || clean === 'construction-and-remodeling') {
+    const normalized = clean.replace(/[-_]/g, ' ');
+    if (
+      clean === 'construction' || 
+      normalized === 'construction remodeling' || 
+      normalized === 'construction and remodeling'
+    ) {
       return 'construction';
     }
-    if (clean === 'services' || clean === 'professional services' || clean === 'professional-services') {
+    if (
+      clean === 'services' || 
+      normalized === 'professional services' || 
+      normalized === 'professional services'
+    ) {
       return 'services';
     }
-    if (clean === 'tech_saas' || clean === 'saas' || clean === 'saas & tech companies' || clean === 'saas-and-tech-companies' || clean === 'saas & tech' || clean === 'saas-tech') {
+    if (
+      clean === 'tech_saas' || 
+      clean === 'saas' || 
+      normalized === 'saas tech companies' || 
+      normalized === 'saas and tech companies' || 
+      normalized === 'saas tech' ||
+      clean === 'saas-tech'
+    ) {
       return 'tech_saas';
     }
     return 'construction'; // Default fallback
@@ -29,20 +45,53 @@ export class ProjectManager {
   /**
    * Resolve user-friendly template names/IDs to strict system-level template IDs.
    */
-  public static resolveTemplateId(templateId: string): string {
+  public static resolveTemplateId(templateId: string, industryId?: string): string {
     const clean = templateId.trim().toLowerCase();
-    if (clean === 'apex-classic' || clean === 'apex classic' || clean === 'classic construction') {
+    const normalized = clean.replace(/[-_]/g, ' ');
+
+    if (
+      clean === 'apex-classic' || 
+      clean === 'apex_classic' || 
+      normalized === 'apex classic' || 
+      normalized === 'classic construction'
+    ) {
       return 'apex-classic';
     }
-    if (clean === 'brick-modern' || clean === 'brick modernist') {
+    if (
+      clean === 'brick-modern' || 
+      clean === 'brick_modern' || 
+      normalized === 'brick modern' || 
+      normalized === 'brick modernist'
+    ) {
       return 'brick-modern';
     }
-    if (clean === 'consult-pro' || clean === 'consult pro') {
+    if (
+      clean === 'consult-pro' || 
+      clean === 'consult_pro' || 
+      normalized === 'consult pro'
+    ) {
       return 'consult-pro';
     }
-    if (clean === 'saas-modern' || clean === 'saas minimalist' || clean === 'saas modern') {
+    if (
+      clean === 'saas-modern' || 
+      clean === 'saas_modern' || 
+      normalized === 'saas modern' || 
+      normalized === 'saas minimalist' ||
+      clean === 'saas-minimalist' ||
+      clean === 'saas_minimalist'
+    ) {
       return 'saas-modern';
     }
+    
+    // Fallback based on industryId if provided
+    if (industryId) {
+      const resolvedInd = this.resolveIndustryId(industryId);
+      const firstTemplate = TEMPLATES.find(t => t.industryId === resolvedInd);
+      if (firstTemplate) {
+        return firstTemplate.id;
+      }
+    }
+
     return 'apex-classic'; // Default fallback
   }
 
@@ -56,25 +105,29 @@ export class ProjectManager {
   ): Project {
     const resolvedIndustryId = this.resolveIndustryId(industryId);
     const resolvedTemplateId = templateId 
-      ? this.resolveTemplateId(templateId) 
+      ? this.resolveTemplateId(templateId, resolvedIndustryId) 
       : (TEMPLATES.filter(t => t.industryId === resolvedIndustryId)[0]?.id || 'apex-classic');
     
-    // Dynamically find a valid theme for this industry
-    const resolvedThemeId = themeId || (resolvedIndustryId === 'tech_saas' ? 'dark-violet' : 'slate');
+    // Find the actual industry associated with this template to prevent content mismatches
+    const matchedTemplate = TEMPLATES.find(t => t.id === resolvedTemplateId);
+    const finalIndustryId = matchedTemplate ? matchedTemplate.industryId : resolvedIndustryId;
 
-    const config = DEFAULT_CONTENTS[resolvedIndustryId] || DEFAULT_CONTENTS['construction'];
+    // Dynamically find a valid theme for this industry
+    const resolvedThemeId = themeId || (finalIndustryId === 'tech_saas' ? 'dark-violet' : 'slate');
+
+    const config = DEFAULT_CONTENTS[finalIndustryId] || DEFAULT_CONTENTS['construction'];
     
     // Copy default config so mutations don't alter the library reference
     const clonedConfig = JSON.parse(JSON.stringify(config)) as WebsiteConfig;
 
-    const defaultAssets = INDUSTRY_DEFAULT_ASSETS[resolvedIndustryId] || DEFAULT_ASSETS;
+    const defaultAssets = INDUSTRY_DEFAULT_ASSETS[finalIndustryId] || DEFAULT_ASSETS;
 
     return {
       metadata: {
         schemaVersion: this.SCHEMA_VERSION,
         builderVersion: this.BUILDER_VERSION,
         templateVersion: this.TEMPLATE_VERSION,
-        industryId: resolvedIndustryId,
+        industryId: finalIndustryId,
         templateId: resolvedTemplateId,
         themeId: resolvedThemeId,
         lastSaved: new Date().toISOString()
@@ -85,9 +138,9 @@ export class ProjectManager {
         seo: {
           title: clonedConfig.businessName,
           description: clonedConfig.aboutDescription || "",
-          keywords: industryId === 'tech_saas' 
+          keywords: finalIndustryId === 'tech_saas' 
             ? "saas, software, automation, workflow, ai tools"
-            : industryId === 'services'
+            : finalIndustryId === 'services'
               ? "consulting, business strategy, advisory"
               : "construction, builder, contractor"
         },
