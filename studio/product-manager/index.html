@@ -1011,6 +1011,7 @@ function editProduct(id) {
   document.getElementById('f-cat').value       = p.cat  || 'SaaS / Startup';
   document.getElementById('f-desc').value      = p.desc || '';
   document.getElementById('f-template').value  = p.template || '';
+  updateBuilderUrl();
   document.getElementById('f-price').value     = p.price || '';
   document.getElementById('f-oldprice').value  = p.oldprice || '';
   document.getElementById('f-mediatype').value = p.mediatype || 'carousel';
@@ -1117,7 +1118,26 @@ function resetForm() {
   renderFeatures();
   renderSlides();
 }
+function updateBuilderUrl() {
+  const BUILDER_BASE = 'https://builder.lifehutsolutions.com';
 
+  const cat = document.getElementById('f-cat').value;
+  const template = (document.getElementById('f-template').value || '').trim();
+
+  const industry = catToSlug(cat);
+
+  const genUrlEl = document.getElementById('f-genurl');
+
+  if (!genUrlEl) return;
+
+  if (template) {
+    genUrlEl.value =
+      `${BUILDER_BASE}/?industry=${industry}&template=${template}&freeze=true`;
+  } else {
+    genUrlEl.value = '';
+    genUrlEl.placeholder = 'Enter Template ID above to generate URL';
+  }
+}
 /* =====================================================
    BADGE / COLOR / TAG / SLIDE PICKERS
    ===================================================== */
