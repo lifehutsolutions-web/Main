@@ -183,25 +183,35 @@ export class ProjectManager {
       }
     }
 
-    // 1. If freeze=true and a valid template parameter exists
-    if (freezeParam === 'true' && templateParam) {
-      // Ignore localStorage completely, load a fresh project from the requested template, and do not overwrite.
-      const resolvedTemplate = this.resolveTemplateId(templateParam);
-      return this.createProject(industryParam || 'construction', resolvedTemplate);
-    }
-
-    // 2. Guests should continue using localStorage only when there is no template specified in the URL.
+    // 1. If a template parameter is specified in the URL
     if (templateParam) {
       const resolvedTemplate = this.resolveTemplateId(templateParam);
+
+      // Check whether a saved project already exists for that template
+      try {
+        const saved = localStorage.getItem(this.STORAGE_KEY);
+        if (saved) {
+          const parsed = JSON.parse(saved) as Project;
+          if (parsed && parsed.metadata && parsed.config) {
+            // If a matching project exists for this template, restore it
+            if (parsed.metadata.templateId === resolvedTemplate) {
+              return this.upgradeIfNeeded(parsed);
+            }
+          }
+        }
+      } catch (e) {
+        console.warn('Could not parse local storage project state for matching template', e);
+      }
+
+      // If no matching project exists, create a fresh project from the template
       return this.createProject(industryParam || 'construction', resolvedTemplate);
     }
 
-    // 3. Otherwise, use localStorage restore behavior
+    // 2. Otherwise (no template specified in the URL), use standard localStorage restore behavior
     try {
       const saved = localStorage.getItem(this.STORAGE_KEY);
       if (saved) {
         const parsed = JSON.parse(saved) as Project;
-        // Verify structural presence of config and metadata before returning
         if (parsed && parsed.metadata && parsed.config) {
           return this.upgradeIfNeeded(parsed);
         }
