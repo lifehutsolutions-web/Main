@@ -168,6 +168,35 @@ export class ProjectManager {
    * Load the active project from local storage, fallback to a default project if none exists.
    */
   public static loadProject(): Project {
+    let industryParam: string | null = null;
+    let templateParam: string | null = null;
+    let freezeParam: string | null = null;
+
+    if (typeof window !== 'undefined') {
+      try {
+        const params = new URLSearchParams(window.location.search);
+        industryParam = params.get('industry');
+        templateParam = params.get('template');
+        freezeParam = params.get('freeze');
+      } catch (e) {
+        console.warn('Failed to parse URL parameters in loadProject', e);
+      }
+    }
+
+    // 1. If freeze=true and a valid template parameter exists
+    if (freezeParam === 'true' && templateParam) {
+      // Ignore localStorage completely, load a fresh project from the requested template, and do not overwrite.
+      const resolvedTemplate = this.resolveTemplateId(templateParam);
+      return this.createProject(industryParam || 'construction', resolvedTemplate);
+    }
+
+    // 2. Guests should continue using localStorage only when there is no template specified in the URL.
+    if (templateParam) {
+      const resolvedTemplate = this.resolveTemplateId(templateParam);
+      return this.createProject(industryParam || 'construction', resolvedTemplate);
+    }
+
+    // 3. Otherwise, use localStorage restore behavior
     try {
       const saved = localStorage.getItem(this.STORAGE_KEY);
       if (saved) {
@@ -181,7 +210,7 @@ export class ProjectManager {
       console.warn('Could not parse local storage project state, resetting to defaults.', e);
     }
 
-    return this.createProject();
+    return this.createProject(industryParam || 'construction');
   }
 
   /**
