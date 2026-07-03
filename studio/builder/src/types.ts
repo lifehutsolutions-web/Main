@@ -123,3 +123,29 @@ export interface Project {
   extensions: ProjectExtensionPoints;
 }
 
+export interface Profile {
+  id: string;
+  email: string;
+  created_at?: string;
+  updated_at?: string;
+}
+
+export interface License {
+  id: string;
+  user_id: string;
+  template_id: string;
+  created_at?: string;
+  active: boolean;
+}
+
+export interface DbProject {
+  id: string;
+  user_id: string;
+  template_id: string;
+  industry_id: string;
+  config: any; // The full Project object as JSON
+  created_at?: string;
+  updated_at?: string;
+}
+
+
