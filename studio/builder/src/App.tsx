@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Sparkles, HelpCircle, X } from 'lucide-react';
 import Header from './components/Header';
 import Tabs from './components/Tabs';
@@ -8,8 +8,13 @@ import FullPreviewModal from './components/FullPreviewModal';
 import { Project, WebsiteConfig } from './types';
 import { ProjectManager } from './library/ProjectManager';
 import { motion, AnimatePresence } from 'motion/react';
+import { AuthProvider, useAuth } from './hooks/useAuth';
 
-export default function App() {
+function BuilderApp() {
+  const { user } = useAuth();
+  const [dbProjectId, setDbProjectId] = useState<string | undefined>(undefined);
+  const [isSaving, setIsSaving] = useState(false);
+
   const [project, setProject] = useState<Project>(() => {
     try {
       const params = new URLSearchParams(window.location.search);
@@ -41,6 +46,55 @@ export default function App() {
   const [isFullPreviewOpen, setIsFullPreviewOpen] = useState<boolean>(false);
   const [isHelpOpen, setIsHelpOpen] = useState<boolean>(false);
 
+  // 1. Restore projects automatically on login state change
+  useEffect(() => {
+    let isMounted = true;
+    const restoreProject = async () => {
+      try {
+        const params = new URLSearchParams(window.location.search);
+        const urlTemplate = params.get('template');
+        
+        const result = await ProjectManager.loadProjectAsync(urlTemplate || undefined);
+        if (isMounted) {
+          setProject(result.project);
+          if (result.dbId) {
+            setDbProjectId(result.dbId);
+          } else {
+            setDbProjectId(undefined);
+          }
+        }
+      } catch (e) {
+        console.error('Failed to restore project state', e);
+      }
+    };
+
+    restoreProject();
+    return () => {
+      isMounted = false;
+    };
+  }, [user]);
+
+  // 2. Debounced automatic background autosave
+  useEffect(() => {
+    if (!project) return;
+
+    const timer = setTimeout(async () => {
+      setIsSaving(true);
+      try {
+        const result = await ProjectManager.saveProjectAsync(project, dbProjectId);
+        if (result?.dbId) {
+          setDbProjectId(result.dbId);
+        }
+      } catch (e) {
+        console.error('Autosave synchronization failed:', e);
+      } finally {
+        setIsSaving(false);
+      }
+    }, 2500);
+
+    return () => clearTimeout(timer);
+  }, [project, dbProjectId]);
+
   // Sync back to config panel compatible bridge
   const config = project.config;
   const setConfig = (newConfigOrFn: WebsiteConfig | ((prev: WebsiteConfig) => WebsiteConfig)) => {
@@ -50,16 +104,16 @@ export default function App() {
         ...prev,
         config: nextConfig
       };
+      // Keep synchronous local storage save immediate, let background thread sync DB
       ProjectManager.saveProject(updated);
       return updated;
     });
   };
 
-  // Clean Import Handler
+  // Clean Import Handler / Restore Project loader
   const handleImport = (importedProject: Project) => {
     setProject(importedProject);
     ProjectManager.saveProject(importedProject);
-    // Auto-mark imported sections as completed
     setCompletedTabs(new Set([0, 1, 2, 3, 4, 5, 6, 7]));
   };
 
@@ -121,14 +175,16 @@ export default function App() {
             <span>Help</span>
           </button>
           <span className="text-slate-250">|</span>
-          <span>v1.0</span>
+          <span>v2.0</span>
           <span className="text-slate-250">|</span>
           <div className="flex items-center gap-1.5">
             <span className="relative flex h-1.5 w-1.5">
-              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
-              <span className="relative inline-flex rounded-full h-1.5 w-1.5 bg-emerald-500"></span>
+              <span className={`animate-ping absolute inline-flex h-full w-full rounded-full ${isSaving ? 'bg-amber-400' : 'bg-emerald-400'} opacity-75`}></span>
+              <span className={`relative inline-flex rounded-full h-1.5 w-1.5 ${isSaving ? 'bg-amber-500' : 'bg-emerald-500'}`}></span>
             </span>
-            <span className="normal-case text-slate-500 font-semibold text-3xs">All changes saved</span>
+            <span className="normal-case text-slate-500 font-semibold text-3xs">
+              {isSaving ? 'Autosaving to cloud...' : 'All changes saved'}
+            </span>
           </div>
         </div>
       </footer>
@@ -140,7 +196,7 @@ export default function App() {
         onClose={() => setIsFullPreviewOpen(false)}
       />
 
-      {/* Embedded Help Overlay Dialog (no window.alert inside iframe) */}
+      {/* Embedded Help Overlay Dialog */}
       <AnimatePresence>
         {isHelpOpen && (
           <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
@@ -159,17 +215,19 @@ export default function App() {
             >
               <div className="flex justify-between items-start mb-4">
                 <h3 className="text-sm font-bold text-slate-900 flex items-center gap-1.5">
-                  <HelpCircle className="w-4 h-4 text-blue-600" /> Welcome to Lifehut Studio™
+                  <HelpCircle className="w-4 h-4 text-blue-600" /> Welcome to Lifehut Studio™ v2
                 </h3>
                 <button 
                   onClick={() => setIsHelpOpen(false)}
-                  className="text-slate-400 hover:text-slate-600 transition-colors p-1 rounded-lg hover:bg-slate-50"
+                  className="text-slate-400 hover:text-slate-600 transition-colors p-1 rounded-lg hover:bg-slate-55"
                 >
                   <X className="w-4 h-4" />
                 </button>
               </div>
               <p className="text-xs text-slate-500 leading-relaxed font-medium mb-5">
-                Complete each section tab to configure your custom responsive template. Select your Sector, Template Layout, and Colors under the <strong className="font-bold text-slate-700">General</strong> tab. Once finalized, download your fully styled self-contained production-ready HTML website package in one click!
+                Complete each section tab to configure your custom responsive template. Select your Sector, Template Layout, and Colors under the <strong className="font-bold text-slate-700">General</strong> tab.
+                <br /><br />
+                Create an account or sign in to save your designs securely to the cloud. Once ready, download your production website package instantly!
               </p>
               <div className="flex justify-end">
                 <button 
@@ -184,5 +242,13 @@ export default function App() {
         )}
       </AnimatePresence>
     </div>
+  );
+}
+
+export default function App() {
+  return (
+    <AuthProvider>
+      <BuilderApp />
+    </AuthProvider>
   );
 }
