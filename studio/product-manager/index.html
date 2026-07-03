@@ -1287,7 +1287,7 @@ function livePreview() {
   // Auto-generate builder URL — base is fixed
   const BUILDER_BASE = 'https://builder.lifehutsolutions.com';
   const template = (document.getElementById('f-template').value || '').trim();
-  const industry = catToSlug(cat);
+  const industry = INDUSTRY_MAP[cat] || "construction";
   const genUrlEl = document.getElementById('f-genurl');
   if (genUrlEl) {
     if (template) {
@@ -1377,7 +1377,7 @@ function generateCode() {
   const cat       = document.getElementById('f-cat').value;
   const desc      = document.getElementById('f-desc').value || '';
   const template = document.getElementById('f-template').value.trim();
-const industry = catToSlug(cat);
+  const industry = INDUSTRY_MAP[cat] || "construction";
 
 const url =
 `https://builder.lifehutsolutions.com/?industry=${industry}&template=${template}&freeze=true`;
