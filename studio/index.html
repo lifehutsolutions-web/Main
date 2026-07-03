@@ -1220,9 +1220,8 @@ document.addEventListener('keydown', e => {
   if (e.key === 'Escape') closeModal();
 });
 
-/* ---------- HARD REFRESH — force reload from Gist ---------- */
+/* ---------- HARD REFRESH — force reload from Gist API ---------- */
 async function hardRefresh() {
-  localStorage.removeItem(LIVE_KEY); // clear local cache
   Array.from(document.querySelectorAll('#productsGrid .pcard')).forEach(c => c.remove());
   const grid = document.getElementById('productsGrid');
   const cs   = grid ? grid.querySelector('.coming-soon-card') : null;
@@ -1232,16 +1231,8 @@ async function hardRefresh() {
   loader.innerHTML = '<i class="ti ti-loader-2" style="font-size:22px;animation:spin .8s linear infinite"></i> Refreshing products...';
   if (grid && cs) grid.insertBefore(loader, cs);
   try {
-    const r = await fetch(GIST_RAW_URL + '?t=' + Date.now(), {
-      cache: 'no-store',
-      headers: { 'Cache-Control': 'no-cache, no-store, must-revalidate', 'Pragma': 'no-cache' }
-    });
-    if (r.ok) {
-      const remote = await r.json();
-      if (Array.isArray(remote) && remote.length > 0) {
-        localStorage.setItem(LIVE_KEY, JSON.stringify(remote));
-      }
-    }
+    const remote = await fetchFromGist();
+    if (remote.length > 0) localStorage.setItem(LIVE_KEY, JSON.stringify(remote));
   } catch(e) {}
   const l = document.getElementById('gridLoader');
   if (l) l.remove();
@@ -1391,8 +1382,25 @@ function updateLiveBanner(count) {
   header.insertBefore(badge, header.firstChild);
 }
 
-// Public Gist raw URL — always fetches latest version, no token needed
-const GIST_RAW_URL = 'https://gist.githubusercontent.com/lifehutsolutions-web/828dd1e72bda69c0f64cbafaa45f3e11/raw/products.json';
+// GitHub API — always live, no CDN caching
+const GIST_API_URL    = 'https://api.github.com/gists/828dd1e72bda69c0f64cbafaa45f3e11';
+const GIST_READ_TOKEN = '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';
+
+async function fetchFromGist() {
+  const r = await fetch(GIST_API_URL, {
+    headers: {
+      'Authorization': 'token ' + GIST_READ_TOKEN,
+      'Accept': 'application/vnd.github.v3+json'
+    }
+  });
+  if (!r.ok) throw new Error('API error ' + r.status);
+  const data = await r.json();
+  const file = data.files && data.files['products.json'];
+  if (!file || !file.content) throw new Error('products.json not found');
+  const remote = JSON.parse(file.content);
+  if (!Array.isArray(remote)) throw new Error('Invalid JSON');
+  return remote;
+}
 
 (async function loadProducts() {
   // Show loading spinner
@@ -1406,43 +1414,27 @@ const GIST_RAW_URL = 'https://gist.githubusercontent.com/lifehutsolutions-web/82
 
   let loaded = false;
   try {
-    // Fetch directly from public Gist — no token, no config, works on every browser
-    // Add timestamp to bust GitHub's aggressive CDN cache
-    const r = await fetch(GIST_RAW_URL + '?t=' + Date.now(), {
-      cache: 'no-store',
-      headers: {
-        'Cache-Control': 'no-cache, no-store, must-revalidate',
-        'Pragma': 'no-cache'
-      }
-    });
-    if (r.ok) {
-      const remote = await r.json();
-      if (Array.isArray(remote) && remote.length > 0) {
-        localStorage.setItem(LIVE_KEY, JSON.stringify(remote));
-        loaded = true;
-      }
+    const remote = await fetchFromGist();
+    if (remote.length > 0) {
+      localStorage.setItem(LIVE_KEY, JSON.stringify(remote));
+      loaded = true;
     }
   } catch(e) {
-    // Network error — fall back to localStorage cache from last successful load
+    // Network error or API fail — use localStorage cache silently
   }
 
-  // Remove loader
   const l = document.getElementById('gridLoader');
   if (l) l.remove();
 
-  // Render from localStorage (either freshly fetched or cached)
   renderLiveProducts();
 
-  // If still nothing — show empty state
-  if (!loaded) {
+  if (!loaded && document.querySelectorAll('#productsGrid .pcard').length === 0) {
     const g = document.getElementById('productsGrid');
-    if (g && g.querySelectorAll('.pcard').length === 0) {
-      const empty = document.createElement('div');
-      empty.style.cssText = 'grid-column:1/-1;text-align:center;padding:48px 24px;color:var(--text3)';
-      empty.innerHTML = '<i class="ti ti-box-off" style="font-size:36px;opacity:.4;display:block;margin-bottom:12px"></i><div style="font-size:14px">Products coming soon — check back shortly</div>';
-      const cs2 = g.querySelector('.coming-soon-card');
-      if (cs2) g.insertBefore(empty, cs2); else g.appendChild(empty);
-    }
+    const empty = document.createElement('div');
+    empty.style.cssText = 'grid-column:1/-1;text-align:center;padding:48px 24px;color:var(--text3)';
+    empty.innerHTML = '<i class="ti ti-box-off" style="font-size:36px;opacity:.4;display:block;margin-bottom:12px"></i><div style="font-size:14px">Products coming soon — check back shortly</div>';
+    const cs2 = g ? g.querySelector('.coming-soon-card') : null;
+    if (cs2) g.insertBefore(empty, cs2); else if (g) g.appendChild(empty);
   }
 })();
 
