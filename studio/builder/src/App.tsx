@@ -9,11 +9,28 @@ import { Project, WebsiteConfig } from './types';
 import { ProjectManager } from './library/ProjectManager';
 import { motion, AnimatePresence } from 'motion/react';
 import { AuthProvider, useAuth } from './hooks/useAuth';
+import ResetPassword from './components/ResetPassword';
+import AuthModal from './components/AuthModal';
 
 function BuilderApp() {
-  const { user } = useAuth();
+  const { user, isRecovering, setIsRecovering } = useAuth();
+  const [showLoginModal, setShowLoginModal] = useState(false);
   const [dbProjectId, setDbProjectId] = useState<string | undefined>(undefined);
   const [isSaving, setIsSaving] = useState(false);
+
+  if (isRecovering) {
+    const handleResetSuccess = () => {
+      if (typeof window !== 'undefined') {
+        window.history.replaceState(null, '', window.location.pathname);
+      }
+      setIsRecovering(false);
+      setShowLoginModal(true);
+    };
+
+    return (
+      <ResetPassword onSuccess={handleResetSuccess} />
+    );
+  }
 
   const [project, setProject] = useState<Project>(() => {
     return ProjectManager.loadProject();
@@ -228,6 +245,12 @@ function BuilderApp() {
           </div>
         )}
       </AnimatePresence>
+
+      <AuthModal 
+        isOpen={showLoginModal}
+        onClose={() => setShowLoginModal(false)}
+        initialMode="login"
+      />
     </div>
   );
 }
