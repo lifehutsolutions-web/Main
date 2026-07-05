@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { supabase } from '../lib/supabase';
 import { motion, AnimatePresence } from 'motion/react';
 import { X, Mail, Lock, Sparkles, Loader2, KeyRound } from 'lucide-react';
@@ -11,6 +11,28 @@ interface AuthModalProps {
 
 export default function AuthModal({ isOpen, onClose, initialMode = 'login' }: AuthModalProps) {
   const [mode, setMode] = useState<'login' | 'signup' | 'forgot'>(initialMode);
+
+  // Synchronize internal mode with initialMode when the modal is opened
+  useEffect(() => {
+    if (isOpen) {
+      setMode(initialMode);
+    }
+  }, [isOpen, initialMode]);
+
+  useEffect(() => {
+    if (isOpen) {
+      try {
+        const currentUrl = window.location.href;
+        // Do not overwrite the returnUrl if we are currently handling a recovery link
+        if (!currentUrl.includes('type=recovery') && !currentUrl.includes('recovery')) {
+          localStorage.setItem('supabase_auth_return_url', currentUrl);
+          sessionStorage.setItem('supabase_auth_return_url', currentUrl);
+        }
+      } catch (e) {
+        console.warn('Failed to save returnUrl:', e);
+      }
+    }
+  }, [isOpen, mode]);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
@@ -23,13 +45,15 @@ export default function AuthModal({ isOpen, onClose, initialMode = 'login' }: Au
     setErrorMsg(null);
     setSuccessMsg(null);
 
+    const savedUrl = localStorage.getItem('supabase_auth_return_url') || sessionStorage.getItem('supabase_auth_return_url') || window.location.href;
+
     try {
       if (mode === 'signup') {
         const { data, error } = await supabase.auth.signUp({
           email,
           password,
           options: {
-            emailRedirectTo: window.location.origin,
+            emailRedirectTo: savedUrl,
           },
         });
 
@@ -40,6 +64,7 @@ export default function AuthModal({ isOpen, onClose, initialMode = 'login' }: Au
           setSuccessMsg('Account created successfully! Welcome to Lifehut Studio.');
           setTimeout(() => {
             onClose();
+            window.location.href = savedUrl;
           }, 1500);
         } else {
           setSuccessMsg('Confirmation email sent! Please check your inbox.');
@@ -55,10 +80,11 @@ export default function AuthModal({ isOpen, onClose, initialMode = 'login' }: Au
         setSuccessMsg('Logged in successfully!');
         setTimeout(() => {
           onClose();
+          window.location.href = savedUrl;
         }, 1000);
       } else if (mode === 'forgot') {
         const { error } = await supabase.auth.resetPasswordForEmail(email, {
-          redirectTo: window.location.origin,
+          redirectTo: savedUrl,
         });
 
         if (error) throw error;
