@@ -250,6 +250,11 @@ export class ProjectManager {
       requestedTemplate = TEMPLATES.filter(t => t.industryId === resolvedIndustry)[0]?.id || 'apex-classic';
     }
 
+    // If freeze=true, ignore localStorage and load a fresh project from the template
+    if (freezeParam === 'true') {
+      return this.createProject(resolvedIndustry || 'construction', requestedTemplate || undefined);
+    }
+
     // 1. If we have a requested template (either explicitly or implicitly from industry parameter)
     if (requestedTemplate) {
       // Check whether a saved project already exists for that template
@@ -296,6 +301,39 @@ export class ProjectManager {
   public static async loadProjectAsync(
     activeTemplateId?: string
   ): Promise<{ project: Project; dbId?: string }> {
+    let industryParam: string | null = null;
+    let templateParam: string | null = null;
+    let freezeParam: string | null = null;
+
+    if (typeof window !== 'undefined') {
+      try {
+        const params = new URLSearchParams(window.location.search);
+        industryParam = params.get('industry');
+        templateParam = params.get('template');
+        freezeParam = params.get('freeze');
+      } catch (e) {
+        console.warn('Failed to parse URL parameters in loadProjectAsync', e);
+      }
+    }
+
+    // Determine requestedTemplate
+    let requestedTemplate = activeTemplateId || null;
+    if (!requestedTemplate) {
+      const resolvedIndustry = industryParam ? this.resolveIndustryId(industryParam) : null;
+      if (templateParam) {
+        requestedTemplate = this.resolveTemplateId(templateParam);
+      } else if (resolvedIndustry) {
+        requestedTemplate = TEMPLATES.filter(t => t.industryId === resolvedIndustry)[0]?.id || 'apex-classic';
+      }
+    }
+
+    if (freezeParam === 'true') {
+      // If freeze=true, ignore localStorage and ignore Supabase DB completely, just load a fresh template!
+      const resolvedIndustry = industryParam ? this.resolveIndustryId(industryParam) : null;
+      const freshProj = this.createProject(resolvedIndustry || 'construction', requestedTemplate || undefined);
+      return { project: freshProj };
+    }
+
     try {
       const { data: { session } } = await supabase.auth.getSession();
       
@@ -303,10 +341,10 @@ export class ProjectManager {
         const dbProjects = await getUserProjects(session.user.id);
         
         let matchedDbProj = null;
-        if (activeTemplateId) {
-          matchedDbProj = dbProjects.find(p => p.template_id === activeTemplateId);
+        if (requestedTemplate) {
+          matchedDbProj = dbProjects.find(p => p.template_id === requestedTemplate);
         } else {
-          // Default to the most recently modified database project
+          // Default to the most recently modified database project ONLY if there's no template/industry requested in URL
           matchedDbProj = dbProjects[0];
         }
 
