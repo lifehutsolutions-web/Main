@@ -14,17 +14,35 @@ import AuthModal from './components/AuthModal';
 
 function BuilderApp() {
   const { user, isRecovering, setIsRecovering } = useAuth();
-  const [showLoginModal, setShowLoginModal] = useState(false);
+  const [showLoginModal, setShowLoginModal] = useState(() => {
+    if (typeof window !== 'undefined') {
+      const flag = sessionStorage.getItem('open_login_after_reset');
+      if (flag === 'true') {
+        sessionStorage.removeItem('open_login_after_reset');
+        return true;
+      }
+    }
+    return false;
+  });
   const [dbProjectId, setDbProjectId] = useState<string | undefined>(undefined);
   const [isSaving, setIsSaving] = useState(false);
 
   if (isRecovering) {
     const handleResetSuccess = () => {
       if (typeof window !== 'undefined') {
-        window.history.replaceState(null, '', window.location.pathname);
+        try {
+          setIsRecovering(false);
+          const cleanUrl = window.location.href.split('#')[0];
+          sessionStorage.setItem('open_login_after_reset', 'true');
+          window.location.href = cleanUrl;
+        } catch (e) {
+          console.error(e);
+          // fallback
+          window.history.replaceState(null, '', window.location.pathname);
+          setIsRecovering(false);
+          setShowLoginModal(true);
+        }
       }
-      setIsRecovering(false);
-      setShowLoginModal(true);
     };
 
     return (
