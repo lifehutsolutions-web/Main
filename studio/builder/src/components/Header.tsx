@@ -210,6 +210,12 @@ export default function Header({ project, onImport, onPreviewFull }: HeaderProps
             <div className="flex items-center gap-2">
               <button
                 onClick={() => {
+                  try {
+                    localStorage.setItem('supabase_auth_return_url', window.location.href);
+                    sessionStorage.setItem('supabase_auth_return_url', window.location.href);
+                  } catch (e) {
+                    console.warn(e);
+                  }
                   setAuthInitialMode('login');
                   setIsAuthModalOpen(true);
                 }}
@@ -219,6 +225,12 @@ export default function Header({ project, onImport, onPreviewFull }: HeaderProps
               </button>
               <button
                 onClick={() => {
+                  try {
+                    localStorage.setItem('supabase_auth_return_url', window.location.href);
+                    sessionStorage.setItem('supabase_auth_return_url', window.location.href);
+                  } catch (e) {
+                    console.warn(e);
+                  }
                   setAuthInitialMode('signup');
                   setIsAuthModalOpen(true);
                 }}
