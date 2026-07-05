@@ -7,6 +7,8 @@ interface AuthContextType {
   loading: boolean;
   signOut: () => Promise<void>;
   refreshUser: () => Promise<void>;
+  isRecovering: boolean;
+  setIsRecovering: (val: boolean) => void;
 }
 
 const AuthContext = createContext<AuthContextType>({
@@ -14,11 +16,21 @@ const AuthContext = createContext<AuthContextType>({
   loading: true,
   signOut: async () => {},
   refreshUser: async () => {},
+  isRecovering: false,
+  setIsRecovering: () => {},
 });
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
+  const [isRecovering, setIsRecovering] = useState(() => {
+    if (typeof window !== 'undefined') {
+      const hash = window.location.hash || '';
+      const search = window.location.search || '';
+      return hash.includes('type=recovery') || search.includes('type=recovery') || hash.includes('recovery');
+    }
+    return false;
+  });
 
   const refreshUser = async () => {
     try {
@@ -37,7 +49,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     });
 
     // 2. Listen for auth state changes
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+      if (event === 'PASSWORD_RECOVERY') {
+        setIsRecovering(true);
+      }
       setUser(session?.user ?? null);
       setLoading(false);
     });
@@ -53,7 +68,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   };
 
   return (
-    <AuthContext.Provider value={{ user, loading, signOut, refreshUser }}>
+    <AuthContext.Provider value={{ user, loading, signOut, refreshUser, isRecovering, setIsRecovering }}>
       {children}
     </AuthContext.Provider>
   );
