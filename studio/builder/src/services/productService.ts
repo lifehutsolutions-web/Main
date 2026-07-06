@@ -7,12 +7,27 @@ export interface ProductDetails {
 
 export async function fetchProductDetails(templateId: string): Promise<ProductDetails> {
   try {
-    const res = await fetch('/products.json');
+    const GIST_URL =
+'https://gist.githubusercontent.com/lifehutsolutions-web/828dd1e72bda69c0f64cbafaa45f3e11/raw/products.json';
+
+const res = await fetch(GIST_URL + '?t=' + Date.now(), {
+  cache: 'no-store'
+});
     if (!res.ok) throw new Error('Failed to fetch products');
     const products = await res.json();
-    if (products[templateId]) {
-      return products[templateId];
-    }
+
+const product = products.find(
+    (p: any) => p.template === templateId
+);
+
+if (product) {
+    return {
+        id: product.template,
+        name: product.name,
+        priceINR: Number(product.price),
+        description: product.desc
+    };
+}
   } catch (e) {
     console.warn('Could not fetch products.json, using default pricing', e);
   }
