@@ -1,0 +1,295 @@
+@import url('https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap');
+@import "tailwindcss";
+
+@theme {
+  --font-sans: "Poppins", "Inter", ui-sans-serif, system-ui, sans-serif;
+  --font-display: "Poppins", sans-serif;
+  --font-mono: "JetBrains Mono", ui-monospace, SFMono-Regular, monospace;
+}
+
+/* ============================================
+   LIFEHUT DESIGN TOKENS
+   Brand: Poppins, blue #0A84FF / navy #0B2545, amber #E67E22 accent
+   Direction: dense, structured, enterprise-grade. Not bento, not gradient-heavy.
+   ============================================ */
+:root {
+  --lh-blue: #0A84FF;
+  --lh-blue-dark: #0055AA;
+  --lh-navy: #0B2545;
+  --lh-amber: #E67E22;
+  --lh-amber-dark: #C8650F;
+
+  --lh-surface: #ffffff;
+  --lh-surface-muted: #F7F8FA;
+  --lh-surface-sunken: #F0F2F5;
+  --lh-border: #E2E5EA;
+  --lh-border-strong: #CBD1DA;
+
+  --lh-text-primary: #16191F;
+  --lh-text-secondary: #5B6270;
+  --lh-text-tertiary: #94999E;
+
+  --lh-success-bg: #E1F5EE;
+  --lh-success-text: #085041;
+  --lh-warning-bg: #FDF1DC;
+  --lh-warning-text: #7A4A05;
+  --lh-danger-bg: #FCEBEB;
+  --lh-danger-text: #791F1F;
+  --lh-info-bg: #E6F1FB;
+  --lh-info-text: #0C447C;
+
+  --lh-radius-sm: 6px;
+  --lh-radius-md: 8px;
+  --lh-radius-lg: 12px;
+
+  --lh-shadow-xs: 0 1px 2px rgba(16, 24, 40, 0.05);
+  --lh-shadow-sm: 0 1px 3px rgba(16, 24, 40, 0.08), 0 1px 2px rgba(16, 24, 40, 0.04);
+}
+
+body {
+  background: var(--lh-surface-sunken);
+}
+
+/* ── Scrollbar ── */
+::-webkit-scrollbar { width: 6px; height: 6px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: var(--lh-border-strong); border-radius: 9999px; }
+::-webkit-scrollbar-thumb:hover { background: var(--lh-text-tertiary); }
+
+@layer utilities {
+  .no-scrollbar::-webkit-scrollbar { display: none; }
+  .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+}
+
+/* ============================================
+   SURFACES
+   ============================================ */
+.lh-panel {
+  background: var(--lh-surface);
+  border: 1px solid var(--lh-border);
+  border-radius: var(--lh-radius-lg);
+}
+
+.lh-panel-flat {
+  background: var(--lh-surface-muted);
+  border: 1px solid var(--lh-border);
+  border-radius: var(--lh-radius-md);
+}
+
+.lh-divider {
+  border-color: var(--lh-border);
+}
+
+/* ============================================
+   BUTTONS
+   ============================================ */
+.lh-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  font-weight: 600;
+  border-radius: var(--lh-radius-md);
+  transition: background-color 0.15s ease, border-color 0.15s ease, color 0.15s ease, transform 0.05s ease;
+  cursor: pointer;
+  white-space: nowrap;
+}
+.lh-btn:active { transform: scale(0.98); }
+
+.lh-btn-primary {
+  background: var(--lh-blue);
+  color: #fff;
+  border: 1px solid var(--lh-blue);
+}
+.lh-btn-primary:hover { background: var(--lh-blue-dark); border-color: var(--lh-blue-dark); }
+
+.lh-btn-accent {
+  background: var(--lh-amber);
+  color: #fff;
+  border: 1px solid var(--lh-amber);
+}
+.lh-btn-accent:hover { background: var(--lh-amber-dark); border-color: var(--lh-amber-dark); }
+
+.lh-btn-secondary {
+  background: var(--lh-surface);
+  color: var(--lh-text-primary);
+  border: 1px solid var(--lh-border-strong);
+}
+.lh-btn-secondary:hover { background: var(--lh-surface-muted); }
+
+.lh-btn-ghost {
+  background: transparent;
+  color: var(--lh-text-secondary);
+  border: 1px solid transparent;
+}
+.lh-btn-ghost:hover { background: var(--lh-surface-muted); color: var(--lh-text-primary); }
+
+.lh-btn-danger {
+  background: transparent;
+  color: var(--lh-danger-text);
+  border: 1px solid transparent;
+}
+.lh-btn-danger:hover { background: var(--lh-danger-bg); }
+
+.lh-btn-sm { padding: 5px 12px; font-size: 11.5px; }
+.lh-btn-md { padding: 8px 16px; font-size: 12.5px; }
+.lh-btn-lg { padding: 11px 22px; font-size: 13.5px; }
+
+/* ============================================
+   BADGES / STATUS PILLS
+   ============================================ */
+.lh-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-weight: 600;
+  font-size: 10.5px;
+  padding: 3px 9px;
+  border-radius: 6px;
+  letter-spacing: 0.01em;
+}
+.lh-badge-success { background: var(--lh-success-bg); color: var(--lh-success-text); }
+.lh-badge-warning { background: var(--lh-warning-bg); color: var(--lh-warning-text); }
+.lh-badge-danger  { background: var(--lh-danger-bg); color: var(--lh-danger-text); }
+.lh-badge-info    { background: var(--lh-info-bg); color: var(--lh-info-text); }
+.lh-badge-neutral { background: var(--lh-surface-sunken); color: var(--lh-text-secondary); }
+
+/* ============================================
+   TABLES
+   ============================================ */
+.lh-table { width: 100%; border-collapse: collapse; font-size: 12.5px; }
+.lh-table thead tr { background: var(--lh-surface-muted); }
+.lh-table th {
+  text-align: left;
+  padding: 9px 14px;
+  font-weight: 600;
+  font-size: 10.5px;
+  color: var(--lh-text-secondary);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  border-bottom: 1px solid var(--lh-border);
+}
+.lh-table td {
+  padding: 11px 14px;
+  border-bottom: 1px solid var(--lh-border);
+  color: var(--lh-text-primary);
+}
+.lh-table tbody tr { transition: background-color 0.1s ease; }
+.lh-table tbody tr:hover { background: var(--lh-surface-muted); }
+.lh-table tbody tr:last-child td { border-bottom: none; }
+
+/* ============================================
+   FORM ELEMENTS
+   ============================================ */
+.lh-input, .lh-select, .lh-textarea {
+  width: 100%;
+  background: var(--lh-surface-muted);
+  border: 1px solid var(--lh-border);
+  border-radius: var(--lh-radius-md);
+  padding: 9px 12px;
+  font-size: 13px;
+  font-family: var(--font-sans);
+  color: var(--lh-text-primary);
+  transition: border-color 0.15s ease, background-color 0.15s ease;
+  outline: none;
+}
+.lh-input::placeholder { color: var(--lh-text-tertiary); }
+.lh-input:focus, .lh-select:focus, .lh-textarea:focus {
+  background: var(--lh-surface);
+  border-color: var(--lh-blue);
+  box-shadow: 0 0 0 3px rgba(10, 132, 255, 0.12);
+}
+.lh-label {
+  display: block;
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--lh-text-secondary);
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  margin-bottom: 5px;
+}
+
+/* ============================================
+   SIDEBAR NAV ITEM
+   ============================================ */
+.lh-nav-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 9px 12px;
+  border-radius: var(--lh-radius-md);
+  font-size: 12.5px;
+  font-weight: 600;
+  color: var(--lh-text-secondary);
+  cursor: pointer;
+  transition: background-color 0.12s ease, color 0.12s ease;
+}
+.lh-nav-item:hover { background: var(--lh-surface-muted); color: var(--lh-text-primary); }
+.lh-nav-item.active {
+  background: var(--lh-info-bg);
+  color: var(--lh-blue-dark);
+}
+
+/* ============================================
+   METRIC TILE
+   ============================================ */
+.lh-metric {
+  background: var(--lh-surface);
+  border: 1px solid var(--lh-border);
+  border-radius: var(--lh-radius-md);
+  padding: 13px 15px;
+}
+.lh-metric-label {
+  font-size: 10.5px;
+  font-weight: 600;
+  color: var(--lh-text-secondary);
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+}
+.lh-metric-value {
+  font-size: 17px;
+  font-weight: 600;
+  color: var(--lh-text-primary);
+  margin-top: 3px;
+  font-variant-numeric: tabular-nums;
+}
+
+/* ============================================
+   MODAL
+   ============================================ */
+.lh-modal-backdrop {
+  background: rgba(11, 37, 69, 0.45);
+  backdrop-filter: blur(2px);
+}
+.lh-modal {
+  background: var(--lh-surface);
+  border-radius: var(--lh-radius-lg);
+  border: 1px solid var(--lh-border);
+  box-shadow: 0 20px 60px rgba(11, 37, 69, 0.25);
+}
+
+/* ============================================
+   LEGACY ALIASES (kept temporarily so unmigrated
+   components don't break — remove once all files
+   are converted to the lh- system)
+   ============================================ */
+.theme-gradient { background: var(--lh-blue); }
+.theme-gradient-reverse { background: var(--lh-blue); }
+.theme-gradient-light { background: var(--lh-info-bg); }
+.theme-gradient-accent { background: var(--lh-blue); }
+.theme-button {
+  background: var(--lh-blue);
+  color: white;
+  box-shadow: var(--lh-shadow-sm);
+  transition: all 0.15s ease;
+}
+.theme-button:hover { background: var(--lh-blue-dark); }
+.theme-button:active { transform: scale(0.98); }
+.theme-card-shadow { box-shadow: var(--lh-shadow-sm); }
+.card-selected-border { border-color: var(--lh-blue); box-shadow: 0 0 0 3px rgba(10, 132, 255, 0.12); }
+.glass-effect {
+  background: rgba(255, 255, 255, 0.92);
+  backdrop-filter: blur(10px);
+  border: 1px solid var(--lh-border);
+}
