@@ -1,0 +1,277 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // 1. Global Safety Net
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    // 2. Hardened Access Helpers
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function isValidId(id) {
+      return id is string && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$');
+    }
+
+    function incoming() {
+      return request.resource.data;
+    }
+
+    function existing() {
+      return resource.data;
+    }
+
+    function isRecentStringTimestamp(timestampStr) {
+      return timestampStr is string && timestampStr.size() >= 10 && (
+        timestampStr[0:4] == string(request.time.year()) || 
+        timestampStr[0:4] == string(request.time.year() - 1)
+      );
+    }
+
+    // 3. Entity Schema Validation Functions
+    function isValidProject(data) {
+      return data.id is string && data.id.size() <= 50
+          && data.name is string && data.name.size() <= 100
+          && data.clientName is string && data.clientName.size() <= 100
+          && data.phone is string && data.phone.size() <= 20
+          && data.email is string && data.email.size() <= 100
+          && data.address is string && data.address.size() <= 200
+          && data.type in ['Residential', 'Commercial', 'Renovation']
+          && data.contractValue is number && data.contractValue >= 0
+          && data.startDate is string && data.startDate.size() <= 20
+          && data.expectedEndDate is string && data.expectedEndDate.size() <= 20
+          && data.status in ['Active', 'Hold', 'Completed']
+          && data.clientCode is string && data.clientCode.size() <= 50
+          && data.isLocked is bool
+          && (!('memberUids' in data) || (data.memberUids is list && data.memberUids.size() <= 20))
+          && (!('contractorUid' in data) || (data.contractorUid is string && data.contractorUid.size() <= 128));
+    }
+
+    function isValidPaymentStage(data) {
+      return data.id is string && data.id.size() <= 50
+          && data.projectId is string && data.projectId.size() <= 50
+          && data.stageName is string && data.stageName.size() <= 120
+          && data.payableAmount is number && data.payableAmount >= 0
+          && data.receivedAmount is number && data.receivedAmount >= 0
+          && data.dueDate is string && data.dueDate.size() <= 20
+          && data.status in ['Paid', 'Pending', 'Overdue'];
+    }
+
+    function isValidExtraWork(data) {
+      return data.id is string && data.id.size() <= 50
+          && data.projectId is string && data.projectId.size() <= 50
+          && data.description is string && data.description.size() <= 1000
+          && data.amount is number && data.amount >= 0
+          && data.date is string && data.date.size() <= 20
+          && data.approvalStatus in ['Pending', 'Approved', 'Rejected']
+          && (!('clientComment' in data) || (data.clientComment is string && data.clientComment.size() <= 1000))
+          && data.photos is list && data.photos.size() <= 10;
+    }
+
+    function isValidExpense(data) {
+      return data.id is string && data.id.size() <= 50
+          && data.projectId is string && data.projectId.size() <= 50
+          && data.category in ['Material', 'Labour', 'Machinery', 'Transport', 'Electrical', 'Plumbing', 'Miscellaneous']
+          && data.description is string && data.description.size() <= 1000
+          && data.amount is number && data.amount >= 0
+          && data.supplier is string && data.supplier.size() <= 200
+          && data.date is string && data.date.size() <= 20
+          && data.billUploaded is bool;
+    }
+
+    function isValidDailyProgress(data) {
+      return data.id is string && data.id.size() <= 50
+          && data.projectId is string && data.projectId.size() <= 50
+          && data.remarks is string && data.remarks.size() <= 2000
+          && data.photos is list && data.photos.size() <= 10
+          && (!('videoUrl' in data) || (data.videoUrl is string && data.videoUrl.size() <= 1000))
+          && data.date is string && data.date.size() <= 20
+          && data.timestamp is string && data.timestamp.size() <= 40
+          && isRecentStringTimestamp(data.timestamp);
+    }
+
+    function isValidProjectDocument(data) {
+      return data.id is string && data.id.size() <= 50
+          && data.projectId is string && data.projectId.size() <= 50
+          && data.name is string && data.name.size() <= 250
+          && data.type in ['Agreement', 'Quotation', 'BOQ', 'Drawing', 'Bill', 'Approval']
+          && data.fileSize is string && data.fileSize.size() <= 20
+          && data.date is string && data.date.size() <= 20
+          && data.url is string && data.url.size() <= 1000;
+    }
+
+    function isValidChatMessage(data) {
+      return data.id is string && data.id.size() <= 50
+          && data.projectId is string && data.projectId.size() <= 50
+          && data.sender in ['Contractor', 'Client']
+          && data.text is string && data.text.size() <= 2000
+          && data.timestamp is string && data.timestamp.size() <= 40
+          && isRecentStringTimestamp(data.timestamp);
+    }
+
+    // Master Source of Truth Relationship Lookups
+    function getProject(projectId) {
+      return get(/databases/$(database)/documents/projects/$(projectId)).data;
+    }
+
+    function isProjectMember(projectId) {
+      return isSignedIn() && 
+        exists(/databases/$(database)/documents/projects/$(projectId)) &&
+        (
+          request.auth.uid in getProject(projectId).memberUids ||
+          getProject(projectId).memberUids.hasAny([request.auth.uid]) ||
+          exists(/databases/$(database)/documents/projects/$(projectId)/members/$(request.auth.uid))
+        );
+    }
+
+    function isProjectContractor(projectId) {
+      return isSignedIn() && 
+        exists(/databases/$(database)/documents/projects/$(projectId)) &&
+        (
+          getProject(projectId).contractorUid == request.auth.uid ||
+          (
+            exists(/databases/$(database)/documents/projects/$(projectId)/members/$(request.auth.uid)) &&
+            get(/databases/$(database)/documents/projects/$(projectId)/members/$(request.auth.uid)).data.role == 'Contractor'
+          )
+        );
+    }
+
+    // 4. Matches & Path Configurations
+    match /clientCodes/{codeId} {
+      allow get: if isSignedIn() && isValidId(codeId);
+      allow create: if isSignedIn() && request.auth.token.firebase.sign_in_provider != 'anonymous' && isValidId(codeId) &&
+        incoming().projectId is string && isValidId(incoming().projectId) &&
+        isProjectContractor(incoming().projectId) &&
+        incoming().redeemed == false;
+      allow update: if isSignedIn() && isValidId(codeId) && (
+        // Allow contractor to update
+        (request.auth.token.firebase.sign_in_provider != 'anonymous' && incoming().projectId == existing().projectId && isProjectContractor(existing().projectId)) ||
+        // Allow client to redeem if not already redeemed
+        (existing().redeemed == false && incoming().redeemed == true && incoming().redeemedBy == request.auth.uid && incoming().projectId == existing().projectId)
+      );
+      allow delete: if isSignedIn() && request.auth.token.firebase.sign_in_provider != 'anonymous' && isValidId(codeId) &&
+        isProjectContractor(existing().projectId);
+    }
+
+    match /system/{docId} {
+      allow read: if isSignedIn();
+      allow create, update: if isSignedIn() && request.auth.token.firebase.sign_in_provider != 'anonymous' && isValidId(docId) &&
+        docId == 'state' && 
+        incoming().seeded == true && 
+        incoming().seededAt is string && 
+        incoming().seededAt.size() <= 40;
+      allow delete: if false;
+    }
+
+    match /projects/{projectId} {
+      allow get: if isSignedIn() && isValidId(projectId) && isProjectMember(projectId);
+      allow list: if isSignedIn() && (
+        resource.data.memberUids.hasAny([request.auth.uid]) ||
+        request.auth.uid in resource.data.memberUids
+      );
+      allow create: if isSignedIn() && request.auth.token.firebase.sign_in_provider != 'anonymous' && isValidId(projectId) && isValidProject(incoming()) && (
+        incoming().memberUids.hasAny([request.auth.uid]) && incoming().contractorUid == request.auth.uid
+      );
+      allow update: if isSignedIn() && isValidId(projectId) && isValidProject(incoming()) && (
+        // Action 1: Contractor modification of fields (contractorUid and clientCode cannot be modified/removed)
+        (isProjectContractor(projectId) && incoming().clientCode == existing().clientCode && incoming().contractorUid == existing().contractorUid) ||
+        
+        // Action 2: Client/Contractor lock or status transition only
+        (
+          isProjectMember(projectId) && 
+          incoming().diff(existing()).affectedKeys().hasOnly(['isLocked', 'status']) && (
+            isProjectContractor(projectId) ||
+            (!isProjectContractor(projectId) && existing().isLocked == false && incoming().isLocked == true)
+          )
+        ) ||
+
+        // Action 3: Client self-registration into memberUids array
+        (
+          get(/databases/$(database)/documents/clientCodes/$(existing().clientCode)).data.redeemed == true &&
+          get(/databases/$(database)/documents/clientCodes/$(existing().clientCode)).data.redeemedBy == request.auth.uid &&
+          incoming().memberUids.hasAll(existing().memberUids) &&
+          incoming().memberUids.size() == existing().memberUids.size() + 1 &&
+          incoming().memberUids.hasAny([request.auth.uid]) &&
+          incoming().diff(existing()).affectedKeys().hasOnly(['memberUids'])
+        )
+      );
+      allow delete: if isSignedIn() && isValidId(projectId) && isProjectContractor(projectId);
+
+      // Subcollections
+      match /members/{memberId} {
+        allow get, list: if isSignedIn() && isValidId(projectId) && isValidId(memberId) && isProjectMember(projectId);
+        allow create, update: if isSignedIn() && isValidId(projectId) && isValidId(memberId) && (
+          isProjectContractor(projectId) ||
+          (request.auth.uid == memberId && request.resource.data.role == 'Client' && isProjectMember(projectId))
+        );
+        allow delete: if isSignedIn() && isValidId(projectId) && isValidId(memberId) && isProjectContractor(projectId);
+      }
+
+      match /stages/{stageId} {
+        allow get: if isSignedIn() && isValidId(projectId) && isValidId(stageId) && isProjectMember(projectId);
+        allow list: if isSignedIn() && isValidId(projectId) && isProjectMember(projectId);
+        allow create: if isSignedIn() && isValidId(projectId) && isValidId(stageId) && isProjectContractor(projectId) && isValidPaymentStage(incoming()) && incoming().projectId == projectId;
+        allow update: if isSignedIn() && isValidId(projectId) && isValidId(stageId) && isValidPaymentStage(incoming()) && incoming().projectId == projectId && (
+          // Contractor can update anything
+          isProjectContractor(projectId) ||
+          // Client can ONLY update status and receivedAmount
+          (isProjectMember(projectId) && incoming().diff(existing()).affectedKeys().hasOnly(['status', 'receivedAmount']))
+        );
+        allow delete: if isSignedIn() && isValidId(projectId) && isValidId(stageId) && isProjectContractor(projectId);
+      }
+
+      match /extraWorks/{extraWorkId} {
+        allow get: if isSignedIn() && isValidId(projectId) && isValidId(extraWorkId) && isProjectMember(projectId);
+        allow list: if isSignedIn() && isValidId(projectId) && isProjectMember(projectId);
+        allow create: if isSignedIn() && isValidId(projectId) && isValidId(extraWorkId) && isProjectContractor(projectId) && isValidExtraWork(incoming()) && incoming().projectId == projectId;
+        allow update: if isSignedIn() && isValidId(projectId) && isValidId(extraWorkId) && isValidExtraWork(incoming()) && incoming().projectId == projectId && (
+          // Contractor can update anything
+          isProjectContractor(projectId) ||
+          // Client can ONLY update approvalStatus and clientComment
+          (isProjectMember(projectId) && incoming().diff(existing()).affectedKeys().hasOnly(['approvalStatus', 'clientComment']))
+        );
+        allow delete: if isSignedIn() && isValidId(projectId) && isValidId(extraWorkId) && isProjectContractor(projectId);
+      }
+
+      match /expenses/{expenseId} {
+        allow get: if isSignedIn() && isValidId(projectId) && isValidId(expenseId) && isProjectMember(projectId);
+        allow list: if isSignedIn() && isValidId(projectId) && isProjectMember(projectId);
+        allow create: if isSignedIn() && isValidId(projectId) && isValidId(expenseId) && isProjectContractor(projectId) && isValidExpense(incoming()) && incoming().projectId == projectId;
+        allow update: if isSignedIn() && isValidId(projectId) && isValidId(expenseId) && isProjectContractor(projectId) && isValidExpense(incoming()) && incoming().projectId == projectId;
+        allow delete: if isSignedIn() && isValidId(projectId) && isValidId(expenseId) && isProjectContractor(projectId);
+      }
+
+      match /progress/{progressId} {
+        allow get: if isSignedIn() && isValidId(projectId) && isValidId(progressId) && isProjectMember(projectId);
+        allow list: if isSignedIn() && isValidId(projectId) && isProjectMember(projectId);
+        allow create: if isSignedIn() && isValidId(projectId) && isValidId(progressId) && isProjectContractor(projectId) && isValidDailyProgress(incoming()) && incoming().projectId == projectId;
+        allow update: if isSignedIn() && isValidId(projectId) && isValidId(progressId) && isProjectContractor(projectId) && isValidDailyProgress(incoming()) && incoming().projectId == projectId;
+        allow delete: if isSignedIn() && isValidId(projectId) && isValidId(progressId) && isProjectContractor(projectId);
+      }
+
+      match /documents/{documentId} {
+        allow get: if isSignedIn() && isValidId(projectId) && isValidId(documentId) && isProjectMember(projectId);
+        allow list: if isSignedIn() && isValidId(projectId) && isProjectMember(projectId);
+        allow create: if isSignedIn() && isValidId(projectId) && isValidId(documentId) && isProjectContractor(projectId) && isValidProjectDocument(incoming()) && incoming().projectId == projectId;
+        allow update: if isSignedIn() && isValidId(projectId) && isValidId(documentId) && isProjectContractor(projectId) && isValidProjectDocument(incoming()) && incoming().projectId == projectId;
+        allow delete: if isSignedIn() && isValidId(projectId) && isValidId(documentId) && isProjectContractor(projectId);
+      }
+
+      match /messages/{messageId} {
+        allow get: if isSignedIn() && isValidId(projectId) && isValidId(messageId) && isProjectMember(projectId);
+        allow list: if isSignedIn() && isValidId(projectId) && isProjectMember(projectId);
+        allow create: if isSignedIn() && isValidId(projectId) && isValidId(messageId) && isProjectMember(projectId) && isValidChatMessage(incoming()) && incoming().projectId == projectId && (
+          (isProjectContractor(projectId) && incoming().sender == 'Contractor') ||
+          (!isProjectContractor(projectId) && incoming().sender == 'Client')
+        );
+        allow update: if isSignedIn() && isValidId(projectId) && isValidId(messageId) && isProjectMember(projectId) && isValidChatMessage(incoming()) && incoming().projectId == projectId && (
+          isProjectContractor(projectId) || (incoming().diff(existing()).affectedKeys().size() == 0)
+        );
+        allow delete: if isSignedIn() && isValidId(projectId) && isValidId(messageId) && isProjectContractor(projectId);
+      }
+    }
+  }
+}

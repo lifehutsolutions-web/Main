@@ -1,0 +1,6 @@
+{
+  "name": "Lifehut Workspace™",
+  "description": "A two-sided client and contractor construction project tracker, complete with structured payments, daily site progress logs, dynamic extra works approvals, project document center, contract-to-cost expense charts, and client-contractor chat.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

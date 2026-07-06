@@ -1,0 +1,145 @@
+{
+  "entities": {
+    "Project": {
+      "title": "Project",
+      "description": "A construction/renovation project with client info, contract status, and client code access indicator.",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "description": "Unique identifier of the project" },
+        "name": { "type": "string", "description": "Display name of the project" },
+        "clientName": { "type": "string", "description": "Full name of the client" },
+        "phone": { "type": "string", "description": "Contact phone number of the client" },
+        "email": { "type": "string", "description": "Contact email of the client" },
+        "address": { "type": "string", "description": "Physical location address of the project" },
+        "type": { "type": "string", "enum": ["Residential", "Commercial", "Renovation"], "description": "Classification of the construction work" },
+        "contractValue": { "type": "number", "description": "Total original agreed contract value" },
+        "startDate": { "type": "string", "description": "Agreed starting date of the project" },
+        "expectedEndDate": { "type": "string", "description": "Target completion date" },
+        "status": { "type": "string", "enum": ["Active", "Hold", "Completed"], "description": "Operational status of the project" },
+        "clientCode": { "type": "string", "description": "Secret client access code" },
+        "isLocked": { "type": "boolean", "description": "Whether configuration modifying is locked" }
+      },
+      "required": ["id", "name", "clientName", "phone", "email", "address", "type", "contractValue", "startDate", "expectedEndDate", "status", "clientCode", "isLocked"]
+    },
+    "PaymentStage": {
+      "title": "PaymentStage",
+      "description": "An individual milestone or milestone-based payment installment.",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "projectId": { "type": "string" },
+        "stageName": { "type": "string" },
+        "payableAmount": { "type": "number" },
+        "receivedAmount": { "type": "number" },
+        "dueDate": { "type": "string" },
+        "status": { "type": "string", "enum": ["Paid", "Pending", "Overdue"] }
+      },
+      "required": ["id", "projectId", "stageName", "payableAmount", "receivedAmount", "dueDate", "status"]
+    },
+    "ExtraWork": {
+      "title": "ExtraWork",
+      "description": "Additional scopes outside the initial agreement requiring explicit client approval.",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "projectId": { "type": "string" },
+        "description": { "type": "string" },
+        "amount": { "type": "number" },
+        "date": { "type": "string" },
+        "approvalStatus": { "type": "string", "enum": ["Pending", "Approved", "Rejected"] },
+        "clientComment": { "type": "string" },
+        "photos": { "type": "array" }
+      },
+      "required": ["id", "projectId", "description", "amount", "date", "approvalStatus", "photos"]
+    },
+    "Expense": {
+      "title": "Expense",
+      "description": "A contractor expenditure logged to calculate the dynamic profit model.",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "projectId": { "type": "string" },
+        "category": { "type": "string", "enum": ["Material", "Labour", "Machinery", "Transport", "Electrical", "Plumbing", "Miscellaneous"] },
+        "description": { "type": "string" },
+        "amount": { "type": "number" },
+        "supplier": { "type": "string" },
+        "date": { "type": "string" },
+        "billUploaded": { "type": "boolean" }
+      },
+      "required": ["id", "projectId", "category", "description", "amount", "supplier", "date", "billUploaded"]
+    },
+    "DailyProgress": {
+      "title": "DailyProgress",
+      "description": "A site progress timeline entry complete with descriptions and base64 media uploads.",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "projectId": { "type": "string" },
+        "remarks": { "type": "string" },
+        "photos": { "type": "array" },
+        "videoUrl": { "type": "string" },
+        "date": { "type": "string" },
+        "timestamp": { "type": "string" }
+      },
+      "required": ["id", "projectId", "remarks", "photos", "date", "timestamp"]
+    },
+    "ProjectDocument": {
+      "title": "ProjectDocument",
+      "description": "Agreement blueprints, estimations or other file-sharing models stored in the cabinet.",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "projectId": { "type": "string" },
+        "name": { "type": "string" },
+        "type": { "type": "string", "enum": ["Agreement", "Quotation", "BOQ", "Drawing", "Bill", "Approval"] },
+        "fileSize": { "type": "string" },
+        "date": { "type": "string" },
+        "url": { "type": "string" }
+      },
+      "required": ["id", "projectId", "name", "type", "fileSize", "date", "url"]
+    },
+    "ChatMessage": {
+      "title": "ChatMessage",
+      "description": "A messaging conversation payload between the Client and Contractor.",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "projectId": { "type": "string" },
+        "sender": { "type": "string", "enum": ["Contractor", "Client"] },
+        "text": { "type": "string" },
+        "timestamp": { "type": "string" }
+      },
+      "required": ["id", "projectId", "sender", "text", "timestamp"]
+    }
+  },
+  "firestore": {
+    "/projects/{projectId}": {
+      "schema": "Project",
+      "description": "A primary active project with specific credentials"
+    },
+    "/projects/{projectId}/stages/{stageId}": {
+      "schema": "PaymentStage",
+      "description": "Payment stages of a project"
+    },
+    "/projects/{projectId}/extraWorks/{extraWorkId}": {
+      "schema": "ExtraWork",
+      "description": "Supplementary extra work orders within a project"
+    },
+    "/projects/{projectId}/expenses/{expenseId}": {
+      "schema": "Expense",
+      "description": "Contractor expenses logged inside a project"
+    },
+    "/projects/{projectId}/progress/{progressId}": {
+      "schema": "DailyProgress",
+      "description": "Milestones and timeline updates on construction site progress"
+    },
+    "/projects/{projectId}/documents/{documentId}": {
+      "schema": "ProjectDocument",
+      "description": "Documents and spreadsheets saved inside a project cabinet"
+    },
+    "/projects/{projectId}/messages/{messageId}": {
+      "schema": "ChatMessage",
+      "description": "Dialogue messages between client and contractor coordinators"
+    }
+  }
+}
