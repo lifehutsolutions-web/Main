@@ -31,7 +31,7 @@ export default function PaymentStatementSheet({
   stages,
   onPayStage,
   isClientView = false,
-  contractorName = 'Kumar'
+  contractorName = '${ownerName}'
 }: PaymentStatementSheetProps) {
   const printAreaRef = useRef<HTMLDivElement>(null);
 
@@ -168,7 +168,7 @@ export default function PaymentStatementSheet({
                 Lifehut Workspace
               </div>
               <div style={{ fontSize: '10.5px', color: '#0A84FF', marginTop: '6px', textTransform: 'uppercase', letterSpacing: '0.08em', fontWeight: 800, fontFamily: "'Poppins', sans-serif" }}>
-                Construction Management & Liaison System
+                Project Management & Liaison System
               </div>
             </div>
             <div style={{ textAlign: 'right' }}>

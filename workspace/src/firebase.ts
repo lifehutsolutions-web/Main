@@ -108,7 +108,7 @@ export async function signInGoogle() {
 // Sign In Anonymously
 export async function signInAnon() {
   try {
-    const result = await signInAnonymously(auth);
+   // const result = await signInAnonymously(auth);
     return result.user;
   } catch (error) {
     console.warn('Anonymous Sign-In Error:', error);

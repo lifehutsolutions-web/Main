@@ -1,6 +1,6 @@
 # Firestore Security Specification and Threat Model
 
-This specification defines the strict security posture for the Construction Management Platform (MetroBuild) Firestore database.
+This specification defines the strict security posture for the Project Management Platform (MetroBuild) Firestore database.
 
 ## 1. Core Security Invariants
 

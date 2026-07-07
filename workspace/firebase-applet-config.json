@@ -1,10 +1,9 @@
 {
-  "projectId": "noted-xerocopy-z67s8",
-  "appId": "1:710157101663:web:e1ee57bd70b896228989ea",
-  "apiKey": "AIzaSyBDB36634vA8LP1UzZ2zRVo-0gJndeF2eY",
-  "authDomain": "noted-xerocopy-z67s8.firebaseapp.com",
-  "firestoreDatabaseId": "ai-studio-5059221c-5b3f-44a7-93e3-2c76855289cc",
-  "storageBucket": "noted-xerocopy-z67s8.firebasestorage.app",
-  "messagingSenderId": "710157101663",
-  "measurementId": ""
+  "projectId": "lifehut-workspace",
+  "appId": "1:475155871966:web:3f2feed50793c037ef2a4f",
+  "apiKey": "AIzaSyCxmRbrwETV3AXSUSfDFLsCtMlGBwcgL0g",
+  "authDomain": "lifehut-workspace.firebaseapp.com",
+  "storageBucket": "lifehut-workspace.firebasestorage.app",
+  "messagingSenderId": "475155871966",
+  "measurementId": "G-83CL8DM7WV"
 }

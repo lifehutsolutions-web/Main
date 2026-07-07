@@ -21,7 +21,7 @@ const initialProjects: Project[] = [
     status: 'Active',
     clientCode: 'CLIENT-GREEN',
     isLocked: true, // Stage 1 is paid, so it is locked by default
-    contractorName: 'Kumar Workspace',
+    contractorName: 'Lifehut Workspace',
     contractorPhone: '+91 99911 22334',
     contractorEmail: 'hello@lifehut.in',
   },
@@ -39,7 +39,7 @@ const initialProjects: Project[] = [
     status: 'Active',
     clientCode: 'CLIENT-APEX',
     isLocked: false, // Not locked yet as Advance payment is pending/not paid!
-    contractorName: 'Kumar Workspace',
+    contractorName: 'Lifehut Workspace',
     contractorPhone: '+91 99911 22334',
     contractorEmail: 'hello@lifehut.in',
   }

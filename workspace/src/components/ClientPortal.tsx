@@ -62,6 +62,7 @@ export default function ClientPortal({
   onUpdateProjects,
   onSendMessage,
   selectedProjId,
+  userProfile,
   onSelectProject
 }: ClientPortalProps) {
   const [clientCode, setClientCode] = useState('');
@@ -381,7 +382,6 @@ export default function ClientPortal({
       </div>
     );
   }
-
   return (
     <div className="space-y-5 relative" id="client-portal-dashboard">
       
@@ -516,16 +516,17 @@ export default function ClientPortal({
               </span>
               <div className="space-y-1 bg-slate-50/50 dark:bg-slate-800/30 p-2 rounded-lg border border-slate-100 dark:border-slate-800">
                 <p className="font-bold text-[12px] text-slate-800 dark:text-slate-200">
-                  {activeProject.contractorName || 'Kumar Workspace'}
+                  {userProfile?.companyName}
                 </p>
                 <p className="flex items-center gap-1.5 text-slate-500 dark:text-slate-400">
                   <Phone className="w-3 h-3" /> 
-                  <span>{activeProject.contractorPhone || '+91 99911 22334'}</span>
+                  <span>{userProfile?.mobile}</span>
                 </p>
                 <p className="flex items-center gap-1.5 truncate text-slate-500 dark:text-slate-400">
                   <Mail className="w-3 h-3" /> 
-                  <span>{activeProject.contractorEmail || 'hello@lifehut.in'}</span>
+                  {userProfile?.email}
                 </p>
+            
               </div>
             </div>
 
@@ -763,7 +764,7 @@ export default function ClientPortal({
                   stages={projectStages} 
                   onPayStage={handleSimulatePayment}
                   isClientView={true}
-                  contractorName={activeProject.contractorName || 'Kumar Workspace'}
+                  contractorName={activeProject.contractorName || 'Workspace'}
                 />
               </div>
             </div>

@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import TodaySummary from './dashboard/TodaySummary';
 import RecentActivity from './dashboard/RecentActivity';
-
+import { uploadImage } from '../services/storageService';
 import { Project, PaymentStage, ExtraWork, Expense, DailyProgress, ProjectDocument, ChatMessage } from '../types';
 import ChatComponent from './ChatComponent';
 import PaymentStatementSheet, { formatIndianNoCurrency } from './PaymentStatementSheet';
@@ -101,7 +101,7 @@ export default function ContractorPortal({
   onSendMessage,
   selectedProjId,
   onSelectProject,
-  ownerName = 'Kumar'
+  ownerName = user?.displayName || user?.email?.split('@')[0] || 'Contractor'
 }: ContractorPortalProps) {
   // Navigation State
   const [activeTab, setActiveTab] = useState<'dashboard' | 'projects' | 'milestones' | 'expenses' | 'extraworks' | 'progress' | 'documents' | 'chat' | 'reports'>('dashboard');
@@ -232,7 +232,7 @@ export default function ContractorPortal({
       status: 'Active',
       clientCode: code,
       isLocked: false,
-      contractorName: ownerName || 'Kumar Workspace',
+      contractorName: ownerName || 'Workspace',
       contractorPhone: '+91 99911 22334',
       contractorEmail: 'hello@lifehut.in'
     };
@@ -528,15 +528,20 @@ export default function ContractorPortal({
     if (!selectedProjId) return;
 
     setIsCompressingPhotos(true);
-    let finalPhotos: string[] = [];
-    try {
-      finalPhotos = await Promise.all(progPhotoFiles.map(f => compressImageToBase64(f)));
-    } catch (err) {
-      alert('One or more photos failed to process. Please try smaller images.');
-      setIsCompressingPhotos(false);
-      return;
-    }
-    setIsCompressingPhotos(false);
+let finalPhotos: string[] = [];
+
+try {
+  finalPhotos = await Promise.all(
+    progPhotoFiles.map(file => uploadImage(file, 'progress'))
+  );
+} catch (err) {
+  console.error(err);
+  alert('Photo upload failed. Please try again.');
+  setIsCompressingPhotos(false);
+  return;
+}
+
+setIsCompressingPhotos(false);
 
     const progItem: DailyProgress = {
       id: `prog_${Date.now()}`,
@@ -614,7 +619,7 @@ export default function ContractorPortal({
       if (s.id === stageId) {
         // Send a chat message notification automatically
         const formattedAmount = s.payableAmount.toLocaleString('en-IN');
-        const msg = `📢 PAYMENT REQUEST:\nContractor Kumar has requested payment of ₹${formattedAmount} for milestone '${s.stageName}'.\nDue Date: ${s.dueDate ? new Date(s.dueDate).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' }) : 'TBD'}.\nPlease review and verify payment under the Milestones tab.`;
+        const msg = `📢 PAYMENT REQUEST:\n ${userProfile?.ownerName} has requested payment of ₹${formattedAmount} for milestone '${s.stageName}'.\nDue Date: ${s.dueDate ? new Date(s.dueDate).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' }) : 'TBD'}.\nPlease review and verify payment under the Milestones tab.`;
         onSendMessage(msg);
         return {
           ...s,
@@ -1354,7 +1359,7 @@ export default function ContractorPortal({
                     project={activeProj} 
                     stages={activeStages} 
                     isClientView={false}
-                    contractorName={ownerName || 'Kumar'}
+                    contractorName={ownerName || 'Contractor'}
                   />
                 </div>
               )}

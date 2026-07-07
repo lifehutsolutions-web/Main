@@ -13,6 +13,7 @@ import { Project, PaymentStage, ExtraWork, Expense, DailyProgress, ProjectDocume
 import ContractorPortal from './components/ContractorPortal';
 import ClientPortal from './components/ClientPortal';
 import DbManager from './components/DbManager';
+import ProfileSetupModal from "./components/ProfileSetupModal";
 import { HardHat, User, ArrowRight, Building2, ShieldCheck, ChevronRight } from 'lucide-react';
 import { 
   auth, 
@@ -66,24 +67,51 @@ export default function App() {
       setSelectedProjId(data.projects[0].id);
     }
   };
+  const [isDemoMode, setIsDemoMode] = useState(false);
 
   // 1. Firebase Auth listener
   useEffect(() => {
     testConnection();
     const unsubscribe = onAuthStateChanged(auth, async (firebaseUser) => {
-      if (!firebaseUser) {
-        // Automatically sign in anonymously to ensure seamless client cloud connection
-        try {
-          const anonUser = await signInAnon();
-          setUser(anonUser);
-        } catch (err) {
-          console.warn("Auto anonymous sign-in failed, falling back to local:", err);
-          loadLocalDatabase();
-          setAuthLoading(false);
-        }
-      } else {
+    if (!firebaseUser) {
+  loadLocalDatabase();
+  setUser(null);
+  setAuthLoading(false);
+} else {
         setDb(null); // Clear any local or stale DB when a real user logs in, awaiting cloud data
         setUser(firebaseUser);
+        setProfileForm(prev => ({
+  ...prev,
+  ownerName: firebaseUser.displayName || "",
+  email: firebaseUser.email || "",
+}));
+        const userRef = doc(fdb, "users", firebaseUser.uid);
+const userSnap = await getDoc(userRef);
+
+if (!userSnap.exists()) {
+  setShowProfileSetup(true);
+} else {
+  const data = userSnap.data();
+
+  setUserProfile(data);
+
+  setProfileForm({
+    companyName: data.companyName || "",
+    ownerName: data.ownerName || firebaseUser.displayName || "",
+    mobile: data.mobile || "",
+    email: data.email || firebaseUser.email || "",
+    gstNumber: data.gstNumber || "",
+    address: data.address || "",
+    city: data.city || "",
+    state: data.state || "",
+    pincode: data.pincode || "",
+  });
+
+  if (!data.companyName || !data.mobile) {
+    setShowProfileSetup(true);
+  }
+}
+        console.log("Logged in UID:", firebaseUser.uid);
         setAuthLoading(false);
         // Default anonymous users to Client role, Google accounts to Contractor
         if (firebaseUser.isAnonymous) {
@@ -96,6 +124,22 @@ export default function App() {
     return () => unsubscribe();
   }, []);
 
+  const [showProfileSetup, setShowProfileSetup] = useState(false);
+
+const [userProfile, setUserProfile] = useState<any>(null);
+const [profileForm, setProfileForm] = useState({
+  companyName: "",
+  ownerName: "",
+  mobile: "",
+  email: "",
+  gstNumber: "",
+  address: "",
+  city: "",
+  state: "",
+  pincode: "",
+});
+
+
   // 2. Real-time Projects Listener (when signed in)
   useEffect(() => {
     if (!user) return;
@@ -103,13 +147,16 @@ export default function App() {
     // Filter projects where user.uid is in memberUids to enforce secure scoping
     const q = query(collection(fdb, 'projects'), where('memberUids', 'array-contains', user.uid));
     const unsubProjects = onSnapshot(q, async (snapshot) => {
+      console.log("Projects found:", snapshot.size);
+      
       const fetchedProjects: Project[] = [];
       snapshot.forEach((doc) => {
         fetchedProjects.push(doc.data() as Project);
       });
+      console.log("Firestore Projects:", fetchedProjects);
 
       // Seeding / migration to Cloud DB if Firestore is fully empty for this user
-      if (fetchedProjects.length === 0) {
+      if (false && fetchedProjects.length === 0) {
         initDB();
         const localData = fetchAll();
         if (localData.projects.length > 0) {
@@ -528,7 +575,7 @@ export default function App() {
 
             <div className="my-10 space-y-4">
               <span className="inline-block text-[10px] tracking-widest font-bold uppercase px-2.5 py-1 rounded-md" style={{ background: 'rgba(230,126,34,0.18)', color: '#F5A961' }}>
-                Construction ERP
+                Project Management ERP
               </span>
               <h1 className="text-2xl md:text-[28px] font-display font-semibold tracking-tight text-white leading-snug">
                 Where projects, clients and teams work together
@@ -545,7 +592,7 @@ export default function App() {
               </div>
               <div className="flex items-center gap-2">
                 <Building2 className="w-3.5 h-3.5" style={{ color: '#5DCAA5' }} />
-                <span>Built for real construction workflows</span>
+                <span>Built for real Project workflows</span>
               </div>
             </div>
           </div>
@@ -700,6 +747,44 @@ export default function App() {
                   </p>
                 </div>
               </button>
+              <button
+  onClick={() => {
+  setIsDemoMode(true);
+  loadLocalDatabase();
+  setActiveRole('Contractor');
+}}
+  className="w-full p-4 text-left rounded-xl transition-all flex items-start gap-3.5 group"
+  style={{ border: '1px solid var(--lh-border)' }}
+  onMouseEnter={(e) => { e.currentTarget.style.borderColor = '#22c55e'; }}
+  onMouseLeave={(e) => { e.currentTarget.style.borderColor = 'var(--lh-border)'; }}
+>
+  <div
+    className="p-2.5 rounded-lg flex-shrink-0"
+    style={{ background: '#ecfdf5', color: '#16a34a' }}
+  >
+    🎬
+  </div>
+
+  <div className="space-y-0.5 flex-1">
+    <div className="flex items-center gap-2">
+      <span
+        className="font-display font-semibold text-[13px]"
+        style={{ color: 'var(--lh-text-primary)' }}
+      >
+        Demo workspace
+      </span>
+
+      <span className="lh-badge">Demo</span>
+    </div>
+
+    <p
+      className="text-[11.5px] leading-normal"
+      style={{ color: 'var(--lh-text-secondary)' }}
+    >
+      Explore Lifehut with sample projects. No sign-in required.
+    </p>
+  </div>
+</button>
 
             </div>
 
@@ -712,10 +797,50 @@ export default function App() {
         </div>
       </div>
     );
+    
   }
+  const saveProfile = async () => {
+  if (!user) return;
+
+  if (!profileForm.companyName.trim()) {
+    alert("Please enter Company Name");
+    return;
+  }
+
+  if (!profileForm.mobile.trim()) {
+    alert("Please enter Mobile Number");
+    return;
+  }
+
+  try {
+    await setDoc(
+      doc(fdb, "users", user.uid),
+      {
+        ...profileForm,
+        updatedAt: new Date().toISOString(),
+      },
+      { merge: true }
+    );
+
+    setUserProfile(profileForm);
+    setShowProfileSetup(false);
+
+    alert("Profile saved successfully.");
+  } catch (err) {
+    console.error(err);
+    alert("Failed to save profile.");
+  }
+};
 
   // 3. MAIN LIVE PORTALS INTERFACE WITH REAL-TIME SYNC
   return (
+    <>
+   <ProfileSetupModal
+  open={showProfileSetup}
+  profileForm={profileForm}
+  setProfileForm={setProfileForm}
+  onSave={saveProfile}
+/>
     <div className="min-h-screen font-sans antialiased" style={{ background: 'var(--lh-surface-sunken)' }} id="main-app-container">
       
       {/* 1. TOP HEADER BAR */}
@@ -729,16 +854,11 @@ export default function App() {
               </div>
               <div>
                 <h1 className="text-[13px] font-semibold leading-none" style={{ color: 'var(--lh-text-primary)' }}>Lifehut Workspace</h1>
-                <p className="text-[10px] font-medium mt-0.5" style={{ color: 'var(--lh-text-tertiary)' }}>Construction ERP</p>
+                <p className="text-[10px] font-medium mt-0.5" style={{ color: 'var(--lh-text-tertiary)' }}>Project Management ERP</p>
               </div>
             </div>
             
-            <button
-              onClick={() => setViewingMode('role_select')}
-              className="md:hidden lh-btn lh-btn-ghost lh-btn-sm"
-            >
-              Exit
-            </button>
+            
           </div>
 
           <div className="flex flex-wrap items-center gap-2.5 justify-between md:justify-end">
@@ -836,7 +956,7 @@ export default function App() {
             onSendMessage={handleSendMessage}
             selectedProjId={selectedProjId}
             onSelectProject={setSelectedProjId}
-            ownerName={user?.displayName || 'Kumar'}
+            ownerName={userProfile?.ownerName || user?.displayName || "Contractor"}
           />
         ) : (
           <ClientPortal
@@ -852,6 +972,7 @@ export default function App() {
             onSendMessage={handleSendMessage}
             selectedProjId={selectedProjId}
             onSelectProject={setSelectedProjId}
+            userProfile={userProfile}
           />
         )}
 
@@ -873,5 +994,6 @@ export default function App() {
       </footer>
 
     </div>
+    </>
   );
 }

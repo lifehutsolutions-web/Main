@@ -1,6 +1,6 @@
 # Lifehut Workspace
 
-A modern, highly polished, zero-trust Construction & Project Management Platform engineered for Contractors and Clients. Built with React, Vite, Tailwind CSS, and Firebase.
+A modern, highly polished, zero-trust Project Management Platform engineered for Contractors and Clients. Built with React, Vite, Tailwind CSS, and Firebase.
 
 ## 🔐 Zero-Trust Security Architecture
 
