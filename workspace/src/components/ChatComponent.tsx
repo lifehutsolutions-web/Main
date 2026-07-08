@@ -6,6 +6,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { Send, User, HardHat, Paperclip, X, FileText, Image, Download } from 'lucide-react';
 import { ChatMessage } from '../types';
+import { uploadImage } from '../services/storageService';
 
 interface ChatComponentProps {
   projectId: string;
@@ -27,29 +28,29 @@ export default function ChatComponent({ projectId, sender, messages, onSendMessa
     chatEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [filteredMessages]);
 
-  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
+  const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+  const file = e.target.files?.[0];
+  if (!file) return;
 
+  try {
     setIsReadingFile(true);
-    const reader = new FileReader();
-    reader.onload = () => {
-      const result = reader.result as string;
-      setSelectedFile({
-        name: file.name,
-        type: file.type,
-        data: result,
-      });
-      setIsReadingFile(false);
-    };
-    reader.onerror = () => {
-      console.error("Failed to read file in chat");
-      setIsReadingFile(false);
-    };
-    reader.readAsDataURL(file);
-    // Reset file input so the same file can be selected again if needed
+
+    const publicUrl = await uploadImage(file, 'chat');
+
+    setSelectedFile({
+      name: file.name,
+      type: file.type,
+      data: publicUrl,
+    });
+
+  } catch (err) {
+    console.error("Chat upload failed:", err);
+    alert("Image upload failed.");
+  } finally {
+    setIsReadingFile(false);
     e.target.value = '';
-  };
+  }
+};
 
   const handleRemoveFile = () => {
     setSelectedFile(null);

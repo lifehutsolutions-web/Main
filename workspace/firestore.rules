@@ -149,8 +149,8 @@ service cloud.firestore {
       allow update: if isSignedIn() && isValidId(codeId) && (
         // Allow contractor to update
         (request.auth.token.firebase.sign_in_provider != 'anonymous' && incoming().projectId == existing().projectId && isProjectContractor(existing().projectId)) ||
-        // Allow client to redeem if not already redeemed
-        (existing().redeemed == false && incoming().redeemed == true && incoming().redeemedBy == request.auth.uid && incoming().projectId == existing().projectId)
+        // Allow client to redeem or re-claim with valid auth.uid to support multiple devices & refreshes
+        (incoming().redeemed == true && incoming().redeemedBy == request.auth.uid && incoming().projectId == existing().projectId)
       );
       allow delete: if isSignedIn() && request.auth.token.firebase.sign_in_provider != 'anonymous' && isValidId(codeId) &&
         isProjectContractor(existing().projectId);

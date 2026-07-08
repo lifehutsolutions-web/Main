@@ -31,7 +31,7 @@ import { Project, PaymentStage, ExtraWork, Expense, DailyProgress, ProjectDocume
 
 // Initialize Firebase
 const app = initializeApp(firebaseConfig);
-export const db = getFirestore(app, firebaseConfig.firestoreDatabaseId);
+export const db = getFirestore(app);
 export const auth = getAuth(app);
 export const googleProvider = new GoogleAuthProvider();
 
@@ -108,7 +108,7 @@ export async function signInGoogle() {
 // Sign In Anonymously
 export async function signInAnon() {
   try {
-   // const result = await signInAnonymously(auth);
+    const result = await signInAnonymously(auth);
     return result.user;
   } catch (error) {
     console.warn('Anonymous Sign-In Error:', error);

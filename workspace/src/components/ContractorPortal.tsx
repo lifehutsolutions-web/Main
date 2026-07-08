@@ -5,6 +5,8 @@ import { uploadImage } from '../services/storageService';
 import { Project, PaymentStage, ExtraWork, Expense, DailyProgress, ProjectDocument, ChatMessage } from '../types';
 import ChatComponent from './ChatComponent';
 import PaymentStatementSheet, { formatIndianNoCurrency } from './PaymentStatementSheet';
+import { useAuth } from '../context/AuthContext';
+import SettingsPage from './SettingsPage';
 import { 
   Building2, 
   Plus, 
@@ -36,7 +38,8 @@ import {
   BarChart3,
   MoreHorizontal,
   Pencil,
-  Bell
+  Bell,
+  Settings
 } from 'lucide-react';
 
 interface ContractorPortalProps {
@@ -101,10 +104,13 @@ export default function ContractorPortal({
   onSendMessage,
   selectedProjId,
   onSelectProject,
-  ownerName = user?.displayName || user?.email?.split('@')[0] || 'Contractor'
+  ownerName
 }: ContractorPortalProps) {
+  const { user, userProfile, permissionGuard } = useAuth();
+  const displayOwnerName = ownerName || userProfile?.ownerName || user?.displayName || user?.email?.split('@')[0] || 'Contractor';
+
   // Navigation State
-  const [activeTab, setActiveTab] = useState<'dashboard' | 'projects' | 'milestones' | 'expenses' | 'extraworks' | 'progress' | 'documents' | 'chat' | 'reports'>('dashboard');
+  const [activeTab, setActiveTab] = useState<'dashboard' | 'projects' | 'milestones' | 'expenses' | 'extraworks' | 'progress' | 'documents' | 'chat' | 'reports' | 'settings'>('dashboard');
 
   // Projects tab sub-view
   const [projectsSubTab, setProjectsSubTab] = useState<'ongoing' | 'completed'>('ongoing');
@@ -232,9 +238,7 @@ export default function ContractorPortal({
       status: 'Active',
       clientCode: code,
       isLocked: false,
-      contractorName: ownerName || 'Workspace',
-      contractorPhone: '+91 99911 22334',
-      contractorEmail: 'hello@lifehut.in'
+      contractorUid: user?.uid
     };
 
     onUpdateProjects([...projects, freshProject]);
@@ -619,7 +623,7 @@ setIsCompressingPhotos(false);
       if (s.id === stageId) {
         // Send a chat message notification automatically
         const formattedAmount = s.payableAmount.toLocaleString('en-IN');
-        const msg = `📢 PAYMENT REQUEST:\n ${userProfile?.ownerName} has requested payment of ₹${formattedAmount} for milestone '${s.stageName}'.\nDue Date: ${s.dueDate ? new Date(s.dueDate).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' }) : 'TBD'}.\nPlease review and verify payment under the Milestones tab.`;
+        const msg = `📢 PAYMENT REQUEST:\n ${displayOwnerName} has requested payment of ₹${formattedAmount} for milestone '${s.stageName}'.\nDue Date: ${s.dueDate ? new Date(s.dueDate).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' }) : 'TBD'}.\nPlease review and verify payment under the Milestones tab.`;
         onSendMessage(msg);
         return {
           ...s,
@@ -661,7 +665,7 @@ setIsCompressingPhotos(false);
 
   // Tabs structure configuration
   interface NavigationItem {
-    id: 'dashboard' | 'projects' | 'milestones' | 'expenses' | 'extraworks' | 'progress' | 'documents' | 'chat' | 'reports';
+    id: 'dashboard' | 'projects' | 'milestones' | 'expenses' | 'extraworks' | 'progress' | 'documents' | 'chat' | 'reports' | 'settings';
     label: string;
     icon: any;
     badge?: number | string;
@@ -677,6 +681,7 @@ setIsCompressingPhotos(false);
     { id: 'progress', label: 'Site updates', icon: Camera, badge: activeProgress.length },
     { id: 'documents', label: 'Documents', icon: FolderOpen, badge: activeDocs.length },
     { id: 'chat', label: 'Chat', icon: MessageSquare, badge: messages.length ? 'Live' : undefined },
+    { id: 'settings', label: 'Settings', icon: Settings },
   ];
 
   // Compute date range boundaries for Overview filter
@@ -880,7 +885,7 @@ setIsCompressingPhotos(false);
             <div className="space-y-5">
 
               <TodaySummary
-                ownerName={ownerName}
+                ownerName={displayOwnerName}
                 activeProjects={ovOngoing}
                 paymentsDueToday={paymentsDueToday}
                 collectedThisMonth={collectedThisMonth}
@@ -1123,7 +1128,11 @@ setIsCompressingPhotos(false);
                   ) : completedDetailId ? (
                     /* DRILL-DOWN DETAIL VIEW */
                     (() => {
-                      const cp = projects.find(p => p.id === completedDetailId)!;
+                      const cp = projects.find(p => p.id === completedDetailId);
+                      if (!cp) {
+                        setTimeout(() => setCompletedDetailId(null), 0);
+                        return null;
+                      }
                       const cpStages = stages.filter(s => s.projectId === cp.id);
                       const cpExpenses = expenses.filter(e => e.projectId === cp.id);
                       const cpExtra = extraWorks.filter(e => e.projectId === cp.id && e.approvalStatus === 'Approved');
@@ -1359,7 +1368,7 @@ setIsCompressingPhotos(false);
                     project={activeProj} 
                     stages={activeStages} 
                     isClientView={false}
-                    contractorName={ownerName || 'Contractor'}
+                    contractorName={displayOwnerName}
                   />
                 </div>
               )}
@@ -2075,6 +2084,10 @@ setIsCompressingPhotos(false);
               </div>
             );
           })()}
+
+          {activeTab === 'settings' && (
+            <SettingsPage />
+          )}
 
         </div>
 

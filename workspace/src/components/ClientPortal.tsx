@@ -5,6 +5,7 @@ import PaymentStatementSheet from './PaymentStatementSheet';
 import RecentActivity from './dashboard/RecentActivity';
 import { doc, getDoc, setDoc, updateDoc, arrayUnion } from 'firebase/firestore';
 import { db as fdb, auth, signInAnon } from '../firebase';
+import { useAuth } from '../context/AuthContext';
 import { 
   Building2, 
   MapPin, 
@@ -62,7 +63,6 @@ export default function ClientPortal({
   onUpdateProjects,
   onSendMessage,
   selectedProjId,
-  userProfile,
   onSelectProject
 }: ClientPortalProps) {
   const [clientCode, setClientCode] = useState('');
@@ -90,56 +90,10 @@ export default function ClientPortal({
 
   const [isLoggingIn, setIsLoggingIn] = useState(false);
 
-  // Synchronize membership on startup if clientCode is saved in localStorage
-  React.useEffect(() => {
-    const syncSavedClient = async () => {
-      const savedCode = localStorage.getItem('metrobuild_client_code');
-      if (!savedCode) return;
-      try {
-        let currentUser = auth.currentUser;
-        if (!currentUser) {
-          currentUser = await signInAnon();
-        }
-        if (!currentUser) return;
+  // Consume Auth Context
+  const { loginAsClient, user, userRole } = useAuth();
 
-        const codeKey = savedCode.trim().toUpperCase();
-        const lookupRef = doc(fdb, 'clientCodes', codeKey);
-        const lookupSnap = await getDoc(lookupRef);
-        if (lookupSnap.exists()) {
-          const codeData = lookupSnap.data();
-          const projId = codeData.projectId;
-          
-          if (!codeData.redeemed) {
-            await updateDoc(lookupRef, {
-              redeemed: true,
-              redeemedBy: currentUser.uid
-            }).catch(e => console.log("Code redemption error: ", e));
-          } else if (codeData.redeemedBy !== currentUser.uid) {
-            console.warn("Client code was redeemed by a different user. Resetting saved code.");
-            localStorage.removeItem('metrobuild_client_code');
-            return;
-          }
-
-          // Securely register client as member
-          await updateDoc(doc(fdb, 'projects', projId), {
-            memberUids: arrayUnion(currentUser.uid)
-          }).catch((err) => console.log("Already registered or updated in project:", err));
-
-          await setDoc(doc(fdb, `projects/${projId}/members`, currentUser.uid), {
-            role: 'Client',
-            uid: currentUser.uid
-          }).catch((err) => console.log("Already registered member record:", err));
-
-          onSelectProject(projId);
-        }
-      } catch (err) {
-        console.warn("Auto-sync client membership error:", err);
-      }
-    };
-    syncSavedClient();
-  }, [onSelectProject]);
-
-  // Active Project for the Client
+  // Active Project for the Client (Declared early to prevent block-scope hoisting issues)
   const activeProject = projects.find(p => {
     const saved = localStorage.getItem('metrobuild_client_code');
     if (saved) {
@@ -148,6 +102,48 @@ export default function ClientPortal({
     return p.id === selectedProjId;
   }) || projects[0];
 
+  // Dynamic contractor details loader
+  const [contractorProfile, setContractorProfile] = useState<{
+    ownerName?: string;
+    mobile?: string;
+    email?: string;
+    companyName?: string;
+  } | null>(null);
+
+  React.useEffect(() => {
+    const fetchContractor = async () => {
+      if (activeProject?.contractorUid) {
+        try {
+          const userSnap = await getDoc(doc(fdb, 'users', activeProject.contractorUid));
+          if (userSnap.exists()) {
+            const data = userSnap.data();
+            setContractorProfile({
+              ownerName: data.ownerName || data.companyName,
+              mobile: data.mobile,
+              email: data.email,
+              companyName: data.companyName
+            });
+          } else {
+            setContractorProfile(null);
+          }
+        } catch (e) {
+          console.warn("Failed to load contractor profile dynamically:", e);
+          setContractorProfile(null);
+        }
+      } else {
+        setContractorProfile(null);
+      }
+    };
+    fetchContractor();
+  }, [activeProject?.contractorUid]);
+
+  React.useEffect(() => {
+    const savedCode = localStorage.getItem('metrobuild_client_code');
+    if (savedCode && userRole === 'Client') {
+      setIsLoggedIn(true);
+    }
+  }, [userRole]);
+
   const handleCodeLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!clientCode.trim()) return;
@@ -155,75 +151,26 @@ export default function ClientPortal({
     setLoginError('');
 
     try {
-      // 1. Ensure authenticated (anonymous sign-in fallback)
-      let currentUser = auth.currentUser;
-      if (!currentUser) {
-        currentUser = await signInAnon();
-      }
-      if (!currentUser) {
-        throw new Error("Unable to authenticate with secure server.");
-      }
-
-      // 2. Lookup Project ID from client code
-      const codeKey = clientCode.trim().toUpperCase();
-      const lookupRef = doc(fdb, 'clientCodes', codeKey);
-      const lookupSnap = await getDoc(lookupRef);
-
-      if (!lookupSnap.exists()) {
-        setLoginError('Invalid client code. Try "CLIENT-GREEN" or "CLIENT-APEX".');
-        setIsLoggingIn(false);
-        return;
-      }
-
-      const codeData = lookupSnap.data();
-      const projectId = codeData.projectId;
-
-      // Check if it's already redeemed and we aren't the ones who redeemed it
-      if (codeData.redeemed && codeData.redeemedBy !== currentUser.uid) {
-        setLoginError('This client code has already been redeemed by another device/user.');
-        setIsLoggingIn(false);
-        return;
-      }
-
-      // If not redeemed, redeem it!
-      if (!codeData.redeemed) {
-        await updateDoc(lookupRef, {
-          redeemed: true,
-          redeemedBy: currentUser.uid
-        });
-      }
-
-      // 3. Register client as project member securely on the server
-      await updateDoc(doc(fdb, 'projects', projectId), {
-        memberUids: arrayUnion(currentUser.uid)
-      });
-
-      await setDoc(doc(fdb, `projects/${projectId}/members`, currentUser.uid), {
-        role: 'Client',
-        uid: currentUser.uid
-      });
-
-      // 4. Save and select project
-      localStorage.setItem('metrobuild_client_code', codeKey);
+      const projectId = await loginAsClient(clientCode);
       onSelectProject(projectId);
       setIsLoggedIn(true);
       showToast('Successfully authenticated and connected securely!', 'success');
     } catch (err: any) {
       console.error("Secure client login failed:", err);
-      setLoginError('Authentication failed. Please verify your connection or client code.');
+      setLoginError(err.message || 'Authentication failed. Please verify your connection or client code.');
     } finally {
       setIsLoggingIn(false);
     }
   };
 
   // Filter items for the selected project
-  const projectStages = stages.filter(s => s.projectId === activeProject.id);
-  const projectExtraWorks = extraWorks.filter(e => e.projectId === activeProject.id);
-  const projectProgress = progress.filter(p => p.projectId === activeProject.id);
-  const projectDocs = documents.filter(d => d.projectId === activeProject.id);
+  const projectStages = activeProject ? stages.filter(s => s.projectId === activeProject.id) : [];
+  const projectExtraWorks = activeProject ? extraWorks.filter(e => e.projectId === activeProject.id) : [];
+  const projectProgress = activeProject ? progress.filter(p => p.projectId === activeProject.id) : [];
+  const projectDocs = activeProject ? documents.filter(d => d.projectId === activeProject.id) : [];
 
   // Financial status
-  const originalContractValue = activeProject.contractValue;
+  const originalContractValue = activeProject ? activeProject.contractValue : 0;
   const approvedExtraValue = projectExtraWorks
     .filter(e => e.approvalStatus === 'Approved')
     .reduce((sum, e) => sum + e.amount, 0);
@@ -290,7 +237,7 @@ export default function ClientPortal({
     // Auto update status on lock if Advance stage goes Paid
     if (stageId.includes('advance') || stageId.includes('stg_advance') || (updatedStage && updatedStage.stageName.toLowerCase().includes('advance'))) {
       const updatedProjs = projects.map(p => {
-        if (p.id === activeProject.id) {
+        if (activeProject && p.id === activeProject.id) {
           return { ...p, isLocked: true };
         }
         return p;
@@ -516,15 +463,15 @@ export default function ClientPortal({
               </span>
               <div className="space-y-1 bg-slate-50/50 dark:bg-slate-800/30 p-2 rounded-lg border border-slate-100 dark:border-slate-800">
                 <p className="font-bold text-[12px] text-slate-800 dark:text-slate-200">
-                  {userProfile?.companyName}
+                  {contractorProfile?.companyName || activeProject?.contractorName || 'Workspace'}
                 </p>
                 <p className="flex items-center gap-1.5 text-slate-500 dark:text-slate-400">
                   <Phone className="w-3 h-3" /> 
-                  <span>{userProfile?.mobile}</span>
+                  <span>{contractorProfile?.mobile || activeProject?.contractorPhone || 'N/A'}</span>
                 </p>
                 <p className="flex items-center gap-1.5 truncate text-slate-500 dark:text-slate-400">
                   <Mail className="w-3 h-3" /> 
-                  {userProfile?.email}
+                  {contractorProfile?.email || activeProject?.contractorEmail || 'N/A'}
                 </p>
             
               </div>
@@ -764,7 +711,7 @@ export default function ClientPortal({
                   stages={projectStages} 
                   onPayStage={handleSimulatePayment}
                   isClientView={true}
-                  contractorName={activeProject.contractorName || 'Workspace'}
+                  contractorName={contractorProfile?.companyName || contractorProfile?.ownerName || activeProject.contractorName || 'Workspace'}
                 />
               </div>
             </div>

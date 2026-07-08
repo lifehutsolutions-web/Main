@@ -4,6 +4,7 @@
  */
 
 import { useState, useEffect } from 'react';
+import { useAuth } from './context/AuthContext';
 import { 
   fetchAll, 
   saveAll, 
@@ -14,7 +15,7 @@ import ContractorPortal from './components/ContractorPortal';
 import ClientPortal from './components/ClientPortal';
 import DbManager from './components/DbManager';
 import ProfileSetupModal from "./components/ProfileSetupModal";
-import { HardHat, User, ArrowRight, Building2, ShieldCheck, ChevronRight } from 'lucide-react';
+import { HardHat, User, ArrowRight, Building2, ShieldCheck, ChevronRight, AlertTriangle, ExternalLink } from 'lucide-react';
 import { 
   auth, 
   db as fdb, 
@@ -37,6 +38,22 @@ import {
 } from 'firebase/firestore';
 
 export default function App() {
+  // Consume central Auth Context
+  const { 
+    user, 
+    userRole, 
+    userProfile, 
+    isDemoMode, 
+    authLoading, 
+    selectedProjId, 
+    setSelectedProjId, 
+    loginAsContractor, 
+    loginAsTestContractor,
+    logout, 
+    startDemoMode,
+    updateUserProfile
+  } = useAuth();
+
   // DB States
   const [db, setDb] = useState<{
     projects: Project[];
@@ -50,94 +67,125 @@ export default function App() {
 
   // Active workspace profile
   const [activeRole, setActiveRole] = useState<'Contractor' | 'Client'>('Contractor');
-  
-  // Selected project ID
-  const [selectedProjId, setSelectedProjId] = useState<string>('proj_green_villa');
+  const [authError, setAuthError] = useState<string | null>(null);
 
-  // Firebase Auth user state
-  const [user, setUser] = useState<FirebaseUser | null>(null);
-  const [authLoading, setAuthLoading] = useState(true);
+  const renderAuthError = () => {
+    if (!authError) return null;
+
+    const isUnauthorizedDomain = authError.toLowerCase().includes('unauthorized-domain');
+    const currentHostname = window.location.hostname;
+
+    return (
+      <div className="p-4 rounded-xl text-left bg-red-50/90 dark:bg-red-950/20 border border-red-200 dark:border-red-900/50 space-y-3" style={{ fontSize: '12px' }}>
+        <div className="flex items-start gap-2.5">
+          <AlertTriangle className="w-4 h-4 text-red-500 flex-shrink-0 mt-0.5" />
+          <div className="space-y-1">
+            {isUnauthorizedDomain ? (
+              <>
+                <p className="font-semibold text-red-800 dark:text-red-300">Firebase Unauthorized Domain</p>
+                <p className="text-red-600 dark:text-red-400 leading-relaxed text-[11.5px]">
+                  To enable Google Sign-In on this domain, please add <code className="bg-red-100 dark:bg-red-900/50 px-1 py-0.5 rounded font-mono text-[11px] font-semibold text-red-900 dark:text-red-200">{currentHostname}</code> to your <strong>Firebase Console &rarr; Authentication &rarr; Settings &rarr; Authorized Domains</strong>.
+                </p>
+              </>
+            ) : (
+              <>
+                <p className="font-semibold text-red-800 dark:text-red-300">Authentication Error</p>
+                <p className="text-red-600 dark:text-red-400 leading-relaxed text-[11.5px]">
+                  {authError}
+                </p>
+              </>
+            )}
+          </div>
+        </div>
+        
+        <div className="pt-2 border-t border-red-100 dark:border-red-900/30 flex flex-col sm:flex-row gap-2">
+          <button 
+            onClick={async () => {
+              setAuthError(null);
+              try {
+                await loginAsTestContractor();
+                setViewingMode('portal');
+              } catch (err) {
+                setAuthError(err instanceof Error ? err.message : String(err));
+              }
+            }}
+            className="px-3 py-1.5 rounded-lg text-white font-medium bg-red-600 hover:bg-red-700 transition-colors text-center text-[11px]"
+          >
+            Iframe-Safe Contractor Login
+          </button>
+          <a 
+            href={window.location.href} 
+            target="_blank" 
+            rel="noopener noreferrer"
+            className="px-3 py-1.5 rounded-lg font-medium border border-slate-200 dark:border-slate-800 hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors text-center text-[11px] flex items-center justify-center gap-1"
+            style={{ color: 'var(--lh-text-primary)' }}
+          >
+            <ExternalLink className="w-3 h-3" />
+            Open in New Tab
+          </a>
+        </div>
+      </div>
+    );
+  };
 
   // Load / Sync fallback
   const loadLocalDatabase = () => {
     initDB();
     const data = fetchAll();
     setDb(data);
-    if (data.projects.length > 0 && !data.projects.some(p => p.id === selectedProjId)) {
+    if (data.projects && data.projects.length > 0 && !data.projects.some(p => p && p.id === selectedProjId)) {
       setSelectedProjId(data.projects[0].id);
     }
   };
-  const [isDemoMode, setIsDemoMode] = useState(false);
 
-  // 1. Firebase Auth listener
+  // 1. Local fallback database loader (for Demo/Sandbox/Offline)
   useEffect(() => {
-    testConnection();
-    const unsubscribe = onAuthStateChanged(auth, async (firebaseUser) => {
-    if (!firebaseUser) {
-  loadLocalDatabase();
-  setUser(null);
-  setAuthLoading(false);
-} else {
-        setDb(null); // Clear any local or stale DB when a real user logs in, awaiting cloud data
-        setUser(firebaseUser);
-        setProfileForm(prev => ({
-  ...prev,
-  ownerName: firebaseUser.displayName || "",
-  email: firebaseUser.email || "",
-}));
-        const userRef = doc(fdb, "users", firebaseUser.uid);
-const userSnap = await getDoc(userRef);
+    if (isDemoMode || !user) {
+      loadLocalDatabase();
+    }
+  }, [isDemoMode, user]);
 
-if (!userSnap.exists()) {
-  setShowProfileSetup(true);
-} else {
-  const data = userSnap.data();
-
-  setUserProfile(data);
-
-  setProfileForm({
-    companyName: data.companyName || "",
-    ownerName: data.ownerName || firebaseUser.displayName || "",
-    mobile: data.mobile || "",
-    email: data.email || firebaseUser.email || "",
-    gstNumber: data.gstNumber || "",
-    address: data.address || "",
-    city: data.city || "",
-    state: data.state || "",
-    pincode: data.pincode || "",
-  });
-
-  if (!data.companyName || !data.mobile) {
-    setShowProfileSetup(true);
-  }
-}
-        console.log("Logged in UID:", firebaseUser.uid);
-        setAuthLoading(false);
-        // Default anonymous users to Client role, Google accounts to Contractor
-        if (firebaseUser.isAnonymous) {
-          setActiveRole('Client');
-        } else {
-          setActiveRole('Contractor');
-        }
-      }
-    });
-    return () => unsubscribe();
-  }, []);
+  // Sync local activeRole toggle state with central userRole
+  useEffect(() => {
+    if (userRole) {
+      setActiveRole(userRole);
+    }
+  }, [userRole]);
 
   const [showProfileSetup, setShowProfileSetup] = useState(false);
+  const [profileForm, setProfileForm] = useState({
+    companyName: "",
+    ownerName: "",
+    mobile: "",
+    email: "",
+    gstNumber: "",
+    address: "",
+    city: "",
+    state: "",
+    pincode: "",
+  });
 
-const [userProfile, setUserProfile] = useState<any>(null);
-const [profileForm, setProfileForm] = useState({
-  companyName: "",
-  ownerName: "",
-  mobile: "",
-  email: "",
-  gstNumber: "",
-  address: "",
-  city: "",
-  state: "",
-  pincode: "",
-});
+  // Sync profileForm when userProfile from context changes
+  useEffect(() => {
+    if (userProfile) {
+      setProfileForm({
+        companyName: userProfile.companyName || "",
+        ownerName: userProfile.ownerName || user?.displayName || "",
+        mobile: userProfile.mobile || "",
+        email: userProfile.email || user?.email || "",
+        gstNumber: userProfile.gstNumber || "",
+        address: userProfile.address || "",
+        city: userProfile.city || "",
+        state: userProfile.state || "",
+        pincode: userProfile.pincode || "",
+      });
+
+      // Contractor profile incompleteness checker
+      if (user && !user.isAnonymous && !isDemoMode && (!userProfile.companyName || !userProfile.mobile)) {
+        setShowProfileSetup(true);
+      }
+    }
+  }, [userProfile, user, isDemoMode]);
 
 
   // 2. Real-time Projects Listener (when signed in)
@@ -271,7 +319,7 @@ const [profileForm, setProfileForm] = useState({
           };
           return { ...base, projects: fetchedProjects };
         });
-        if (fetchedProjects.length > 0 && !fetchedProjects.some(p => p.id === selectedProjId)) {
+        if (fetchedProjects && fetchedProjects.length > 0 && !fetchedProjects.some(p => p && p.id === selectedProjId)) {
           setSelectedProjId(fetchedProjects[0].id);
         }
       }
@@ -287,7 +335,7 @@ const [profileForm, setProfileForm] = useState({
     if (!user || !selectedProjId || !db) return;
 
     // Safety: ONLY subscribe to subcollections if user is actually authorized for the selected project
-    const hasProject = db.projects.some(p => p.id === selectedProjId && p.memberUids?.includes(user.uid));
+    const hasProject = db && db.projects && db.projects.some(p => p && p.id === selectedProjId && p.memberUids?.includes(user.uid));
     if (!hasProject) {
       console.warn(`User is not authorized for selected project ${selectedProjId}. Subscriptions skipped.`);
       return;
@@ -345,7 +393,7 @@ const [profileForm, setProfileForm] = useState({
       unsubDocs();
       unsubMessages();
     };
-  }, [user, selectedProjId, db?.projects.map(p => p.id).join(',')]);
+  }, [user, selectedProjId, db?.projects?.map(p => p?.id).join(',')]);
 
   // Sync to Storage Helper (Local/Offline Mode)
   const syncDatabase = (updatedDb: typeof db) => {
@@ -375,18 +423,18 @@ const [profileForm, setProfileForm] = useState({
           return p;
         });
 
-        await Promise.all(
+         await Promise.all(
           changedItems.map(async (item) => {
-            // Write core project document
+            // 1. Write core project document first
             await setDoc(doc(fdb, 'projects', item.id), item);
 
-            // Also write member registration in members subcollection for the creator
+            // 2. Also write member registration in members subcollection for the creator
             await setDoc(doc(fdb, `projects/${item.id}/members`, user.uid), {
               role: 'Contractor',
               uid: user.uid
             });
 
-            // Write lookup document for the client access code
+            // 3. Now write lookup document for the client access code safely
             await setDoc(doc(fdb, 'clientCodes', item.clientCode.trim().toUpperCase()), {
               projectId: item.id,
               redeemed: false,
@@ -606,9 +654,23 @@ const [profileForm, setProfileForm] = useState({
               </p>
             </div>
 
+            {renderAuthError()}
+
             <div className="space-y-3">
               <button
-                onClick={() => handleSelectRole('Contractor')}
+                onClick={async () => {
+                  setAuthError(null);
+                  if (!user) {
+                    try {
+                      await loginAsContractor();
+                    } catch (err: any) {
+                      console.error("Google sign in failed:", err);
+                      setAuthError(err?.message || "Google sign in popup failed to load. Please try our iframe-safe fallback.");
+                    }
+                  } else {
+                    handleSelectRole('Contractor');
+                  }
+                }}
                 className="w-full p-4 text-left rounded-xl transition-all flex items-center gap-3.5 group"
                 style={{ border: '1px solid var(--lh-border)' }}
                 onMouseEnter={(e) => { e.currentTarget.style.borderColor = 'var(--lh-blue)'; }}
@@ -704,10 +766,24 @@ const [profileForm, setProfileForm] = useState({
               <p className="text-[12.5px]" style={{ color: 'var(--lh-text-secondary)' }}>Sign in as contractor or enter a client access code</p>
             </div>
 
+            {renderAuthError()}
+
             <div className="space-y-3">
               
               <button
-                onClick={() => handleSelectRole('Contractor')}
+                onClick={async () => {
+                  setAuthError(null);
+                  if (!user) {
+                    try {
+                      await loginAsContractor();
+                    } catch (err: any) {
+                      console.error("Google sign in failed:", err);
+                      setAuthError(err?.message || "Google sign in popup failed to load. Please try our iframe-safe fallback.");
+                    }
+                  } else {
+                    handleSelectRole('Contractor');
+                  }
+                }}
                 className="w-full p-4 text-left rounded-xl transition-all flex items-start gap-3.5 group"
                 style={{ border: '1px solid var(--lh-border)' }}
                 onMouseEnter={(e) => { e.currentTarget.style.borderColor = 'var(--lh-blue)'; }}
@@ -748,11 +824,10 @@ const [profileForm, setProfileForm] = useState({
                 </div>
               </button>
               <button
-  onClick={() => {
-  setIsDemoMode(true);
-  loadLocalDatabase();
-  setActiveRole('Contractor');
-}}
+                onClick={() => {
+                  startDemoMode();
+                  setViewingMode('portal');
+                }}
   className="w-full p-4 text-left rounded-xl transition-all flex items-start gap-3.5 group"
   style={{ border: '1px solid var(--lh-border)' }}
   onMouseEnter={(e) => { e.currentTarget.style.borderColor = '#22c55e'; }}
@@ -813,18 +888,8 @@ const [profileForm, setProfileForm] = useState({
   }
 
   try {
-    await setDoc(
-      doc(fdb, "users", user.uid),
-      {
-        ...profileForm,
-        updatedAt: new Date().toISOString(),
-      },
-      { merge: true }
-    );
-
-    setUserProfile(profileForm);
+    await updateUserProfile(profileForm);
     setShowProfileSetup(false);
-
     alert("Profile saved successfully.");
   } catch (err) {
     console.error(err);
@@ -869,7 +934,7 @@ const [profileForm, setProfileForm] = useState({
               </span>
               {user ? (
                 <button 
-                  onClick={logOut} 
+                  onClick={logout} 
                   className="ml-1 text-[10.5px] font-semibold underline"
                   style={{ color: 'var(--lh-blue)' }}
                   id="btn-cloud-signout"
@@ -878,7 +943,7 @@ const [profileForm, setProfileForm] = useState({
                 </button>
               ) : (
                 <button 
-                  onClick={signInGoogle} 
+                  onClick={loginAsContractor} 
                   className="ml-1 text-[10.5px] font-semibold"
                   style={{ color: 'var(--lh-blue)' }}
                   id="btn-cloud-signin"
@@ -972,16 +1037,17 @@ const [profileForm, setProfileForm] = useState({
             onSendMessage={handleSendMessage}
             selectedProjId={selectedProjId}
             onSelectProject={setSelectedProjId}
-            userProfile={userProfile}
           />
         )}
 
       </main>
 
-      {/* 3. DB BACKUP TOOL */}
-      <DbManager 
-        onRefresh={loadLocalDatabase} 
-      />
+      {/* 3. DB BACKUP TOOL - Sandbox Details hidden for contractors and clients */}
+      {!user && !isDemoMode && (
+        <DbManager 
+          onRefresh={loadLocalDatabase} 
+        />
+      )}
 
       {/* Footer */}
       <footer className="py-6 text-center text-xs mt-8" style={{ background: 'var(--lh-surface)', borderTop: '1px solid var(--lh-border)', color: 'var(--lh-text-tertiary)' }}>
