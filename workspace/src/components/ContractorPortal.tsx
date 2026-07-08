@@ -7,6 +7,7 @@ import ChatComponent from './ChatComponent';
 import PaymentStatementSheet, { formatIndianNoCurrency } from './PaymentStatementSheet';
 import { useAuth } from '../context/AuthContext';
 import SettingsPage from './SettingsPage';
+import * as XLSX from 'xlsx';
 import { 
   Building2, 
   Plus, 
@@ -39,7 +40,9 @@ import {
   MoreHorizontal,
   Pencil,
   Bell,
-  Settings
+  Settings,
+  Download,
+  Upload
 } from 'lucide-react';
 
 interface ContractorPortalProps {
@@ -187,6 +190,10 @@ export default function ContractorPortal({
     name: '',
     type: 'Quotation' as const,
   });
+
+  const [editingStage, setEditingStage] = useState<PaymentStage | null>(null);
+  const [selectedDocFile, setSelectedDocFile] = useState<File | null>(null);
+  const [isUploadingDoc, setIsUploadingDoc] = useState(false);
 
   // Filtering states
   const [filterProject, setFilterProject] = useState('all');
@@ -570,26 +577,59 @@ setIsCompressingPhotos(false);
     setProgPhotoPreviews([]);
   };
 
-  const handleAddDocument = (e: React.FormEvent) => {
+  const handleAddDocument = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!selectedProjId) return;
+    if (!selectedDocFile) {
+      alert("❌ Please select a document file to upload.");
+      return;
+    }
 
-    const doc: ProjectDocument = {
-      id: `doc_${Date.now()}`,
-      projectId: selectedProjId,
-      name: newDoc.name.endsWith('.pdf') ? newDoc.name : `${newDoc.name || 'Contract_BOQ'}.pdf`,
-      type: newDoc.type,
-      fileSize: '1.5 MB',
-      date: new Date().toISOString().split('T')[0],
-      url: '#',
-    };
+    setIsUploadingDoc(true);
+    try {
+      // Upload the file to Supabase Storage
+      const fileUrl = await uploadImage(selectedDocFile, 'documents');
+      
+      const fileSize = selectedDocFile.size > 1024 * 1024
+        ? `${(selectedDocFile.size / (1024 * 1024)).toFixed(2)} MB`
+        : `${(selectedDocFile.size / 1024).toFixed(0)} KB`;
 
-    onUpdateDocuments([...documents, doc]);
-    setShowDocModal(false);
-    setNewDoc({
-      name: '',
-      type: 'Quotation',
-    });
+      const originalName = selectedDocFile.name;
+      const docTitle = newDoc.name.trim();
+      
+      // Determine file extension from original uploaded file
+      const dotIndex = originalName.lastIndexOf('.');
+      const extension = dotIndex !== -1 ? originalName.substring(dotIndex) : '';
+      
+      let finalName = docTitle || originalName;
+      if (docTitle && extension && !docTitle.toLowerCase().endsWith(extension.toLowerCase())) {
+        finalName = `${docTitle}${extension}`;
+      }
+
+      const doc: ProjectDocument = {
+        id: `doc_${Date.now()}`,
+        projectId: selectedProjId,
+        name: finalName,
+        type: newDoc.type,
+        fileSize: fileSize,
+        date: new Date().toISOString().split('T')[0],
+        url: fileUrl,
+      };
+
+      onUpdateDocuments([...documents, doc]);
+      setShowDocModal(false);
+      setNewDoc({
+        name: '',
+        type: 'Quotation',
+      });
+      setSelectedDocFile(null);
+      alert(`✅ Document "${finalName}" uploaded successfully!`);
+    } catch (err: any) {
+      console.error(err);
+      alert(`❌ Failed to upload document to Supabase: ${err.message || err}`);
+    } finally {
+      setIsUploadingDoc(false);
+    }
   };
 
   // Lock Override Manual Override trigger helper
@@ -618,6 +658,132 @@ setIsCompressingPhotos(false);
     }
   };
 
+  const handleEditStageClick = (stg: PaymentStage) => {
+    if (activeProj?.isLocked) {
+      alert("❌ Project structure is currently locked! Please unlock the project first by clicking 'Bypass lock'.");
+      return;
+    }
+    setEditingStage(stg);
+  };
+
+  const downloadBulkUploadTemplate = () => {
+    try {
+      const wb = XLSX.utils.book_new();
+      const templateData = [
+        {
+          "Stage Name": "Advance Payment",
+          "Payable Amount": 500000,
+          "Due Date (YYYY-MM-DD)": "2026-08-01"
+        },
+        {
+          "Stage Name": "Plinth Beam Completion",
+          "Payable Amount": 350000,
+          "Due Date (YYYY-MM-DD)": "2026-09-15"
+        },
+        {
+          "Stage Name": "Slab Casting GF",
+          "Payable Amount": 400000,
+          "Due Date (YYYY-MM-DD)": "2026-10-31"
+        }
+      ];
+      const ws = XLSX.utils.json_to_sheet(templateData);
+      XLSX.utils.book_append_sheet(wb, ws, "Stages Template");
+      XLSX.writeFile(wb, "Payment_Stages_Bulk_Upload_Template.xlsx");
+    } catch (err: any) {
+      console.error(err);
+      alert(`Failed to generate bulk upload template: ${err.message}`);
+    }
+  };
+
+  const handleBulkUploadStages = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    if (activeProj?.isLocked) {
+      alert("❌ Project is currently locked! Please unlock the project first before uploading payment stages.");
+      return;
+    }
+
+    const reader = new FileReader();
+    reader.onload = (evt) => {
+      try {
+        const data = new Uint8Array(evt.target?.result as ArrayBuffer);
+        const workbook = XLSX.read(data, { type: 'array' });
+        const firstSheetName = workbook.SheetNames[0];
+        const ws = workbook.Sheets[firstSheetName];
+        const rows = XLSX.utils.sheet_to_json<any>(ws);
+
+        if (rows.length === 0) {
+          alert("⚠️ No rows found in the uploaded Excel sheet.");
+          return;
+        }
+
+        const parsedStages: PaymentStage[] = [];
+        for (let i = 0; i < rows.length; i++) {
+          const row = rows[i];
+          
+          const name = row["Stage Name"] || row["stage name"] || row["StageName"] || row["Stage"] || row["stage"] || "";
+          const amountStr = row["Payable Amount"] || row["payable amount"] || row["Amount"] || row["amount"] || "0";
+          const rawDate = row["Due Date (YYYY-MM-DD)"] || row["due date"] || row["Due Date"] || row["dueDate"] || row["Date"] || row["date"] || "";
+
+          if (!name || String(name).trim() === "") {
+            continue;
+          }
+
+          const payableAmount = Number(amountStr) || 0;
+          
+          let formattedDate = "";
+          if (rawDate) {
+            if (typeof rawDate === 'number') {
+              const dateObj = XLSX.SSF.parse_date_code(rawDate);
+              const y = dateObj.y;
+              const m = String(dateObj.m).padStart(2, '0');
+              const d = String(dateObj.d).padStart(2, '0');
+              formattedDate = `${y}-${m}-${d}`;
+            } else {
+              const strDate = String(rawDate).trim();
+              const dateMatch = strDate.match(/^(\d{4})[-/](\d{1,2})[-/](\d{1,2})$/);
+              if (dateMatch) {
+                formattedDate = `${dateMatch[1]}-${dateMatch[2].padStart(2, '0')}-${dateMatch[3].padStart(2, '0')}`;
+              } else {
+                const parsedDate = new Date(strDate);
+                if (!isNaN(parsedDate.getTime())) {
+                  const y = parsedDate.getFullYear();
+                  const m = String(parsedDate.getMonth() + 1).padStart(2, '0');
+                  const d = String(parsedDate.getDate()).padStart(2, '0');
+                  formattedDate = `${y}-${m}-${d}`;
+                }
+              }
+            }
+          }
+
+          parsedStages.push({
+            id: `stg_${Date.now()}_bulk_${i}_${Math.random().toString(36).substr(2, 4)}`,
+            projectId: selectedProjId,
+            stageName: String(name).trim(),
+            payableAmount: payableAmount,
+            receivedAmount: 0,
+            dueDate: formattedDate,
+            status: 'Pending',
+          });
+        }
+
+        if (parsedStages.length === 0) {
+          alert("❌ No valid payment stages could be imported. Please make sure the sheet matches the template and contains 'Stage Name' and 'Payable Amount'.");
+          return;
+        }
+
+        onUpdateStages([...stages, ...parsedStages]);
+        alert(`✅ Successfully imported ${parsedStages.length} payment stages!`);
+      } catch (err: any) {
+        console.error(err);
+        alert(`❌ Error parsing Excel file: ${err.message || err}`);
+      }
+      e.target.value = '';
+    };
+    reader.readAsArrayBuffer(file);
+  };
+
   const handleRequestPayment = (stageId: string) => {
     const updated = stages.map(s => {
       if (s.id === stageId) {
@@ -635,6 +801,140 @@ setIsCompressingPhotos(false);
     });
     onUpdateStages(updated);
     alert("✅ Payment request sent! Client has been notified in the Portal and Chat.");
+  };
+
+  const downloadBulkUploadExpensesTemplate = () => {
+    try {
+      const wb = XLSX.utils.book_new();
+      const templateData = [
+        {
+          "Category": "Material",
+          "Description": "Cement bag purchase - 150 bags",
+          "Amount": 65000,
+          "Supplier": "UltraTech Cement Dealer",
+          "Date (YYYY-MM-DD)": "2026-07-10"
+        },
+        {
+          "Category": "Labour",
+          "Description": "Weekly masonry work wages - Phase 1 GF",
+          "Amount": 42000,
+          "Supplier": "Suresh Contractor",
+          "Date (YYYY-MM-DD)": "2026-07-15"
+        },
+        {
+          "Category": "Machinery",
+          "Description": "Concrete mixer rental - 3 days",
+          "Amount": 12000,
+          "Supplier": "Metro Rentals",
+          "Date (YYYY-MM-DD)": "2026-07-12"
+        }
+      ];
+      const ws = XLSX.utils.json_to_sheet(templateData);
+      XLSX.utils.book_append_sheet(wb, ws, "Expenses Template");
+      XLSX.writeFile(wb, "Expenses_Bulk_Upload_Template.xlsx");
+    } catch (err: any) {
+      console.error(err);
+      alert(`Failed to generate bulk upload template: ${err.message}`);
+    }
+  };
+
+  const handleBulkUploadExpenses = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    if (!selectedProjId) {
+      alert("❌ Please select a project first before uploading expenses.");
+      return;
+    }
+
+    const reader = new FileReader();
+    reader.onload = (evt) => {
+      try {
+        const data = new Uint8Array(evt.target?.result as ArrayBuffer);
+        const workbook = XLSX.read(data, { type: 'array' });
+        const firstSheetName = workbook.SheetNames[0];
+        const ws = workbook.Sheets[firstSheetName];
+        const rows = XLSX.utils.sheet_to_json<any>(ws);
+
+        if (rows.length === 0) {
+          alert("⚠️ No rows found in the uploaded Excel sheet.");
+          return;
+        }
+
+        const validCategories = ['Material', 'Labour', 'Machinery', 'Transport', 'Electrical', 'Plumbing', 'Miscellaneous'];
+
+        const parsedExpenses: Expense[] = [];
+        for (let i = 0; i < rows.length; i++) {
+          const row = rows[i];
+          
+          let categoryRaw = String(row["Category"] || row["category"] || "Miscellaneous").trim();
+          // Capitalize first letter, lowercase rest
+          if (categoryRaw) {
+            categoryRaw = categoryRaw.charAt(0).toUpperCase() + categoryRaw.slice(1).toLowerCase();
+          }
+          
+          const category = (validCategories.includes(categoryRaw) ? categoryRaw : 'Miscellaneous') as any;
+          const description = String(row["Description"] || row["description"] || row["Details"] || row["details"] || "Bulk Imported Expense").trim();
+          const amountStr = row["Amount"] || row["amount"] || row["Cost"] || row["cost"] || "0";
+          const supplier = String(row["Supplier"] || row["supplier"] || row["Vendor"] || row["vendor"] || "Various").trim();
+          const rawDate = row["Date (YYYY-MM-DD)"] || row["Date"] || row["date"] || row["expense date"] || "";
+
+          const amount = Number(amountStr) || 0;
+          if (amount <= 0 && !description) {
+            continue;
+          }
+
+          let formattedDate = new Date().toISOString().split('T')[0];
+          if (rawDate) {
+            if (typeof rawDate === 'number') {
+              const dateObj = XLSX.SSF.parse_date_code(rawDate);
+              const y = dateObj.y;
+              const m = String(dateObj.m).padStart(2, '0');
+              const d = String(dateObj.d).padStart(2, '0');
+              formattedDate = `${y}-${m}-${d}`;
+            } else {
+              const strDate = String(rawDate).trim();
+              const dateMatch = strDate.match(/^(\d{4})[-/](\d{1,2})[-/](\d{1,2})$/);
+              if (dateMatch) {
+                formattedDate = `${dateMatch[1]}-${dateMatch[2].padStart(2, '0')}-${dateMatch[3].padStart(2, '0')}`;
+              } else {
+                const parsedDate = new Date(strDate);
+                if (!isNaN(parsedDate.getTime())) {
+                  const y = parsedDate.getFullYear();
+                  const m = String(parsedDate.getMonth() + 1).padStart(2, '0');
+                  const d = String(parsedDate.getDate()).padStart(2, '0');
+                  formattedDate = `${y}-${m}-${d}`;
+                }
+              }
+            }
+          }
+
+          parsedExpenses.push({
+            id: `exp_${Date.now()}_bulk_${i}_${Math.random().toString(36).substr(2, 4)}`,
+            projectId: selectedProjId,
+            category,
+            description,
+            amount,
+            supplier,
+            date: formattedDate,
+            billUploaded: false,
+          });
+        }
+
+        if (parsedExpenses.length === 0) {
+          alert("❌ No valid expenses could be imported. Please make sure the sheet matches the template and contains 'Category' and 'Amount'.");
+          return;
+        }
+
+        onUpdateExpenses([...expenses, ...parsedExpenses]);
+        alert(`✅ Successfully imported ${parsedExpenses.length} expenses!`);
+      } catch (err: any) {
+        console.error(err);
+        alert(`❌ Error parsing Excel file: ${err.message || err}`);
+      }
+      e.target.value = '';
+    };
+    reader.readAsArrayBuffer(file);
   };
 
   const todayStr = new Date().toISOString().split('T')[0];
@@ -1360,6 +1660,48 @@ setIsCompressingPhotos(false);
                 </div>
               </div>
 
+              {/* Bulk Upload Section */}
+              {activeProj && (
+                <div className="lh-panel rounded-xl p-3 border border-[var(--lh-border)] bg-slate-50/50 dark:bg-slate-800/10">
+                  <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+                    <div className="space-y-0.5">
+                      <h4 className="text-[12.5px] font-semibold text-[var(--lh-text-primary)] flex items-center gap-1.5">
+                        <FileSpreadsheet className="w-3.5 h-3.5 text-emerald-500" />
+                        <span>Bulk Upload Payment Milestones (Excel)</span>
+                      </h4>
+                      <p className="text-[10.5px] text-[var(--lh-text-secondary)]">
+                        Fill out and upload the template to bulk add milestone payment stages.
+                      </p>
+                    </div>
+                    <div className="flex flex-wrap items-center gap-2">
+                      <button
+                        type="button"
+                        onClick={downloadBulkUploadTemplate}
+                        className="lh-btn lh-btn-secondary lh-btn-xs flex items-center gap-1.5 bg-white hover:bg-slate-100 text-slate-700 dark:bg-slate-900 dark:hover:bg-slate-800 dark:text-slate-200 border border-slate-200 dark:border-slate-800"
+                        style={{ padding: '6px 12px', fontSize: '11px' }}
+                      >
+                        <Download className="w-3.5 h-3.5 text-emerald-500" />
+                        <span>Download Template</span>
+                      </button>
+
+                      <label
+                        className="lh-btn lh-btn-primary lh-btn-xs flex items-center gap-1.5 cursor-pointer bg-emerald-600 hover:bg-emerald-700 text-white border-none"
+                        style={{ padding: '6px 12px', fontSize: '11px', margin: 0 }}
+                      >
+                        <Upload className="w-3.5 h-3.5 text-white" />
+                        <span>Choose Excel File</span>
+                        <input
+                          type="file"
+                          accept=".xlsx, .xls"
+                          className="hidden"
+                          onChange={handleBulkUploadStages}
+                        />
+                      </label>
+                    </div>
+                  </div>
+                </div>
+              )}
+
               {/* Exact Replicating Statement attachment component */}
               {activeProj && (
                 <div className="space-y-2.5">
@@ -1399,7 +1741,18 @@ setIsCompressingPhotos(false);
                           return (
                             <tr key={stg.id}>
                               <td style={{ color: 'var(--lh-text-tertiary)' }}>{sIdx + 1}</td>
-                              <td className="font-medium">{stg.stageName}</td>
+                              <td className="font-medium">
+                                <div className="flex items-center gap-1.5">
+                                  <span>{stg.stageName}</span>
+                                  <button
+                                    onClick={() => handleEditStageClick(stg)}
+                                    className="p-1 hover:bg-slate-100 dark:hover:bg-slate-800 rounded text-slate-400 hover:text-[var(--lh-blue)] transition-colors"
+                                    title="Edit payment stage"
+                                  >
+                                    <Pencil className="w-3 h-3" />
+                                  </button>
+                                </div>
+                              </td>
                               <td style={{ color: 'var(--lh-text-secondary)' }}>
                                 {stg.dueDate ? new Date(stg.dueDate).toLocaleDateString('en-IN', { day: 'numeric', month: 'short' }) : 'TBD'}
                               </td>
@@ -1438,6 +1791,14 @@ setIsCompressingPhotos(false);
                                       className="lh-btn lh-btn-primary lh-btn-sm"
                                     >
                                       Log receipt
+                                    </button>
+                                    <button
+                                      onClick={() => handleEditStageClick(stg)}
+                                      className="lh-btn lh-btn-secondary lh-btn-sm"
+                                      style={{ padding: '5px' }}
+                                      title="Edit payment stage"
+                                    >
+                                      <Pencil className="w-3.5 h-3.5" />
                                     </button>
                                     <button
                                       onClick={() => handleDeleteStage(stg.id)}
@@ -1495,6 +1856,48 @@ setIsCompressingPhotos(false);
                   ))}
                 </select>
               </div>
+
+              {/* Bulk Upload Expenses Section */}
+              {activeProj && (
+                <div className="lh-panel rounded-xl p-3 border border-[var(--lh-border)] bg-slate-50/50 dark:bg-slate-800/10">
+                  <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+                    <div className="space-y-0.5">
+                      <h4 className="text-[12.5px] font-semibold text-[var(--lh-text-primary)] flex items-center gap-1.5">
+                        <FileSpreadsheet className="w-3.5 h-3.5 text-emerald-500" />
+                        <span>Bulk Upload Expenses (Excel)</span>
+                      </h4>
+                      <p className="text-[10.5px] text-[var(--lh-text-secondary)]">
+                        Fill out and upload the template to bulk add materials, labour, or machinery expenses.
+                      </p>
+                    </div>
+                    <div className="flex flex-wrap items-center gap-2">
+                      <button
+                        type="button"
+                        onClick={downloadBulkUploadExpensesTemplate}
+                        className="lh-btn lh-btn-secondary lh-btn-xs flex items-center gap-1.5 bg-white hover:bg-slate-100 text-slate-700 dark:bg-slate-900 dark:hover:bg-slate-800 dark:text-slate-200 border border-slate-200 dark:border-slate-800"
+                        style={{ padding: '6px 12px', fontSize: '11px' }}
+                      >
+                        <Download className="w-3.5 h-3.5 text-emerald-500" />
+                        <span>Download Template</span>
+                      </button>
+
+                      <label
+                        className="lh-btn lh-btn-primary lh-btn-xs flex items-center gap-1.5 cursor-pointer bg-emerald-600 hover:bg-emerald-700 text-white border-none"
+                        style={{ padding: '6px 12px', fontSize: '11px', margin: 0 }}
+                      >
+                        <Upload className="w-3.5 h-3.5 text-white" />
+                        <span>Choose Excel File</span>
+                        <input
+                          type="file"
+                          accept=".xlsx, .xls"
+                          className="hidden"
+                          onChange={handleBulkUploadExpenses}
+                        />
+                      </label>
+                    </div>
+                  </div>
+                </div>
+              )}
 
               {/* Profit metrics margin layout */}
               <div className="grid grid-cols-1 md:grid-cols-4 gap-3">
@@ -1729,12 +2132,24 @@ setIsCompressingPhotos(false);
                             <td style={{ color: 'var(--lh-text-tertiary)' }}>{doc.fileSize}</td>
                             <td style={{ color: 'var(--lh-text-tertiary)' }}>{doc.date}</td>
                             <td style={{ textAlign: 'right' }}>
-                              <button
-                                onClick={() => alert(`Simulating file download: "${doc.name}"`)}
-                                className="lh-btn lh-btn-ghost lh-btn-sm"
-                              >
-                                Download
-                              </button>
+                              {doc.url && doc.url !== '#' ? (
+                                <a
+                                  href={doc.url}
+                                  target="_blank"
+                                  rel="noopener noreferrer"
+                                  className="lh-btn lh-btn-ghost lh-btn-sm inline-flex items-center gap-1.5 text-[var(--lh-blue)]"
+                                >
+                                  <Download className="w-3.5 h-3.5" />
+                                  <span>Download</span>
+                                </a>
+                              ) : (
+                                <button
+                                  onClick={() => alert(`Simulating file download: "${doc.name}"`)}
+                                  className="lh-btn lh-btn-ghost lh-btn-sm"
+                                >
+                                  Download
+                                </button>
+                              )}
                             </td>
                           </tr>
                         ))}
@@ -2645,25 +3060,30 @@ setIsCompressingPhotos(false);
       {/* ==================== CREATE DOC CABINET MODAL ==================== */}
       {showDocModal && (
         <div className="fixed inset-0 lh-modal-backdrop flex items-center justify-center p-4 z-50">
-          <div className="lh-modal p-5 max-w-sm w-full">
+          <div className="lh-modal p-5 max-w-sm w-full space-y-4">
             <div className="flex items-center justify-between pb-2.5 mb-3" style={{ borderBottom: '1px solid var(--lh-border)' }}>
-              <h3 className="text-[13px] font-semibold" style={{ color: 'var(--lh-text-primary)' }}>Attach document</h3>
+              <h3 className="text-[13px] font-semibold" style={{ color: 'var(--lh-text-primary)' }}>Attach Document</h3>
               <button onClick={() => setShowDocModal(false)} className="text-sm font-bold" style={{ color: 'var(--lh-text-tertiary)' }}>✕</button>
             </div>
-            <form onSubmit={handleAddDocument} className="space-y-3.5">
+            
+            <form onSubmit={handleAddDocument} className="space-y-4">
               <div>
-                <label className="lh-label">Document title</label>
+                <label className="lh-label">Document Title (Optional)</label>
                 <input
-                  type="text" required placeholder="e.g. Master Structural GF plan"
-                  value={newDoc.name} onChange={(e) => setNewDoc({ ...newDoc, name: e.target.value })}
-                  className="lh-input"
+                  type="text" 
+                  placeholder="Leave empty to use file name"
+                  value={newDoc.name} 
+                  onChange={(e) => setNewDoc({ ...newDoc, name: e.target.value })}
+                  className="lh-input text-xs"
                 />
               </div>
+
               <div>
                 <label className="lh-label">Classification</label>
                 <select
-                  value={newDoc.type} onChange={(e) => setNewDoc({ ...newDoc, type: e.target.value as any })}
-                  className="lh-select"
+                  value={newDoc.type} 
+                  onChange={(e) => setNewDoc({ ...newDoc, type: e.target.value as any })}
+                  className="lh-select text-xs"
                 >
                   <option value="Agreement">Agreement copy</option>
                   <option value="Quotation">Quotation estimate</option>
@@ -2673,13 +3093,150 @@ setIsCompressingPhotos(false);
                   <option value="Approval">Approval certificate</option>
                 </select>
               </div>
+
+              <div>
+                <label className="lh-label">Select Document File</label>
+                <div 
+                  className="relative group border-2 border-dashed border-[var(--lh-border)] hover:border-[var(--lh-blue)] rounded-lg p-4 text-center cursor-pointer bg-slate-50/50 dark:bg-slate-900/40 transition-colors"
+                >
+                  <input
+                    type="file"
+                    required
+                    className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
+                    onChange={(e) => {
+                      const file = e.target.files?.[0] || null;
+                      setSelectedDocFile(file);
+                      if (file && !newDoc.name) {
+                        // strip extension for title input helper
+                        const dot = file.name.lastIndexOf('.');
+                        const titleName = dot !== -1 ? file.name.substring(0, dot) : file.name;
+                        setNewDoc(prev => ({ ...prev, name: titleName }));
+                      }
+                    }}
+                  />
+                  
+                  <div className="space-y-1 text-xs">
+                    <div className="flex justify-center mb-1">
+                      <Upload className="w-6 h-6 text-emerald-500 animate-pulse" />
+                    </div>
+                    {selectedDocFile ? (
+                      <div className="text-emerald-600 dark:text-emerald-400 font-semibold truncate max-w-[280px]">
+                        {selectedDocFile.name} ({(selectedDocFile.size / 1024).toFixed(1)} KB)
+                      </div>
+                    ) : (
+                      <div className="text-[var(--lh-text-secondary)]">
+                        <span className="font-semibold text-[var(--lh-blue)]">Click to upload</span> or drag and drop file
+                      </div>
+                    )}
+                    <p className="text-[10px] text-[var(--lh-text-tertiary)]">Supports PDF, CAD, images, XLS, DOC up to 50MB</p>
+                  </div>
+                </div>
+              </div>
+
               <button
                 type="submit"
-                className="lh-btn lh-btn-primary lh-btn-lg w-full mt-1"
+                disabled={isUploadingDoc}
+                className="lh-btn lh-btn-primary lh-btn-lg w-full mt-2"
+                style={isUploadingDoc ? { opacity: 0.6, cursor: 'not-allowed' } : {}}
               >
-                Add to cabinet
+                {isUploadingDoc ? (
+                  <span className="flex items-center justify-center gap-2">
+                    <span className="w-3.5 h-3.5 border-2 border-white border-t-transparent rounded-full animate-spin"></span>
+                    Uploading to Supabase...
+                  </span>
+                ) : (
+                  'Upload to Supabase Storage'
+                )}
               </button>
             </form>
+          </div>
+        </div>
+      )}
+
+      {/* ==================== EDIT MILESTONE STAGE MODAL ==================== */}
+      {editingStage && (
+        <div className="fixed inset-0 lh-modal-backdrop flex items-center justify-center p-4 z-50">
+          <div className="lh-modal p-6 max-w-sm w-full space-y-4">
+            <div className="flex items-center justify-between pb-3" style={{ borderBottom: '1px solid var(--lh-border)' }}>
+              <h3 className="text-[13px] font-semibold" style={{ color: 'var(--lh-text-primary)' }}>Edit Payment Stage</h3>
+              <button onClick={() => setEditingStage(null)} className="text-sm font-bold" style={{ color: 'var(--lh-text-tertiary)' }}>✕</button>
+            </div>
+            
+            <div className="space-y-3.5 text-left">
+              <div>
+                <label className="lh-label">Stage Name</label>
+                <input
+                  type="text"
+                  className="lh-input"
+                  value={editingStage.stageName}
+                  onChange={(e) => setEditingStage({ ...editingStage, stageName: e.target.value })}
+                />
+              </div>
+              <div>
+                <label className="lh-label">Payable Amount (₹)</label>
+                <input
+                  type="number"
+                  className="lh-input"
+                  value={editingStage.payableAmount}
+                  onChange={(e) => setEditingStage({ ...editingStage, payableAmount: Number(e.target.value) || 0 })}
+                />
+              </div>
+              <div>
+                <label className="lh-label">Due Date</label>
+                <input
+                  type="date"
+                  className="lh-input"
+                  value={editingStage.dueDate || ''}
+                  onChange={(e) => setEditingStage({ ...editingStage, dueDate: e.target.value })}
+                />
+              </div>
+              <div>
+                <label className="lh-label">Received Amount (₹)</label>
+                <input
+                  type="number"
+                  className="lh-input"
+                  value={editingStage.receivedAmount || 0}
+                  onChange={(e) => {
+                    const rec = Number(e.target.value) || 0;
+                    setEditingStage({ 
+                      ...editingStage, 
+                      receivedAmount: rec,
+                      status: rec >= editingStage.payableAmount ? 'Paid' : 'Pending'
+                    });
+                  }}
+                />
+              </div>
+              <div>
+                <label className="lh-label">Status</label>
+                <select
+                  className="lh-select"
+                  value={editingStage.status}
+                  onChange={(e) => setEditingStage({ ...editingStage, status: e.target.value as any })}
+                >
+                  <option value="Pending">Pending</option>
+                  <option value="Paid">Paid</option>
+                </select>
+              </div>
+            </div>
+
+            <div className="flex gap-2 pt-2">
+              <button
+                onClick={() => setEditingStage(null)}
+                className="lh-btn lh-btn-secondary flex-1"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={() => {
+                  const updated = stages.map(s => s.id === editingStage.id ? editingStage : s);
+                  onUpdateStages(updated);
+                  setEditingStage(null);
+                }}
+                className="lh-btn lh-btn-primary flex-1"
+              >
+                Save Changes
+              </button>
+            </div>
           </div>
         </div>
       )}
