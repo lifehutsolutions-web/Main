@@ -22,10 +22,11 @@ import {
   FileSpreadsheet
 } from 'lucide-react';
 import { fetchAll, saveAll, resetDB } from '../data';
+import * as XLSX from 'xlsx';
 
 export default function SettingsPage() {
   const { user, userRole, userProfile, isDemoMode, updateUserProfile } = useAuth();
-  const [activeSection, setActiveSection] = useState<'profile' | 'auth' | 'storage' | 'defaults' | 'backup'>('profile');
+  const [activeSection, setActiveSection] = useState<'profile' | 'defaults' | 'backup'>('profile');
 
   // Form states for Company Profile
   const [companyName, setCompanyName] = useState(userProfile?.companyName || '');
@@ -38,10 +39,11 @@ export default function SettingsPage() {
   const [state, setState] = useState(userProfile?.state || '');
   const [pincode, setPincode] = useState(userProfile?.pincode || '');
 
-  // Form states for Project Defaults
-  const [defaultRetainage, setDefaultRetainage] = useState('5');
-  const [paymentTermsDays, setPaymentTermsDays] = useState('15');
-  const [defaultTaxRate, setDefaultTaxRate] = useState('18');
+  // Form states for Page Settings / Defaults (Header, Logo, Signature, Terms, etc.)
+  const [pageHeader, setPageHeader] = useState(userProfile?.pageHeader || 'Lifehut Workspace Billing Statement');
+  const [logoUrl, setLogoUrl] = useState(userProfile?.logoUrl || 'https://images.unsplash.com/photo-1541888946425-d81bb19240f5?q=80&w=100&auto=format&fit=crop');
+  const [signature, setSignature] = useState(userProfile?.signature || 'Authorized Signatory');
+  const [termsAndConditions, setTermsAndConditions] = useState(userProfile?.termsAndConditions || '1. All payments should be made strictly as per billing stages.\n2. Delayed payments may attract delay interest.\n3. Dispute resolution subject to local jurisdiction.');
 
   const [saving, setSaving] = useState(false);
   const [msg, setMsg] = useState<{ text: string; type: 'success' | 'error' } | null>(null);
@@ -76,6 +78,26 @@ export default function SettingsPage() {
     }
   };
 
+  const handleSaveDefaults = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setSaving(true);
+    setMsg(null);
+    try {
+      await updateUserProfile({
+        pageHeader,
+        logoUrl,
+        signature,
+        termsAndConditions
+      });
+      setMsg({ text: 'Page & Document settings updated successfully! ✅', type: 'success' });
+    } catch (err: any) {
+      console.error(err);
+      setMsg({ text: err.message || 'Failed to update defaults.', type: 'error' });
+    } finally {
+      setSaving(false);
+    }
+  };
+
   const handleCopyToClipboard = () => {
     navigator.clipboard.writeText(dbString);
     setCopied(true);
@@ -83,30 +105,95 @@ export default function SettingsPage() {
   };
 
   const handleDownloadBackup = () => {
-    const blob = new Blob([dbString], { type: 'application/json' });
-    const url = URL.createObjectURL(blob);
-    const link = document.createElement('a');
-    link.href = url;
-    link.download = `lifehut_workspace_backup_${new Date().toISOString().split('T')[0]}.json`;
-    link.click();
-    URL.revokeObjectURL(url);
+    try {
+      const wb = XLSX.utils.book_new();
+
+      // Convert each db collection to sheet
+      const wsProjects = XLSX.utils.json_to_sheet(currentDb.projects || []);
+      XLSX.utils.book_append_sheet(wb, wsProjects, 'Projects');
+
+      const wsStages = XLSX.utils.json_to_sheet(currentDb.stages || []);
+      XLSX.utils.book_append_sheet(wb, wsStages, 'Payment Stages');
+
+      const wsExtraWorks = XLSX.utils.json_to_sheet(currentDb.extraWorks || []);
+      XLSX.utils.book_append_sheet(wb, wsExtraWorks, 'Extra Works');
+
+      const wsExpenses = XLSX.utils.json_to_sheet(currentDb.expenses || []);
+      XLSX.utils.book_append_sheet(wb, wsExpenses, 'Expenses');
+
+      const wsProgress = XLSX.utils.json_to_sheet(currentDb.progress || []);
+      XLSX.utils.book_append_sheet(wb, wsProgress, 'Daily Progress');
+
+      const wsDocuments = XLSX.utils.json_to_sheet(currentDb.documents || []);
+      XLSX.utils.book_append_sheet(wb, wsDocuments, 'Documents');
+
+      const wsMessages = XLSX.utils.json_to_sheet(currentDb.messages || []);
+      XLSX.utils.book_append_sheet(wb, wsMessages, 'Messages');
+
+      XLSX.writeFile(wb, `lifehut_workspace_backup_${new Date().toISOString().split('T')[0]}.xlsx`);
+      setMsg({ text: 'Excel backup file downloaded successfully! 📊', type: 'success' });
+    } catch (err: any) {
+      console.error(err);
+      setMsg({ text: `Failed to generate Excel backup: ${err.message}`, type: 'error' });
+    }
   };
 
   const handleImportBackup = () => {
-    const raw = prompt('Paste your previously backed-up JSON data here:');
-    if (!raw) return;
-    try {
-      const parsed = JSON.parse(raw);
-      if (parsed.projects && parsed.stages) {
-        saveAll(parsed);
-        alert('Data successfully imported and active! Please reload to view.');
-        window.location.reload();
-      } else {
-        alert('Invalid schema! Missing "projects" or "stages" headers.');
-      }
-    } catch (e) {
-      alert('Failed to parse JSON. Please make sure the string is clean.');
-    }
+    const fileInput = document.createElement('input');
+    fileInput.type = 'file';
+    fileInput.accept = '.xlsx, .xls';
+    fileInput.onchange = (e: any) => {
+      const file = e.target.files?.[0];
+      if (!file) return;
+
+      const reader = new FileReader();
+      reader.onload = (evt) => {
+        try {
+          const data = new Uint8Array(evt.target?.result as ArrayBuffer);
+          const workbook = XLSX.read(data, { type: 'array' });
+          const importedDb: any = {
+            projects: [],
+            stages: [],
+            extraWorks: [],
+            expenses: [],
+            progress: [],
+            documents: [],
+            messages: []
+          };
+          
+          const sheetMap: Record<string, string> = {
+            'Projects': 'projects',
+            'Payment Stages': 'stages',
+            'Extra Works': 'extraWorks',
+            'Expenses': 'expenses',
+            'Daily Progress': 'progress',
+            'Documents': 'documents',
+            'Messages': 'messages'
+          };
+          
+          workbook.SheetNames.forEach(sheetName => {
+            const dbKey = sheetMap[sheetName];
+            if (dbKey) {
+              const ws = workbook.Sheets[sheetName];
+              importedDb[dbKey] = XLSX.utils.sheet_to_json(ws);
+            }
+          });
+          
+          if (importedDb.projects && importedDb.projects.length > 0) {
+            saveAll(importedDb);
+            alert('Excel Backup successfully imported and synchronized! Reloading to apply changes...');
+            window.location.reload();
+          } else {
+            alert('Invalid Excel backup structure! Please upload a valid backup generated by this system (must contain "Projects" sheet).');
+          }
+        } catch (err: any) {
+          console.error(err);
+          alert(`Failed to import Excel backup: ${err.message}`);
+        }
+      };
+      reader.readAsArrayBuffer(file);
+    };
+    fileInput.click();
   };
 
   const handleResetSandbox = () => {
@@ -131,7 +218,7 @@ export default function SettingsPage() {
               Workspace Settings
             </h3>
             <p className="text-[12px] leading-relaxed max-w-2xl" style={{ color: 'rgba(255,255,255,0.65)' }}>
-              Configure company variables, authentication parameters, cloud database state, and local backups.
+              Configure company variables, page layout defaults, and local spreadsheet backups.
             </p>
           </div>
         </div>
@@ -161,33 +248,13 @@ export default function SettingsPage() {
           </button>
 
           <button
-            onClick={() => setActiveSection('auth')}
-            className={`w-full text-left px-3.5 py-2.5 rounded-lg text-xs font-semibold flex items-center gap-2.5 transition-colors ${
-              activeSection === 'auth' ? 'bg-[var(--lh-blue)] text-white' : 'text-[var(--lh-text-secondary)] hover:bg-[var(--lh-surface-muted)]'
-            }`}
-          >
-            <Lock className="w-4 h-4" />
-            <span>Auth & Security</span>
-          </button>
-
-          <button
-            onClick={() => setActiveSection('storage')}
-            className={`w-full text-left px-3.5 py-2.5 rounded-lg text-xs font-semibold flex items-center gap-2.5 transition-colors ${
-              activeSection === 'storage' ? 'bg-[var(--lh-blue)] text-white' : 'text-[var(--lh-text-secondary)] hover:bg-[var(--lh-surface-muted)]'
-            }`}
-          >
-            <Database className="w-4 h-4" />
-            <span>Storage & DB</span>
-          </button>
-
-          <button
             onClick={() => setActiveSection('defaults')}
             className={`w-full text-left px-3.5 py-2.5 rounded-lg text-xs font-semibold flex items-center gap-2.5 transition-colors ${
               activeSection === 'defaults' ? 'bg-[var(--lh-blue)] text-white' : 'text-[var(--lh-text-secondary)] hover:bg-[var(--lh-surface-muted)]'
             }`}
           >
             <FileSpreadsheet className="w-4 h-4" />
-            <span>Project Defaults</span>
+            <span>Page & Document Settings</span>
           </button>
 
           <button
@@ -301,168 +368,78 @@ export default function SettingsPage() {
             </form>
           )}
 
-          {/* SECTION 2: AUTHENTICATION & SECURITY */}
-          {activeSection === 'auth' && (
-            <div className="space-y-5">
+          {/* SECTION 4: PAGE & DOCUMENT SETTINGS */}
+          {activeSection === 'defaults' && (
+            <form onSubmit={handleSaveDefaults} className="space-y-4">
               <div>
-                <h4 className="text-sm font-semibold mb-1" style={{ color: 'var(--lh-text-primary)' }}>Authentication & Security Controls</h4>
+                <h4 className="text-sm font-semibold mb-1" style={{ color: 'var(--lh-text-primary)' }}>Page & Document Layout Defaults</h4>
                 <p className="text-[11.5px]" style={{ color: 'var(--lh-text-secondary)' }}>
-                  View details of the currently enforced modular authentication architecture.
-                </p>
-              </div>
-
-              {/* Status details */}
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div className="p-4 rounded-xl border border-[var(--lh-border)] bg-[var(--lh-surface-muted)] space-y-2">
-                  <div className="flex items-center gap-2 text-xs font-semibold text-[var(--lh-text-primary)]">
-                    <Key className="w-4 h-4 text-[var(--lh-blue)]" />
-                    <span>Contractor Auth Protocol</span>
-                  </div>
-                  <p className="text-[11px] text-[var(--lh-text-secondary)]">
-                    Contractors authenticate exclusively via Google Sign-In. This registers them with secure, encrypted OAuth handles in the project's User directories.
-                  </p>
-                  <div className="pt-2 flex items-center justify-between text-[11px]">
-                    <span className="font-semibold">Authentication Type:</span>
-                    <span className="lh-badge lh-badge-info">OAuth (Google)</span>
-                  </div>
-                </div>
-
-                <div className="p-4 rounded-xl border border-[var(--lh-border)] bg-[var(--lh-surface-muted)] space-y-2">
-                  <div className="flex items-center gap-2 text-xs font-semibold text-[var(--lh-text-primary)]">
-                    <CloudLightning className="w-4 h-4 text-[var(--lh-amber)]" />
-                    <span>Client Auth Protocol</span>
-                  </div>
-                  <p className="text-[11px] text-[var(--lh-text-secondary)]">
-                    Clients utilize anonymous Firebase session tokens bound dynamically to a verified client code lookup sheet in Firestore.
-                  </p>
-                  <div className="pt-2 flex items-center justify-between text-[11px]">
-                    <span className="font-semibold">Access Verification:</span>
-                    <span className="lh-badge lh-badge-warning">Client Access Code</span>
-                  </div>
-                </div>
-              </div>
-
-              {/* Security permissions explanation */}
-              <div className="p-4 rounded-xl border border-[#9FE1CB] bg-[#ECFDF5] space-y-2">
-                <div className="flex items-center gap-2 text-xs font-semibold text-[#047857]">
-                  <ShieldCheck className="w-4 h-4" />
-                  <span>Verified Security Guard & Role Permissions</span>
-                </div>
-                <div className="text-[11px] text-[#065F46] space-y-1">
-                  <p className="font-semibold">Current user is logged in as: <span className="font-mono text-black font-bold uppercase">{userRole || 'Contractor (Sandbox/Demo)'}</span></p>
-                  <ul className="list-disc pl-4 space-y-1 mt-1 font-medium">
-                    <li><strong className="text-black">Contractor Role:</strong> Has full CRUD (Create, Read, Update, Delete) rights over projects, payment milestones, expenses, extra works, documents, and messaging boards.</li>
-                    <li><strong className="text-black">Client Role:</strong> Enforces read-only access guards across all project metrics. No project parameter can be modified except approving scope changes (extra works) and contributing to project chat.</li>
-                  </ul>
-                </div>
-              </div>
-            </div>
-          )}
-
-          {/* SECTION 3: STORAGE & DATABASE */}
-          {activeSection === 'storage' && (
-            <div className="space-y-5">
-              <div>
-                <h4 className="text-sm font-semibold mb-1" style={{ color: 'var(--lh-text-primary)' }}>Storage & Database Integration</h4>
-                <p className="text-[11.5px]" style={{ color: 'var(--lh-text-secondary)' }}>
-                  State parameters for persistent real-time Firestore database and Supabase file servers.
+                  Set up default headers, logos, signatures, and terms applied to newly generated statements and pages.
                 </p>
               </div>
 
               <div className="space-y-4">
-                <div className="p-4 rounded-xl border border-[var(--lh-border)] space-y-3">
-                  <div className="flex items-center gap-2 text-xs font-semibold text-[var(--lh-text-primary)]">
-                    <Database className="w-4 h-4 text-[var(--lh-blue)]" />
-                    <span>Google Cloud Firestore</span>
-                  </div>
-                  <div className="grid grid-cols-2 gap-2 text-[11px]">
-                    <span className="text-[var(--lh-text-secondary)] font-medium">Database Node:</span>
-                    <span className="font-mono text-right font-semibold">projects (Default Default)</span>
-                    <span className="text-[var(--lh-text-secondary)] font-medium">Client Code Lookups:</span>
-                    <span className="font-mono text-right font-semibold">clientCodes</span>
-                    <span className="text-[var(--lh-text-secondary)] font-medium">Sync Status:</span>
-                    <span className="text-right text-[#047857] font-semibold">{isDemoMode ? 'Offline Sandbox (Demo)' : 'Authenticated & Connected'}</span>
-                  </div>
+                <div>
+                  <label className="lh-label">Page Header Text</label>
+                  <input
+                    type="text" required value={pageHeader}
+                    onChange={(e) => setPageHeader(e.target.value)}
+                    className="lh-input" placeholder="e.g. Lifehut Workspace Billing Statement"
+                  />
+                  <span className="text-[10px] text-[var(--lh-text-tertiary)] mt-1 block">Primary header text displayed at the top of statement pages.</span>
+                </div>
+                
+                <div>
+                  <label className="lh-label">Company Logo URL</label>
+                  <input
+                    type="text" required value={logoUrl}
+                    onChange={(e) => setLogoUrl(e.target.value)}
+                    className="lh-input" placeholder="e.g. https://domain.com/logo.png"
+                  />
+                  <span className="text-[10px] text-[var(--lh-text-tertiary)] mt-1 block">Web link to your company logo image.</span>
                 </div>
 
-                <div className="p-4 rounded-xl border border-[var(--lh-border)] space-y-3">
-                  <div className="flex items-center gap-2 text-xs font-semibold text-[var(--lh-text-primary)]">
-                    <FolderOpen className="w-4 h-4 text-[#10B981]" />
-                    <span>Supabase Storage Integration</span>
-                  </div>
-                  <p className="text-[11px] text-[var(--lh-text-secondary)] leading-normal">
-                    Media files, progress photos, and contract agreement uploads are securely stored inside Supabase file buckets. This optimizes database volume and ensures instant download pipelines.
-                  </p>
-                  <div className="grid grid-cols-2 gap-2 text-[11px] pt-1">
-                    <span className="text-[var(--lh-text-secondary)] font-medium">Active Storage Bucket:</span>
-                    <span className="font-mono text-right font-semibold">workspace-files</span>
-                    <span className="text-[var(--lh-text-secondary)] font-medium">Upload Protocol:</span>
-                    <span className="font-mono text-right font-semibold">supabase-js API v2</span>
-                  </div>
+                <div>
+                  <label className="lh-label">Authorized Signature / Designation</label>
+                  <input
+                    type="text" required value={signature}
+                    onChange={(e) => setSignature(e.target.value)}
+                    className="lh-input" placeholder="e.g. Authorized Signatory for Lifehut"
+                  />
+                  <span className="text-[10px] text-[var(--lh-text-tertiary)] mt-1 block">Label placed above the signature box on generated document prints.</span>
                 </div>
-              </div>
-            </div>
-          )}
 
-          {/* SECTION 4: PROJECT DEFAULTS */}
-          {activeSection === 'defaults' && (
-            <div className="space-y-4">
-              <div>
-                <h4 className="text-sm font-semibold mb-1" style={{ color: 'var(--lh-text-primary)' }}>Project Defaults & Standards</h4>
-                <p className="text-[11.5px]" style={{ color: 'var(--lh-text-secondary)' }}>
-                  Set up default payment terms and tax variables applied to newly drafted projects or billing stages.
-                </p>
-              </div>
-
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                 <div>
-                  <label className="lh-label">Default Retainage (%)</label>
-                  <input
-                    type="number" value={defaultRetainage}
-                    onChange={(e) => setDefaultRetainage(e.target.value)}
-                    className="lh-input" min="0" max="100"
+                  <label className="lh-label">Default Terms & Conditions</label>
+                  <textarea
+                    rows={4} required value={termsAndConditions}
+                    onChange={(e) => setTermsAndConditions(e.target.value)}
+                    className="lh-input font-mono text-xs" style={{ minHeight: '100px', resize: 'vertical' }}
+                    placeholder="Enter standard contract terms..."
                   />
-                  <span className="text-[10px] text-[var(--lh-text-tertiary)] mt-1 block">Contract value held back for security.</span>
-                </div>
-                <div>
-                  <label className="lh-label">Standard Payment Terms (Days)</label>
-                  <input
-                    type="number" value={paymentTermsDays}
-                    onChange={(e) => setPaymentTermsDays(e.target.value)}
-                    className="lh-input" min="1"
-                  />
-                  <span className="text-[10px] text-[var(--lh-text-tertiary)] mt-1 block">Due window following milestone invoice.</span>
-                </div>
-                <div>
-                  <label className="lh-label">Standard GST Rate (%)</label>
-                  <input
-                    type="number" value={defaultTaxRate}
-                    onChange={(e) => setDefaultTaxRate(e.target.value)}
-                    className="lh-input" min="0" max="100"
-                  />
-                  <span className="text-[10px] text-[var(--lh-text-tertiary)] mt-1 block">Goods & Services tax applied by default.</span>
+                  <span className="text-[10px] text-[var(--lh-text-tertiary)] mt-1 block">Terms listed at the bottom of estimates and final bill summaries.</span>
                 </div>
               </div>
 
               <div className="pt-3 border-t border-[var(--lh-border)]">
                 <button
-                  type="button" onClick={() => alert('Standard project configuration parameters updated! ⚙️')}
+                  type="submit" disabled={saving}
                   className="lh-btn lh-btn-primary lh-btn-md flex items-center gap-1.5"
                 >
                   <Save className="w-4 h-4" />
-                  <span>Update Defaults</span>
+                  <span>{saving ? 'Updating Settings...' : 'Save Page Defaults'}</span>
                 </button>
               </div>
-            </div>
+            </form>
           )}
 
           {/* SECTION 5: BACKUP & SYNC */}
           {activeSection === 'backup' && (
             <div className="space-y-5">
               <div>
-                <h4 className="text-sm font-semibold mb-1" style={{ color: 'var(--lh-text-primary)' }}>Backup & Sandbox Sync</h4>
+                <h4 className="text-sm font-semibold mb-1" style={{ color: 'var(--lh-text-primary)' }}>Excel Backup & Sync</h4>
                 <p className="text-[11.5px]" style={{ color: 'var(--lh-text-secondary)' }}>
-                  Manage offline states, export raw schema payloads, or import local data trees back into the sandbox.
+                  Manage offline states, export spreadsheet workbook backups, or import local Excel data sheets back into the sandbox.
                 </p>
               </div>
 
@@ -490,27 +467,19 @@ export default function SettingsPage() {
               {/* Database Operations */}
               <div className="flex flex-wrap gap-2 pt-2">
                 <button
-                  onClick={handleCopyToClipboard}
-                  className="lh-btn lh-btn-secondary lh-btn-sm flex items-center gap-1"
-                >
-                  <Download className="w-3.5 h-3.5" />
-                  <span>{copied ? 'Copied Payload!' : 'Copy Schema'}</span>
-                </button>
-
-                <button
                   onClick={handleDownloadBackup}
-                  className="lh-btn lh-btn-secondary lh-btn-sm flex items-center gap-1"
+                  className="lh-btn lh-btn-primary lh-btn-sm flex items-center gap-1.5 bg-emerald-600 border-emerald-600 text-white hover:bg-emerald-700 hover:border-emerald-700"
                 >
                   <Download className="w-3.5 h-3.5" />
-                  <span>Download Backup File</span>
+                  <span>Download Excel Backup</span>
                 </button>
 
                 <button
                   onClick={handleImportBackup}
-                  className="lh-btn lh-btn-secondary lh-btn-sm flex items-center gap-1"
+                  className="lh-btn lh-btn-secondary lh-btn-sm flex items-center gap-1.5"
                 >
                   <Upload className="w-3.5 h-3.5" />
-                  <span>Import JSON State</span>
+                  <span>Upload Excel Backup</span>
                 </button>
 
                 <button
@@ -525,7 +494,7 @@ export default function SettingsPage() {
 
               {/* Schema Inspector */}
               <div className="space-y-1.5 pt-2">
-                <span className="text-[11px] font-semibold text-[var(--lh-text-secondary)] block">Sandbox Schema Inspector</span>
+                <span className="text-[11px] font-semibold text-[var(--lh-text-secondary)] block">Sandbox JSON Payload Preview</span>
                 <pre className="p-3 bg-slate-900 rounded-lg text-[10px] font-mono text-slate-200 max-h-48 overflow-auto">
                   {dbString}
                 </pre>
