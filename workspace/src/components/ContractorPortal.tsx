@@ -42,7 +42,8 @@ import {
   Bell,
   Settings,
   Download,
-  Upload
+  Upload,
+  LogOut
 } from 'lucide-react';
 
 interface ContractorPortalProps {
@@ -109,7 +110,7 @@ export default function ContractorPortal({
   onSelectProject,
   ownerName
 }: ContractorPortalProps) {
-  const { user, userProfile, permissionGuard } = useAuth();
+  const { user, userProfile, permissionGuard, logout } = useAuth();
   const displayOwnerName = ownerName || userProfile?.ownerName || user?.displayName || user?.email?.split('@')[0] || 'Contractor';
 
   // Navigation State
@@ -1113,6 +1114,17 @@ setIsCompressingPhotos(false);
                 </button>
               );
             })}
+            <button
+              onClick={async () => {
+                if (confirm('Are you sure you want to sign out?')) {
+                  await logout();
+                }
+              }}
+              className="flex-shrink-0 px-3 py-2 rounded-lg text-[11.5px] font-bold flex items-center gap-1.5 bg-rose-50 text-rose-600 border border-rose-200 dark:bg-rose-950/20 dark:border-rose-900 transition-colors"
+            >
+              <LogOut className="w-3.5 h-3.5 text-rose-600" />
+              <span>Sign out</span>
+            </button>
           </div>
 
           {/* Desktop sidebar */}
@@ -1150,6 +1162,20 @@ setIsCompressingPhotos(false);
               >
                 <Plus className="w-4 h-4" />
                 <span>New project</span>
+              </button>
+            </div>
+
+            <div className="pt-2 border-t border-slate-100 dark:border-slate-800">
+              <button
+                onClick={async () => {
+                  if (confirm('Are you sure you want to sign out?')) {
+                    await logout();
+                  }
+                }}
+                className="w-full text-left px-3 py-2 text-[12px] font-bold text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-950/20 rounded-lg transition-colors flex items-center gap-2 animate-fade-in"
+              >
+                <LogOut className="w-4 h-4 text-rose-600" />
+                <span>Logout / Signout</span>
               </button>
             </div>
           </div>

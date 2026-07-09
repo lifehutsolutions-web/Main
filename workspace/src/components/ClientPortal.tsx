@@ -91,7 +91,7 @@ export default function ClientPortal({
   const [isLoggingIn, setIsLoggingIn] = useState(false);
 
   // Consume Auth Context
-  const { loginAsClient, user, userRole } = useAuth();
+  const { loginAsClient, user, userRole, logout } = useAuth();
 
   // Active Project for the Client (Declared early to prevent block-scope hoisting issues)
   const activeProject = projects.find(p => {
@@ -289,9 +289,6 @@ export default function ClientPortal({
                 placeholder="e.g., CLIENT-GREEN"
                 className="lh-input text-center font-mono tracking-wide disabled:opacity-50"
               />
-              <p className="text-[11px] mt-2" style={{ color: 'var(--lh-text-tertiary)' }}>
-                Try <span className="font-mono font-semibold px-1.5 py-0.5 rounded" style={{ background: 'var(--lh-surface-muted)', color: 'var(--lh-text-secondary)' }}>CLIENT-GREEN</span> for the demo dashboard.
-              </p>
             </div>
 
             {loginError && (
@@ -480,9 +477,10 @@ export default function ClientPortal({
             {/* Logout / Signout at the End of Sidebar */}
             <div className="pt-2 border-t border-slate-100 dark:border-slate-800">
               <button
-                onClick={() => {
+                onClick={async () => {
                   localStorage.removeItem('metrobuild_client_code');
                   setIsLoggedIn(false);
+                  await logout();
                 }}
                 className="w-full text-left px-3 py-2 text-[12px] font-bold text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-950/20 rounded-lg transition-colors flex items-center gap-2"
               >
@@ -514,9 +512,10 @@ export default function ClientPortal({
             
             {/* Mobile Switch Account & Signout items at end of scroll list */}
             <button
-              onClick={() => {
+              onClick={async () => {
                 localStorage.removeItem('metrobuild_client_code');
                 setIsLoggedIn(false);
+                await logout();
               }}
               className="px-4 py-2 rounded-full text-xs font-semibold whitespace-nowrap flex items-center gap-1.5 bg-slate-100 text-slate-600 border border-slate-200 hover:bg-slate-200 flex-shrink-0"
             >
@@ -525,9 +524,10 @@ export default function ClientPortal({
             </button>
             
             <button
-              onClick={() => {
+              onClick={async () => {
                 localStorage.removeItem('metrobuild_client_code');
                 setIsLoggedIn(false);
+                await logout();
               }}
               className="px-4 py-2 rounded-full text-xs font-bold whitespace-nowrap flex items-center gap-1.5 bg-rose-50 text-rose-600 border border-rose-200 hover:bg-rose-100 flex-shrink-0"
             >
