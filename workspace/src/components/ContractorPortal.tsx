@@ -225,15 +225,15 @@ export default function ContractorPortal({
   // Active highlighted project 
   const activeProj = projects.find(p => p.id === selectedProjId) || projects[0];
 
-  // Group items by selected active project
-  const activeStages = stages.filter(s => s.projectId === selectedProjId);
-  const activeExtraWorks = extraWorks.filter(e => e.projectId === selectedProjId);
+  // Group items by selected active project (or show all if selectedProjId is 'all')
+  const activeStages = selectedProjId === 'all' ? stages : stages.filter(s => s.projectId === selectedProjId);
+  const activeExtraWorks = selectedProjId === 'all' ? extraWorks : extraWorks.filter(e => e.projectId === selectedProjId);
   const activeExpenses = expenses.filter(ex => {
     if (filterProject === 'all') return true;
     return ex.projectId === filterProject;
   });
-  const activeProgress = progress.filter(p => p.projectId === selectedProjId);
-  const activeDocs = documents.filter(d => d.projectId === selectedProjId);
+  const activeProgress = selectedProjId === 'all' ? progress : progress.filter(p => p.projectId === selectedProjId);
+  const activeDocs = selectedProjId === 'all' ? documents : documents.filter(d => d.projectId === selectedProjId);
 
   // Handlers
   const handleCreateProject = (e: React.FormEvent) => {
@@ -363,11 +363,6 @@ export default function ContractorPortal({
       };
     });
     onUpdateStages(updated);
-    // Auto-lock if advance stage is now paid
-    const stg = stages.find(s => s.id === receiptStageId);
-    if (stg?.stageName.toLowerCase().includes('advance')) {
-      onUpdateProjects(projects.map(p => p.id === selectedProjId ? { ...p, isLocked: true } : p));
-    }
     setShowReceiptModal(false);
     setReceiptStageId(null);
   };
@@ -448,11 +443,6 @@ export default function ContractorPortal({
   const handleAddMultiplePaymentStages = (e: React.FormEvent) => {
     e.preventDefault();
     if (!selectedProjId) return;
-
-    if (activeProj?.isLocked) {
-      alert("❌ Locked! Cannot add custom payment stages after the Advance Payment stage has been marked PAID.");
-      return;
-    }
 
     if (newStagesList.some(s => !s.stageName.trim())) {
       alert("❌ All payment stages must have names specified.");
@@ -633,37 +623,14 @@ setIsCompressingPhotos(false);
     }
   };
 
-  // Lock Override Manual Override trigger helper
-  const handleToggleBypassLock = () => {
-    if (!activeProj) return;
-    const choice = confirm(`⚠️ Scope Protection Warning: Bypass Contract Lock?\n\nIf you override this structured lock, you can add or change payment stages. However, modifying base stages after advance receipt causes frequent scope-creeps.\n\nContinue to UNLOCK editing?`);
-    if (choice) {
-      const updated = projects.map(p => {
-        if (p.id === activeProj.id) {
-          return { ...p, isLocked: false };
-        }
-        return p;
-      });
-      onUpdateProjects(updated);
-    }
-  };
-
   // Stage deletion fallback
   const handleDeleteStage = (stageId: string) => {
-    if (activeProj?.isLocked) {
-      alert("❌ Locked! Cannot delete payment milestones in active locked project.");
-      return;
-    }
     if (confirm('Delete this payment stage milestone?')) {
       onUpdateStages(stages.filter(s => s.id !== stageId));
     }
   };
 
   const handleEditStageClick = (stg: PaymentStage) => {
-    if (activeProj?.isLocked) {
-      alert("❌ Project structure is currently locked! Please unlock the project first by clicking 'Bypass lock'.");
-      return;
-    }
     setEditingStage(stg);
   };
 
@@ -699,11 +666,6 @@ setIsCompressingPhotos(false);
   const handleBulkUploadStages = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
-
-    if (activeProj?.isLocked) {
-      alert("❌ Project is currently locked! Please unlock the project first before uploading payment stages.");
-      return;
-    }
 
     const reader = new FileReader();
     reader.onload = (evt) => {
@@ -1014,38 +976,45 @@ setIsCompressingPhotos(false);
 
   const overviewRange = getOverviewDateRange();
 
-  // Filter stages/expenses by date range for Overview metrics
-  const rangedStages = overviewRange
-    ? stages.filter(s => s.dueDate && s.dueDate >= overviewRange.from && s.dueDate <= overviewRange.to)
-    : stages;
-  const rangedExpenses = overviewRange
-    ? expenses.filter(e => e.date && e.date >= overviewRange.from && e.date <= overviewRange.to)
-    : expenses;
+  // Find current/active projects (status is not 'Completed')
+  const currentProjects = projects.filter(p => p.status !== 'Completed');
+  const currentProjectIds = currentProjects.map(p => p.id);
 
-  // Overview aggregates
-  const ovTotalProjects = projects.length;
-  const ovOngoing = projects.filter(p => p.status !== 'Completed').length;
+  // Filter stages/expenses by current projects AND date range for Overview metrics (always cumulative of current projects)
+  const projectStages = stages.filter(s => currentProjectIds.includes(s.projectId));
+  const projectExpenses = expenses.filter(e => currentProjectIds.includes(e.projectId));
+
+  const rangedStages = overviewRange
+    ? projectStages.filter(s => s.dueDate && s.dueDate >= overviewRange.from && s.dueDate <= overviewRange.to)
+    : projectStages;
+  const rangedExpenses = overviewRange
+    ? projectExpenses.filter(e => e.date && e.date >= overviewRange.from && e.date <= overviewRange.to)
+    : projectExpenses;
+
+  // Overview aggregates (cumulative of current projects)
+  const ovTotalProjects = currentProjects.length;
+  const ovOngoing = currentProjects.filter(p => p.status === 'Active').length;
   const ovCompleted = projects.filter(p => p.status === 'Completed').length;
-  const ovOnHold = projects.filter(p => p.status === 'Hold').length;
+  const ovOnHold = currentProjects.filter(p => p.status === 'Hold').length;
 
   const ovTotalDues = rangedStages.reduce((s, st) => s + st.payableAmount, 0);
   const ovCollected = rangedStages.reduce((s, st) => s + (st.receivedAmount || 0), 0);
   const ovPending = ovTotalDues - ovCollected;
 
-  // TodaySummary metrics
+  // TodaySummary metrics (cumulative of current projects)
   const now = new Date();
   const currentYear = now.getFullYear();
   const currentMonthStr = String(now.getMonth() + 1).padStart(2, '0');
   const monthStart = `${currentYear}-${currentMonthStr}-01`;
   const endOfMonth = new Date(currentYear, now.getMonth() + 1, 0).toISOString().split('T')[0];
 
-  const collectedThisMonth = stages
+  const collectedThisMonth = projectStages
     .filter(s => s.dueDate && s.dueDate >= monthStart && s.dueDate <= endOfMonth)
     .reduce((sum, s) => sum + (s.receivedAmount || 0), 0);
 
-  const pendingCollection = stages.reduce((sum, s) => sum + (s.payableAmount - (s.receivedAmount || 0)), 0);
+  const pendingCollection = projectStages.reduce((sum, s) => sum + (s.payableAmount - (s.receivedAmount || 0)), 0);
 
-  const paymentsDueToday = stages.filter(s => s.status !== 'Paid' && s.dueDate === todayStr).length;
+  const paymentsDueToday = projectStages.filter(s => s.status !== 'Paid' && s.dueDate === todayStr).length;
   const ovOverdue = rangedStages.filter(s => (s.receivedAmount || 0) < s.payableAmount && s.dueDate && s.dueDate < todayStr).reduce((s, st) => s + (st.payableAmount - (st.receivedAmount || 0)), 0);
   const ovTotalExpenses = rangedExpenses.reduce((s, e) => s + e.amount, 0);
   const ovProfitLoss = ovCollected - ovTotalExpenses;
@@ -1114,17 +1083,6 @@ setIsCompressingPhotos(false);
                 </button>
               );
             })}
-            <button
-              onClick={async () => {
-                if (confirm('Are you sure you want to sign out?')) {
-                  await logout();
-                }
-              }}
-              className="flex-shrink-0 px-3 py-2 rounded-lg text-[11.5px] font-bold flex items-center gap-1.5 bg-rose-50 text-rose-600 border border-rose-200 dark:bg-rose-950/20 dark:border-rose-900 transition-colors"
-            >
-              <LogOut className="w-3.5 h-3.5 text-rose-600" />
-              <span>Sign out</span>
-            </button>
           </div>
 
           {/* Desktop sidebar */}
@@ -1164,26 +1122,22 @@ setIsCompressingPhotos(false);
                 <span>New project</span>
               </button>
             </div>
-
-            <div className="pt-2 border-t border-slate-100 dark:border-slate-800">
-              <button
-                onClick={async () => {
-                  if (confirm('Are you sure you want to sign out?')) {
-                    await logout();
-                  }
-                }}
-                className="w-full text-left px-3 py-2 text-[12px] font-bold text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-950/20 rounded-lg transition-colors flex items-center gap-2 animate-fade-in"
-              >
-                <LogOut className="w-4 h-4 text-rose-600" />
-                <span>Logout / Signout</span>
-              </button>
-            </div>
           </div>
 
           {/* Connected Projects Indicator Panel */}
           <div className="lh-panel-flat rounded-xl p-3.5 space-y-2.5">
-            <span className="lh-label">Connected sites</span>
+            <span className="lh-label">Connected Projects</span>
             <div className="space-y-1 max-h-[140px] overflow-y-auto">
+              <button
+                onClick={() => onSelectProject('all')}
+                className="w-full px-2.5 py-2 rounded-lg text-left text-[11.5px] font-medium truncate flex items-center justify-between transition-colors"
+                style={selectedProjId === 'all'
+                  ? { background: 'var(--lh-surface)', border: '1px solid var(--lh-blue)', color: 'var(--lh-text-primary)' }
+                  : { background: 'transparent', border: '1px solid transparent', color: 'var(--lh-text-secondary)' }}
+              >
+                <span className="truncate font-semibold">All projects</span>
+                <span className="text-[9px] flex-shrink-0" style={{ color: 'var(--lh-text-tertiary)' }}>A</span>
+              </button>
               {projects
                 .filter(p => p.status !== 'Completed')
                 .map((p) => (
@@ -1220,12 +1174,12 @@ setIsCompressingPhotos(false);
               />
 
               <RecentActivity
-                projects={projects}
-                stages={stages}
-                extraWorks={extraWorks}
-                expenses={expenses}
-                progress={progress}
-                documents={documents}
+                projects={currentProjects}
+                stages={stages.filter(s => currentProjectIds.includes(s.projectId))}
+                extraWorks={extraWorks.filter(e => currentProjectIds.includes(e.projectId))}
+                expenses={expenses.filter(ex => currentProjectIds.includes(ex.projectId))}
+                progress={progress.filter(p => currentProjectIds.includes(p.projectId))}
+                documents={documents.filter(d => currentProjectIds.includes(d.projectId))}
                 userRole="Contractor"
               />
 
@@ -1661,84 +1615,86 @@ setIsCompressingPhotos(false);
           {/* ACTIVE TAB 2: PAYMENT MILESTONES */}
           {activeTab === 'milestones' && (
             <div className="space-y-5">
-              <div className="lh-panel-flat rounded-xl p-4 flex flex-wrap justify-between items-center gap-3">
-                <div className="space-y-0.5">
-                  <p className="text-[12.5px] font-semibold" style={{ color: 'var(--lh-text-primary)' }}>Stage-wise payment setup</p>
-                  <p className="text-[11.5px]" style={{ color: 'var(--lh-text-secondary)' }}>Add milestones and generate printable statement sheets.</p>
+              {selectedProjId === 'all' ? (
+                <div className="lh-panel rounded-xl p-4 bg-amber-50/50 dark:bg-amber-950/10 border border-amber-200/50">
+                  <p className="text-xs font-medium text-amber-800 dark:text-amber-300">
+                    ℹ️ You are currently viewing all projects combined. To add milestones, upload bulk templates, or generate statements, please select a specific project from the sidebar.
+                  </p>
                 </div>
-
-                <div className="flex gap-2">
-                  <button
-                    onClick={() => setShowStageModal(true)}
-                    className="lh-btn lh-btn-primary lh-btn-sm"
-                  >
-                    <Plus className="w-3.5 h-3.5" />
-                    <span>Add stages</span>
-                  </button>
-
-                  <button
-                    onClick={handleToggleBypassLock}
-                    className="lh-btn lh-btn-secondary lh-btn-sm"
-                  >
-                    {activeProj?.isLocked ? <Lock className="w-3 h-3" /> : <Unlock className="w-3 h-3" style={{ color: 'var(--lh-success-text)' }} />}
-                    <span>{activeProj?.isLocked ? 'Bypass lock' : 'Lock structure'}</span>
-                  </button>
-                </div>
-              </div>
-
-              {/* Bulk Upload Section */}
-              {activeProj && (
-                <div className="lh-panel rounded-xl p-3 border border-[var(--lh-border)] bg-slate-50/50 dark:bg-slate-800/10">
-                  <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+              ) : (
+                <>
+                  <div className="lh-panel-flat rounded-xl p-4 flex flex-wrap justify-between items-center gap-3">
                     <div className="space-y-0.5">
-                      <h4 className="text-[12.5px] font-semibold text-[var(--lh-text-primary)] flex items-center gap-1.5">
-                        <FileSpreadsheet className="w-3.5 h-3.5 text-emerald-500" />
-                        <span>Bulk Upload Payment Milestones (Excel)</span>
-                      </h4>
-                      <p className="text-[10.5px] text-[var(--lh-text-secondary)]">
-                        Fill out and upload the template to bulk add milestone payment stages.
-                      </p>
+                      <p className="text-[12.5px] font-semibold" style={{ color: 'var(--lh-text-primary)' }}>Stage-wise payment setup</p>
+                      <p className="text-[11.5px]" style={{ color: 'var(--lh-text-secondary)' }}>Add milestones and generate printable statement sheets.</p>
                     </div>
-                    <div className="flex flex-wrap items-center gap-2">
-                      <button
-                        type="button"
-                        onClick={downloadBulkUploadTemplate}
-                        className="lh-btn lh-btn-secondary lh-btn-xs flex items-center gap-1.5 bg-white hover:bg-slate-100 text-slate-700 dark:bg-slate-900 dark:hover:bg-slate-800 dark:text-slate-200 border border-slate-200 dark:border-slate-800"
-                        style={{ padding: '6px 12px', fontSize: '11px' }}
-                      >
-                        <Download className="w-3.5 h-3.5 text-emerald-500" />
-                        <span>Download Template</span>
-                      </button>
 
-                      <label
-                        className="lh-btn lh-btn-primary lh-btn-xs flex items-center gap-1.5 cursor-pointer bg-emerald-600 hover:bg-emerald-700 text-white border-none"
-                        style={{ padding: '6px 12px', fontSize: '11px', margin: 0 }}
+                    <div className="flex gap-2">
+                      <button
+                        onClick={() => setShowStageModal(true)}
+                        className="lh-btn lh-btn-primary lh-btn-sm"
                       >
-                        <Upload className="w-3.5 h-3.5 text-white" />
-                        <span>Choose Excel File</span>
-                        <input
-                          type="file"
-                          accept=".xlsx, .xls"
-                          className="hidden"
-                          onChange={handleBulkUploadStages}
-                        />
-                      </label>
+                        <Plus className="w-3.5 h-3.5" />
+                        <span>Add stages</span>
+                      </button>
                     </div>
                   </div>
-                </div>
-              )}
 
-              {/* Exact Replicating Statement attachment component */}
-              {activeProj && (
-                <div className="space-y-2.5">
-                  <span className="lh-label">Statement sheet</span>
-                  <PaymentStatementSheet 
-                    project={activeProj} 
-                    stages={activeStages} 
-                    isClientView={false}
-                    contractorName={displayOwnerName}
-                  />
-                </div>
+                  {/* Bulk Upload Section */}
+                  {activeProj && (
+                    <div className="lh-panel rounded-xl p-3 border border-[var(--lh-border)] bg-slate-50/50 dark:bg-slate-800/10">
+                      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+                        <div className="space-y-0.5">
+                          <h4 className="text-[12.5px] font-semibold text-[var(--lh-text-primary)] flex items-center gap-1.5">
+                            <FileSpreadsheet className="w-3.5 h-3.5 text-emerald-500" />
+                            <span>Bulk Upload Payment Milestones (Excel)</span>
+                          </h4>
+                          <p className="text-[10.5px] text-[var(--lh-text-secondary)]">
+                            Fill out and upload the template to bulk add milestone payment stages.
+                          </p>
+                        </div>
+                        <div className="flex flex-wrap items-center gap-2">
+                          <button
+                            type="button"
+                            onClick={downloadBulkUploadTemplate}
+                            className="lh-btn lh-btn-secondary lh-btn-xs flex items-center gap-1.5 bg-white hover:bg-slate-100 text-slate-700 dark:bg-slate-900 dark:hover:bg-slate-800 dark:text-slate-200 border border-slate-200 dark:border-slate-800"
+                            style={{ padding: '6px 12px', fontSize: '11px' }}
+                          >
+                            <Download className="w-3.5 h-3.5 text-emerald-500" />
+                            <span>Download Template</span>
+                          </button>
+
+                          <label
+                            className="lh-btn lh-btn-primary lh-btn-xs flex items-center gap-1.5 cursor-pointer bg-emerald-600 hover:bg-emerald-700 text-white border-none"
+                            style={{ padding: '6px 12px', fontSize: '11px', margin: 0 }}
+                          >
+                            <Upload className="w-3.5 h-3.5 text-white" />
+                            <span>Choose Excel File</span>
+                            <input
+                              type="file"
+                              accept=".xlsx, .xls"
+                              className="hidden"
+                              onChange={handleBulkUploadStages}
+                            />
+                          </label>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Exact Replicating Statement attachment component */}
+                  {activeProj && (
+                    <div className="space-y-2.5">
+                      <span className="lh-label">Statement sheet</span>
+                      <PaymentStatementSheet 
+                        project={activeProj} 
+                        stages={activeStages} 
+                        isClientView={false}
+                        contractorName={displayOwnerName}
+                      />
+                    </div>
+                  )}
+                </>
               )}
 
               {/* Milestones table */}
@@ -1747,13 +1703,14 @@ setIsCompressingPhotos(false);
                   <h4 className="text-[13px] font-semibold" style={{ color: 'var(--lh-text-primary)' }}>Active milestones</h4>
                 </div>
                 {activeStages.length === 0 ? (
-                  <p className="text-[12px] py-8 italic text-center" style={{ color: 'var(--lh-text-tertiary)' }}>No stages configured. Click "Add stages" above to begin.</p>
+                  <p className="text-[12px] py-8 italic text-center" style={{ color: 'var(--lh-text-tertiary)' }}>No stages configured. Select a project to configure stages.</p>
                 ) : (
                   <div className="overflow-x-auto">
                     <table className="lh-table">
                       <thead>
                         <tr>
                           <th>#</th>
+                          {selectedProjId === 'all' && <th>Project</th>}
                           <th>Stage</th>
                           <th>Due date</th>
                           <th style={{ textAlign: 'right' }}>Amount</th>
@@ -1767,6 +1724,11 @@ setIsCompressingPhotos(false);
                           return (
                             <tr key={stg.id}>
                               <td style={{ color: 'var(--lh-text-tertiary)' }}>{sIdx + 1}</td>
+                              {selectedProjId === 'all' && (
+                                <td className="text-[11px] font-medium text-[var(--lh-text-secondary)]">
+                                  {projects.find(p => p.id === stg.projectId)?.name || 'Unknown'}
+                                </td>
+                              )}
                               <td className="font-medium">
                                 <div className="flex items-center gap-1.5">
                                   <span>{stg.stageName}</span>
@@ -2010,29 +1972,38 @@ setIsCompressingPhotos(false);
           {/* ACTIVE TAB 4: EXTRA WORKS REQUESTS */}
           {activeTab === 'extraworks' && (
             <div className="space-y-5">
-              <div className="lh-panel-flat rounded-xl p-4 flex items-center justify-between flex-wrap gap-3">
-                <div className="space-y-0.5">
-                  <p className="text-[12.5px] font-semibold" style={{ color: 'var(--lh-text-primary)' }}>Scope variation ledger</p>
-                  <p className="text-[11.5px]" style={{ color: 'var(--lh-text-secondary)' }}>Request supplemental works and monitor client approvals.</p>
+              {selectedProjId === 'all' ? (
+                <div className="lh-panel rounded-xl p-4 bg-amber-50/50 dark:bg-amber-950/10 border border-amber-200/50">
+                  <p className="text-xs font-medium text-amber-800 dark:text-amber-300">
+                    ℹ️ You are currently viewing all projects combined. To request a scope variation, please select a specific project from the sidebar.
+                  </p>
                 </div>
-                <button
-                  onClick={() => setShowExtraModal(true)}
-                  className="lh-btn lh-btn-primary lh-btn-sm"
-                >
-                  <Plus className="w-3.5 h-3.5" />
-                  <span>Request variation</span>
-                </button>
-              </div>
+              ) : (
+                <div className="lh-panel-flat rounded-xl p-4 flex items-center justify-between flex-wrap gap-3">
+                  <div className="space-y-0.5">
+                    <p className="text-[12.5px] font-semibold" style={{ color: 'var(--lh-text-primary)' }}>Scope variation ledger</p>
+                    <p className="text-[11.5px]" style={{ color: 'var(--lh-text-secondary)' }}>Request supplemental works and monitor client approvals.</p>
+                  </div>
+                  <button
+                    onClick={() => setShowExtraModal(true)}
+                    className="lh-btn lh-btn-primary lh-btn-sm"
+                  >
+                    <Plus className="w-3.5 h-3.5" />
+                    <span>Request variation</span>
+                  </button>
+                </div>
+              )}
 
               {/* Extra works table */}
               <div className="lh-panel rounded-xl overflow-hidden">
                 {activeExtraWorks.length === 0 ? (
-                  <p className="text-[12px] italic text-center py-8" style={{ color: 'var(--lh-text-tertiary)' }}>No scope variations submitted.</p>
+                  <p className="text-[12px] italic text-center py-8" style={{ color: 'var(--lh-text-tertiary)' }}>No scope variations submitted. Select a project to submit or view variations.</p>
                 ) : (
                   <div className="overflow-x-auto">
                     <table className="lh-table">
                       <thead>
                         <tr>
+                          {selectedProjId === 'all' && <th>Project</th>}
                           <th>Description</th>
                           <th>Date</th>
                           <th style={{ textAlign: 'right' }}>Estimated cost</th>
@@ -2043,6 +2014,11 @@ setIsCompressingPhotos(false);
                       <tbody>
                         {activeExtraWorks.map((ew) => (
                           <tr key={ew.id}>
+                            {selectedProjId === 'all' && (
+                              <td className="text-[11px] font-medium text-[var(--lh-text-secondary)]">
+                                {projects.find(p => p.id === ew.projectId)?.name || 'Unknown'}
+                              </td>
+                            )}
                             <td className="font-medium max-w-[260px]">{ew.description}</td>
                             <td style={{ color: 'var(--lh-text-tertiary)' }}>{ew.date}</td>
                             <td style={{ textAlign: 'right' }} className="font-semibold font-mono">+₹{ew.amount.toLocaleString('en-IN')}</td>
@@ -2067,29 +2043,37 @@ setIsCompressingPhotos(false);
           {/* ACTIVE TAB 5: DAILY PROGRESS */}
           {activeTab === 'progress' && (
             <div className="space-y-5">
-              <div className="lh-panel-flat rounded-xl p-4 flex items-center justify-between flex-wrap gap-3">
-                <div className="space-y-0.5">
-                  <p className="text-[12.5px] font-semibold" style={{ color: 'var(--lh-text-primary)' }}>Site progress logger</p>
-                  <p className="text-[11.5px]" style={{ color: 'var(--lh-text-secondary)' }}>Publish daily photos or video updates to the client.</p>
+              {selectedProjId === 'all' ? (
+                <div className="lh-panel rounded-xl p-4 bg-amber-50/50 dark:bg-amber-950/10 border border-amber-200/50">
+                  <p className="text-xs font-medium text-amber-800 dark:text-amber-300">
+                    ℹ️ You are currently viewing all projects combined. To publish daily progress logs or upload photos, please select a specific project from the sidebar.
+                  </p>
                 </div>
-                <button
-                  onClick={() => setShowProgressModal(true)}
-                  className="lh-btn lh-btn-primary lh-btn-sm"
-                >
-                  <Plus className="w-3.5 h-3.5" />
-                  <span>Add update</span>
-                </button>
-              </div>
+              ) : (
+                <div className="lh-panel-flat rounded-xl p-4 flex items-center justify-between flex-wrap gap-3">
+                  <div className="space-y-0.5">
+                    <p className="text-[12.5px] font-semibold" style={{ color: 'var(--lh-text-primary)' }}>Site progress logger</p>
+                    <p className="text-[11.5px]" style={{ color: 'var(--lh-text-secondary)' }}>Publish daily photos or video updates to the client.</p>
+                  </div>
+                  <button
+                    onClick={() => setShowProgressModal(true)}
+                    className="lh-btn lh-btn-primary lh-btn-sm"
+                  >
+                    <Plus className="w-3.5 h-3.5" />
+                    <span>Add update</span>
+                  </button>
+                </div>
+              )}
 
               <div className="lh-panel rounded-xl p-5">
                 {activeProgress.length === 0 ? (
-                  <p className="text-[12px] italic py-8 text-center" style={{ color: 'var(--lh-text-tertiary)' }}>No progress logs yet.</p>
+                  <p className="text-[12px] italic py-8 text-center" style={{ color: 'var(--lh-text-tertiary)' }}>No progress logs yet. Select a project to add or view progress updates.</p>
                 ) : (
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-3.5">
                     {activeProgress.map((prog) => (
                       <div key={prog.id} className="lh-panel-flat rounded-lg p-3.5 space-y-2.5">
                         <div className="flex justify-between text-[10px] font-semibold" style={{ color: 'var(--lh-text-tertiary)' }}>
-                          <span>Update</span>
+                          <span>{selectedProjId === 'all' ? (projects.find(p => p.id === prog.projectId)?.name || 'Project update') : 'Update'}</span>
                           <span>{prog.date}</span>
                         </div>
                         <p className="lh-panel p-2.5 rounded-lg text-[12px] leading-relaxed" style={{ color: 'var(--lh-text-primary)' }}>{prog.remarks}</p>
@@ -2118,28 +2102,37 @@ setIsCompressingPhotos(false);
           {/* ACTIVE TAB 6: DOCUMENT CABINET */}
           {activeTab === 'documents' && (
             <div className="space-y-5">
-              <div className="lh-panel-flat rounded-xl p-4 flex items-center justify-between flex-wrap gap-3">
-                <div className="space-y-0.5">
-                  <p className="text-[12.5px] font-semibold" style={{ color: 'var(--lh-text-primary)' }}>Document cabinet</p>
-                  <p className="text-[11.5px]" style={{ color: 'var(--lh-text-secondary)' }}>Agreements, quotations, BOQs and drawings.</p>
+              {selectedProjId === 'all' ? (
+                <div className="lh-panel rounded-xl p-4 bg-amber-50/50 dark:bg-amber-950/10 border border-amber-200/50">
+                  <p className="text-xs font-medium text-amber-800 dark:text-amber-300">
+                    ℹ️ You are currently viewing all projects combined. To attach new quotations, agreements, or site drawings, please select a specific project from the sidebar.
+                  </p>
                 </div>
-                <button
-                  onClick={() => setShowDocModal(true)}
-                  className="lh-btn lh-btn-primary lh-btn-sm"
-                >
-                  <Plus className="w-3.5 h-3.5" />
-                  <span>Attach document</span>
-                </button>
-              </div>
+              ) : (
+                <div className="lh-panel-flat rounded-xl p-4 flex items-center justify-between flex-wrap gap-3">
+                  <div className="space-y-0.5">
+                    <p className="text-[12.5px] font-semibold" style={{ color: 'var(--lh-text-primary)' }}>Document cabinet</p>
+                    <p className="text-[11.5px]" style={{ color: 'var(--lh-text-secondary)' }}>Agreements, quotations, BOQs and drawings.</p>
+                  </div>
+                  <button
+                    onClick={() => setShowDocModal(true)}
+                    className="lh-btn lh-btn-primary lh-btn-sm"
+                  >
+                    <Plus className="w-3.5 h-3.5" />
+                    <span>Attach document</span>
+                  </button>
+                </div>
+              )}
 
               <div className="lh-panel rounded-xl overflow-hidden">
                 {activeDocs.length === 0 ? (
-                  <p className="text-[12px] py-8 text-center italic" style={{ color: 'var(--lh-text-tertiary)' }}>No documents loaded yet.</p>
+                  <p className="text-[12px] py-8 text-center italic" style={{ color: 'var(--lh-text-tertiary)' }}>No documents loaded yet. Select a project to upload or view documents.</p>
                 ) : (
                   <div className="overflow-x-auto">
                     <table className="lh-table">
                       <thead>
                         <tr>
+                          {selectedProjId === 'all' && <th>Project</th>}
                           <th>Name</th>
                           <th>Type</th>
                           <th>Size</th>
@@ -2150,6 +2143,11 @@ setIsCompressingPhotos(false);
                       <tbody>
                         {activeDocs.map((doc) => (
                           <tr key={doc.id}>
+                            {selectedProjId === 'all' && (
+                              <td className="text-[11px] font-medium text-[var(--lh-text-secondary)]">
+                                {projects.find(p => p.id === doc.projectId)?.name || 'Unknown'}
+                              </td>
+                            )}
                             <td className="font-medium flex items-center gap-2">
                               <FileText className="w-3.5 h-3.5 flex-shrink-0" style={{ color: 'var(--lh-text-tertiary)' }} />
                               <span className="truncate max-w-[220px]">{doc.name}</span>
@@ -2196,12 +2194,20 @@ setIsCompressingPhotos(false);
               </div>
 
               <div className="flex-1 min-h-[350px]">
-                <ChatComponent 
-                  projectId={selectedProjId}
-                  sender="Contractor"
-                  messages={messages}
-                  onSendMessage={onSendMessage}
-                />
+                {selectedProjId === 'all' ? (
+                  <div className="flex flex-col items-center justify-center h-full text-center p-6 space-y-3 bg-slate-50 dark:bg-slate-800/25 rounded-xl border border-dashed border-[var(--lh-border)]">
+                    <p className="text-sm font-medium text-[var(--lh-text-secondary)]">
+                      Please select a specific project from the sidebar to chat with its client.
+                    </p>
+                  </div>
+                ) : (
+                  <ChatComponent 
+                    projectId={selectedProjId}
+                    sender="Contractor"
+                    messages={messages}
+                    onSendMessage={onSendMessage}
+                  />
+                )}
               </div>
             </div>
           )}
@@ -2419,7 +2425,7 @@ setIsCompressingPhotos(false);
                       onChange={(e) => setReportProjectFilter(e.target.value)}
                       className="lh-select"
                     >
-                      <option value="all">All connected sites</option>
+                      <option value="all">All connected projects</option>
                       {projects.map(p => (
                         <option key={p.id} value={p.id}>{p.name} ({p.clientName})</option>
                       ))}
@@ -2781,13 +2787,6 @@ setIsCompressingPhotos(false);
               </button>
             </div>
 
-            {activeProj?.isLocked && (
-              <div className="p-3 rounded-lg text-[11.5px] leading-relaxed flex items-start gap-2" style={{ background: 'var(--lh-warning-bg)', color: 'var(--lh-warning-text)' }}>
-                <AlertTriangle className="w-3.5 h-3.5 flex-shrink-0 mt-0.5" />
-                <span>The milestone structure is locked. Click "Bypass lock" in the dashboard first to make manual additions.</span>
-              </div>
-            )}
-
             <form onSubmit={handleAddMultiplePaymentStages} className="space-y-4">
               
               <div className="space-y-3 max-h-[380px] overflow-y-auto pr-1">
@@ -2868,9 +2867,7 @@ setIsCompressingPhotos(false);
                 </button>
                 <button
                   type="submit"
-                  disabled={activeProj?.isLocked}
                   className="lh-btn lh-btn-primary lh-btn-md flex-1"
-                  style={activeProj?.isLocked ? { opacity: 0.5, cursor: 'not-allowed' } : {}}
                 >
                   Publish {newStagesList.length} stages
                 </button>

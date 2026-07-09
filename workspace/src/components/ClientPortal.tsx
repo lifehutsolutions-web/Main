@@ -473,21 +473,6 @@ export default function ClientPortal({
             
               </div>
             </div>
-
-            {/* Logout / Signout at the End of Sidebar */}
-            <div className="pt-2 border-t border-slate-100 dark:border-slate-800">
-              <button
-                onClick={async () => {
-                  localStorage.removeItem('metrobuild_client_code');
-                  setIsLoggedIn(false);
-                  await logout();
-                }}
-                className="w-full text-left px-3 py-2 text-[12px] font-bold text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-950/20 rounded-lg transition-colors flex items-center gap-2"
-              >
-                <Lock className="w-4 h-4" />
-                <span>Logout / Signout</span>
-              </button>
-            </div>
           </div>
 
           {/* Mobile responsive horizontal scroll selection bar */}
@@ -509,31 +494,6 @@ export default function ClientPortal({
                 </button>
               );
             })}
-            
-            {/* Mobile Switch Account & Signout items at end of scroll list */}
-            <button
-              onClick={async () => {
-                localStorage.removeItem('metrobuild_client_code');
-                setIsLoggedIn(false);
-                await logout();
-              }}
-              className="px-4 py-2 rounded-full text-xs font-semibold whitespace-nowrap flex items-center gap-1.5 bg-slate-100 text-slate-600 border border-slate-200 hover:bg-slate-200 flex-shrink-0"
-            >
-              <Users className="w-3.5 h-3.5" />
-              <span>Switch account</span>
-            </button>
-            
-            <button
-              onClick={async () => {
-                localStorage.removeItem('metrobuild_client_code');
-                setIsLoggedIn(false);
-                await logout();
-              }}
-              className="px-4 py-2 rounded-full text-xs font-bold whitespace-nowrap flex items-center gap-1.5 bg-rose-50 text-rose-600 border border-rose-200 hover:bg-rose-100 flex-shrink-0"
-            >
-              <Lock className="w-3.5 h-3.5" />
-              <span>Logout / Signout</span>
-            </button>
           </div>
         </div>
 
@@ -634,7 +594,7 @@ export default function ClientPortal({
                     />
                   </div>
                   <p className="text-[10px] text-slate-400 italic">
-                    *Stage 1 lock is triggered upon clearing of the advance milestone.
+                    *Milestone updates are processed upon approval.
                   </p>
                 </div>
               </div>
@@ -724,7 +684,7 @@ export default function ClientPortal({
                 <span className="lh-badge" style={{ background: 'rgba(230,126,34,0.18)', color: '#F5A961' }}>Variation Scope</span>
                 <h3 className="text-lg font-display font-semibold tracking-tight text-white">Work orders awaiting your review</h3>
                 <p className="text-[12px] leading-relaxed" style={{ color: 'rgba(255,255,255,0.65)' }}>
-                  Additional works the team has logged that need your approval. Approving locks the amount into the adjusted contract total.
+                  Additional works the team has logged that need your approval. Approving adds the amount into the adjusted contract total.
                 </p>
               </div>
 

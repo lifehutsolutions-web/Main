@@ -342,70 +342,95 @@ export default function App() {
     return () => unsubProjects();
   }, [user]);
 
-  // 3. Real-time Subcollection Listeners for Active Selected Project ID (when signed in)
+  // 3. Real-time Subcollection Listeners for All Authorized Projects (when signed in)
   useEffect(() => {
-    if (!user || !selectedProjId || !db) return;
+    if (!user || !db || !db.projects || db.projects.length === 0) return;
 
-    // Safety: ONLY subscribe to subcollections if user is actually authorized for the selected project
-    const hasProject = db && db.projects && db.projects.some(p => p && p.id === selectedProjId && p.memberUids?.includes(user.uid));
-    if (!hasProject) {
-      console.warn(`User is not authorized for selected project ${selectedProjId}. Subscriptions skipped.`);
-      return;
-    }
+    // Filter projects that the user is actually authorized for
+    const authorizedProjects = db.projects.filter(p => p && p.memberUids?.includes(user.uid));
+    if (authorizedProjects.length === 0) return;
 
-    const projectPath = `projects/${selectedProjId}`;
+    const unsubs: (() => void)[] = [];
+    
+    // Maps of project ID -> items for each subcollection to easily merge them
+    const stagesMap: Record<string, PaymentStage[]> = {};
+    const extraWorksMap: Record<string, ExtraWork[]> = {};
+    const expensesMap: Record<string, Expense[]> = {};
+    const progressMap: Record<string, DailyProgress[]> = {};
+    const documentsMap: Record<string, ProjectDocument[]> = {};
+    const messagesMap: Record<string, ChatMessage[]> = {};
 
-    // Stages subscription
-    const unsubStages = onSnapshot(collection(fdb, `${projectPath}/stages`), (snapshot) => {
-      const items: PaymentStage[] = [];
-      snapshot.forEach(d => items.push(d.data() as PaymentStage));
-      setDb(prev => prev ? { ...prev, stages: items } : null);
-    }, (error) => handleFirestoreError(error, OperationType.LIST, `${projectPath}/stages`));
+    const updateDb = () => {
+      setDb(prev => {
+        if (!prev) return null;
+        return {
+          ...prev,
+          stages: Object.values(stagesMap).flat(),
+          extraWorks: Object.values(extraWorksMap).flat(),
+          expenses: Object.values(expensesMap).flat(),
+          progress: Object.values(progressMap).flat(),
+          documents: Object.values(documentsMap).flat(),
+          messages: Object.values(messagesMap).flat()
+        };
+      });
+    };
 
-    // Extra works subscription
-    const unsubExtra = onSnapshot(collection(fdb, `${projectPath}/extraWorks`), (snapshot) => {
-      const items: ExtraWork[] = [];
-      snapshot.forEach(d => items.push(d.data() as ExtraWork));
-      setDb(prev => prev ? { ...prev, extraWorks: items } : null);
-    }, (error) => handleFirestoreError(error, OperationType.LIST, `${projectPath}/extraWorks`));
+    authorizedProjects.forEach(proj => {
+      const projectPath = `projects/${proj.id}`;
 
-    // Expenses subscription
-    const unsubExpenses = onSnapshot(collection(fdb, `${projectPath}/expenses`), (snapshot) => {
-      const items: Expense[] = [];
-      snapshot.forEach(d => items.push(d.data() as Expense));
-      setDb(prev => prev ? { ...prev, expenses: items } : null);
-    }, (error) => handleFirestoreError(error, OperationType.LIST, `${projectPath}/expenses`));
+      // Stages subscription
+      unsubs.push(onSnapshot(collection(fdb, `${projectPath}/stages`), (snapshot) => {
+        const items: PaymentStage[] = [];
+        snapshot.forEach(d => items.push(d.data() as PaymentStage));
+        stagesMap[proj.id] = items;
+        updateDb();
+      }, (error) => handleFirestoreError(error, OperationType.LIST, `${projectPath}/stages`)));
 
-    // Progress subscription
-    const unsubProgress = onSnapshot(collection(fdb, `${projectPath}/progress`), (snapshot) => {
-      const items: DailyProgress[] = [];
-      snapshot.forEach(d => items.push(d.data() as DailyProgress));
-      setDb(prev => prev ? { ...prev, progress: items } : null);
-    }, (error) => handleFirestoreError(error, OperationType.LIST, `${projectPath}/progress`));
+      // Extra works subscription
+      unsubs.push(onSnapshot(collection(fdb, `${projectPath}/extraWorks`), (snapshot) => {
+        const items: ExtraWork[] = [];
+        snapshot.forEach(d => items.push(d.data() as ExtraWork));
+        extraWorksMap[proj.id] = items;
+        updateDb();
+      }, (error) => handleFirestoreError(error, OperationType.LIST, `${projectPath}/extraWorks`)));
 
-    // Documents subscription
-    const unsubDocs = onSnapshot(collection(fdb, `${projectPath}/documents`), (snapshot) => {
-      const items: ProjectDocument[] = [];
-      snapshot.forEach(d => items.push(d.data() as ProjectDocument));
-      setDb(prev => prev ? { ...prev, documents: items } : null);
-    }, (error) => handleFirestoreError(error, OperationType.LIST, `${projectPath}/documents`));
+      // Expenses subscription
+      unsubs.push(onSnapshot(collection(fdb, `${projectPath}/expenses`), (snapshot) => {
+        const items: Expense[] = [];
+        snapshot.forEach(d => items.push(d.data() as Expense));
+        expensesMap[proj.id] = items;
+        updateDb();
+      }, (error) => handleFirestoreError(error, OperationType.LIST, `${projectPath}/expenses`)));
 
-    // Messages subscription
-    const unsubMessages = onSnapshot(collection(fdb, `${projectPath}/messages`), (snapshot) => {
-      const items: ChatMessage[] = [];
-      snapshot.forEach(d => items.push(d.data() as ChatMessage));
-      setDb(prev => prev ? { ...prev, messages: items } : null);
-    }, (error) => handleFirestoreError(error, OperationType.LIST, `${projectPath}/messages`));
+      // Progress subscription
+      unsubs.push(onSnapshot(collection(fdb, `${projectPath}/progress`), (snapshot) => {
+        const items: DailyProgress[] = [];
+        snapshot.forEach(d => items.push(d.data() as DailyProgress));
+        progressMap[proj.id] = items;
+        updateDb();
+      }, (error) => handleFirestoreError(error, OperationType.LIST, `${projectPath}/progress`)));
+
+      // Documents subscription
+      unsubs.push(onSnapshot(collection(fdb, `${projectPath}/documents`), (snapshot) => {
+        const items: ProjectDocument[] = [];
+        snapshot.forEach(d => items.push(d.data() as ProjectDocument));
+        documentsMap[proj.id] = items;
+        updateDb();
+      }, (error) => handleFirestoreError(error, OperationType.LIST, `${projectPath}/documents`)));
+
+      // Messages subscription
+      unsubs.push(onSnapshot(collection(fdb, `${projectPath}/messages`), (snapshot) => {
+        const items: ChatMessage[] = [];
+        snapshot.forEach(d => items.push(d.data() as ChatMessage));
+        messagesMap[proj.id] = items;
+        updateDb();
+      }, (error) => handleFirestoreError(error, OperationType.LIST, `${projectPath}/messages`)));
+    });
 
     return () => {
-      unsubStages();
-      unsubExtra();
-      unsubExpenses();
-      unsubProgress();
-      unsubDocs();
-      unsubMessages();
+      unsubs.forEach(unsub => unsub());
     };
-  }, [user, selectedProjId, db?.projects?.map(p => p?.id).join(',')]);
+  }, [user, db?.projects?.map(p => p?.id).join(',')]);
 
   // Sync to Storage Helper (Local/Offline Mode)
   const syncDatabase = (updatedDb: typeof db) => {
