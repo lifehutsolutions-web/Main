@@ -1,4 +1,6 @@
 import React, { useState } from 'react';
+import { db as fdb } from '../firebase';
+import { doc, getDoc, setDoc, deleteDoc } from 'firebase/firestore';
 import TodaySummary from './dashboard/TodaySummary';
 import RecentActivity from './dashboard/RecentActivity';
 import { uploadImage } from '../services/storageService';
@@ -43,7 +45,13 @@ import {
   Settings,
   Download,
   Upload,
-  LogOut
+  LogOut,
+  Eye,
+  EyeOff,
+  Copy,
+  RotateCcw,
+  Key,
+  RefreshCw
 } from 'lucide-react';
 
 interface ContractorPortalProps {
@@ -124,6 +132,9 @@ export default function ContractorPortal({
   const [showProjModal, setShowProjModal] = useState(false);
   const [showEditProjModal, setShowEditProjModal] = useState(false);
   const [editProjId, setEditProjId] = useState<string | null>(null);
+  const [isPinConfigured, setIsPinConfigured] = useState(false);
+  const [isLoadingPin, setIsLoadingPin] = useState(false);
+  const [isResettingPin, setIsResettingPin] = useState(false);
   const [showStageModal, setShowStageModal] = useState(false);
   const [showExtraModal, setShowExtraModal] = useState(false);
   const [showExpenseModal, setShowExpenseModal] = useState(false);
@@ -239,7 +250,7 @@ export default function ContractorPortal({
   const handleCreateProject = (e: React.FormEvent) => {
     e.preventDefault();
     const id = `proj_${Date.now()}`;
-    const code = `CLIENT-${newProj.name.replace(/\s+/g, '').toUpperCase().slice(0, 5)}-${Math.floor(100 + Math.random() * 900)}`;
+    const code = id; // Project ID is used directly as the client access code! No separate CLIENT-XXXXX code is generated.
     const freshProject: Project = {
       ...newProj,
       id,
@@ -327,7 +338,7 @@ export default function ContractorPortal({
     }
   };
 
-  const handleOpenEditProject = (proj: Project) => {
+  const handleOpenEditProject = async (proj: Project) => {
     setEditProjId(proj.id);
     setEditProj({
       name: proj.name,
@@ -342,6 +353,50 @@ export default function ContractorPortal({
       status: proj.status,
     });
     setShowEditProjModal(true);
+    setIsLoadingPin(true);
+    setIsPinConfigured(false);
+
+    try {
+      const pinRef = doc(fdb, 'clientPins', proj.id);
+      const pinSnap = await getDoc(pinRef);
+      if (pinSnap.exists()) {
+        setIsPinConfigured(true);
+      } else if (proj.clientCode) {
+        const legacyRef = doc(fdb, 'clientPins', proj.clientCode.trim().toUpperCase());
+        const legacySnap = await getDoc(legacyRef);
+        if (legacySnap.exists()) {
+          setIsPinConfigured(true);
+        }
+      }
+    } catch (err) {
+      console.error("Error fetching client PIN status:", err);
+    } finally {
+      setIsLoadingPin(false);
+    }
+  };
+
+  const handleResetClientPin = async () => {
+    if (!editProjId) return;
+
+    setIsResettingPin(true);
+    try {
+      // 1. Delete PIN under Project ID
+      await deleteDoc(doc(fdb, 'clientPins', editProjId));
+
+      // 2. Delete PIN under legacy client code if any
+      const currentProj = projects.find(p => p.id === editProjId);
+      if (currentProj?.clientCode) {
+        await deleteDoc(doc(fdb, 'clientPins', currentProj.clientCode.trim().toUpperCase()));
+      }
+
+      setIsPinConfigured(false);
+      alert(`✅ Client Access PIN has been cleared and reset! The client will be asked to set up a new PIN upon their next login.`);
+    } catch (err) {
+      console.error("Error resetting client PIN:", err);
+      alert("❌ Failed to reset client PIN in Firestore.");
+    } finally {
+      setIsResettingPin(false);
+    }
   };
 
   // Save edited project (does not touch clientCode, isLocked, or stages)
@@ -975,7 +1030,7 @@ setIsCompressingPhotos(false);
             Login credentials created for <span className="font-semibold" style={{ color: 'var(--lh-text-primary)' }}>{createdClientShareDetails.clientName}</span>. Share these immediately.
           </p>
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 text-xs lh-panel-flat p-3 rounded-lg">
-            <div><span className="lh-label mb-0.5">Client code</span> <span className="font-mono font-semibold" style={{ color: 'var(--lh-blue-dark)' }}>{createdClientShareDetails.code}</span></div>
+            <div><span className="lh-label mb-0.5">Project ID (Access Code)</span> <span className="font-mono font-semibold" style={{ color: 'var(--lh-blue-dark)' }}>{createdClientShareDetails.code}</span></div>
             <div><span className="lh-label mb-0.5">Project</span> <span style={{ color: 'var(--lh-text-primary)' }}>{createdClientShareDetails.projName}</span></div>
             <div><span className="lh-label mb-0.5">Mobile</span> <span style={{ color: 'var(--lh-text-primary)' }}>{createdClientShareDetails.phone}</span></div>
           </div>
@@ -984,7 +1039,7 @@ setIsCompressingPhotos(false);
               navigator.clipboard.writeText(
                 `🔑 Lifehut Workspace login for ${createdClientShareDetails.clientName}\n` +
                 `Site: ${createdClientShareDetails.projName}\n` +
-                `Client code: ${createdClientShareDetails.code}\n` +
+                `Project ID (Access Code): ${createdClientShareDetails.code}\n` +
                 `Portal: ${window.location.origin}`
               );
               alert('Copied to clipboard! ✅');
@@ -2670,6 +2725,100 @@ setIsCompressingPhotos(false);
                     value={editProj.expectedEndDate} onChange={(e) => setEditProj({ ...editProj, expectedEndDate: e.target.value })}
                     className="lh-input"
                   />
+                </div>
+              </div>
+
+              <div className="border-t border-slate-100 dark:border-slate-800 pt-3 mt-3 space-y-3">
+                <div className="flex items-center gap-1.5 pb-1">
+                  <Key className="w-4 h-4 text-amber-500 animate-pulse" />
+                  <span className="text-[11.5px] font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider">Client Access & Recovery</span>
+                </div>
+
+                <div className="bg-slate-50 dark:bg-slate-800/40 border border-slate-100 dark:border-slate-800 p-3 rounded-lg space-y-2 text-xs">
+                  {/* Project ID (Client Code) */}
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <span className="text-[10px] text-slate-400 font-semibold block uppercase">Project ID (Client Code)</span>
+                      <span className="font-mono font-bold text-slate-800 dark:text-slate-200 break-all select-all">{editProjId}</span>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        if (editProjId) {
+                          navigator.clipboard.writeText(editProjId);
+                          alert("Project ID copied to clipboard! ✅");
+                        }
+                      }}
+                      className="p-1.5 hover:bg-slate-200 dark:hover:bg-slate-800 rounded-md text-slate-500 hover:text-slate-700"
+                      title="Copy Project ID"
+                    >
+                      <Copy className="w-3.5 h-3.5" />
+                    </button>
+                  </div>
+
+                  {/* Legacy Client Code (if different) */}
+                  {(() => {
+                    const matchedProj = projects.find(p => p.id === editProjId);
+                    if (matchedProj && matchedProj.clientCode && matchedProj.clientCode !== editProjId) {
+                      return (
+                        <div className="flex items-center justify-between pt-1 border-t border-slate-100/80 dark:border-slate-800/60">
+                          <div>
+                            <span className="text-[10px] text-slate-400 font-semibold block uppercase">Legacy Client Code</span>
+                            <span className="font-mono text-slate-600 dark:text-slate-400">{matchedProj.clientCode}</span>
+                          </div>
+                          <button
+                            type="button"
+                            onClick={() => {
+                              navigator.clipboard.writeText(matchedProj.clientCode);
+                              alert("Legacy Client Code copied! ✅");
+                            }}
+                            className="p-1.5 hover:bg-slate-200 dark:hover:bg-slate-800 rounded-md text-slate-500 hover:text-slate-700"
+                            title="Copy Legacy Client Code"
+                          >
+                            <Copy className="w-3.5 h-3.5" />
+                          </button>
+                        </div>
+                      );
+                    }
+                    return null;
+                  })()}
+
+                  {/* Private PIN Status & Recovery */}
+                  <div className="pt-2 border-t border-slate-100/80 dark:border-slate-800/60">
+                    <span className="text-[10px] text-slate-400 font-semibold block uppercase">Private Access PIN Status</span>
+                    {isLoadingPin ? (
+                      <span className="text-[11px] text-slate-400 italic animate-pulse">Checking PIN status...</span>
+                    ) : isPinConfigured ? (
+                      <div className="flex items-center justify-between mt-1">
+                        <div className="flex items-center gap-1.5">
+                          <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
+                          <span className="font-semibold text-emerald-600 dark:text-emerald-400">🔒 Registered & Private</span>
+                        </div>
+                        <button
+                          type="button"
+                          disabled={isResettingPin}
+                          onClick={() => {
+                            if (confirm("Are you sure you want to reset this client's Private PIN? This will clear their current PIN and allow them to register a new one upon next login.")) {
+                              handleResetClientPin();
+                            }
+                          }}
+                          className="px-2.5 py-1 hover:bg-amber-100 dark:hover:bg-amber-950/30 rounded-md text-amber-600 hover:text-amber-700 flex items-center gap-1 text-[11px] font-semibold border border-amber-200 dark:border-amber-900/40"
+                          title="Reset PIN"
+                        >
+                          <RotateCcw className={`w-3 h-3 ${isResettingPin ? 'animate-spin' : ''}`} />
+                          <span>Trigger Reset</span>
+                        </button>
+                      </div>
+                    ) : (
+                      <div className="mt-1 flex items-center justify-between">
+                        <div className="flex items-center gap-1.5">
+                          <span className="w-2 h-2 rounded-full bg-amber-400" />
+                          <span className="text-amber-600 dark:text-amber-400 italic">⚠️ Not Configured Yet</span>
+                        </div>
+                        <span className="text-[10px] text-slate-400 italic">Created upon client's first login</span>
+                      </div>
+                    )}
+                  </div>
                 </div>
               </div>
 

@@ -472,8 +472,8 @@ export default function App() {
               uid: user.uid
             });
 
-            // 3. Now write lookup document for the client access code safely
-            await setDoc(doc(fdb, 'clientCodes', item.clientCode.trim().toUpperCase()), {
+            // 3. Register the Project ID directly in clientCodes to allow client lookup/login
+            await setDoc(doc(fdb, 'clientCodes', item.id.trim().toUpperCase()), {
               projectId: item.id,
               redeemed: false,
               redeemedBy: ""

@@ -357,9 +357,18 @@ export default function ClientPortal({
         const projectId = codeData.projectId;
         setTempProjectId(projectId);
 
-        // 3. Check if PIN exists in clientPins
-        const pinRef = doc(fdb, 'clientPins', codeKey);
-        const pinSnap = await getDoc(pinRef);
+        // 3. Check if PIN exists in clientPins under Project ID or legacy Code Key
+        let pinRef = doc(fdb, 'clientPins', projectId);
+        let pinSnap = await getDoc(pinRef);
+
+        if (!pinSnap.exists()) {
+          const legacyRef = doc(fdb, 'clientPins', codeKey);
+          const legacySnap = await getDoc(legacyRef);
+          if (legacySnap.exists()) {
+            pinRef = legacyRef;
+            pinSnap = legacySnap;
+          }
+        }
 
         if (pinSnap.exists()) {
           // PIN exists, ask to enter PIN
@@ -377,14 +386,22 @@ export default function ClientPortal({
           throw new Error("PINs do not match. Please verify.");
         }
 
-        // 2. Save the PIN
-        const pinRef = doc(fdb, 'clientPins', codeKey);
-        await setDoc(pinRef, {
+        // 2. Save the PIN under both Project ID and the lookup clientCode
+        await setDoc(doc(fdb, 'clientPins', tempProjectId), {
           pin: pin,
           projectId: tempProjectId,
           clientCode: codeKey,
           updatedAt: new Date().toISOString()
         });
+
+        if (codeKey !== tempProjectId.toUpperCase()) {
+          await setDoc(doc(fdb, 'clientPins', codeKey), {
+            pin: pin,
+            projectId: tempProjectId,
+            clientCode: codeKey,
+            updatedAt: new Date().toISOString()
+          });
+        }
 
         // 3. Complete loginAsClient
         const projectId = await loginAsClient(clientCode);
@@ -398,16 +415,23 @@ export default function ClientPortal({
         }
 
         // 2. Fetch stored PIN
-        const pinRef = doc(fdb, 'clientPins', codeKey);
-        const pinSnap = await getDoc(pinRef);
+        let pinRef = doc(fdb, 'clientPins', tempProjectId);
+        let pinSnap = await getDoc(pinRef);
 
         if (!pinSnap.exists()) {
-          // Edge case: Pin was deleted, go back to setup-pin
-          setLoginStep('setup-pin');
-          throw new Error("PIN document not found. Please set it up now.");
+          const legacyRef = doc(fdb, 'clientPins', codeKey);
+          const legacySnap = await getDoc(legacyRef);
+          if (legacySnap.exists()) {
+            pinRef = legacyRef;
+            pinSnap = legacySnap;
+          } else {
+            // Edge case: Pin was deleted, go back to setup-pin
+            setLoginStep('setup-pin');
+            throw new Error("PIN document not found. Please set it up now.");
+          }
         }
 
-        if (pinSnap.data().pin !== pin) {
+        if (pinSnap.data()?.pin !== pin) {
           throw new Error("Incorrect PIN. Please try again.");
         }
 
@@ -547,14 +571,14 @@ export default function ClientPortal({
           <form onSubmit={handleCodeLogin} className="space-y-4">
             {loginStep === 'code' && (
               <div>
-                <label className="lh-label">Client access code</label>
+                <label className="lh-label">Project ID (Access Code)</label>
                 <input
                   type="text"
                   required
                   disabled={isLoggingIn}
                   value={clientCode}
                   onChange={(e) => setClientCode(e.target.value)}
-                  placeholder="e.g., CLIENT-GREEN"
+                  placeholder="e.g., proj_123456"
                   className="lh-input text-center font-mono tracking-wide disabled:opacity-50"
                 />
               </div>
@@ -564,7 +588,7 @@ export default function ClientPortal({
               <div className="space-y-4">
                 <div>
                   <div className="flex justify-between items-center mb-1">
-                    <label className="lh-label mb-0">Client access code</label>
+                    <label className="lh-label mb-0">Project ID (Access Code)</label>
                     <button
                       type="button"
                       onClick={() => {
@@ -628,7 +652,7 @@ export default function ClientPortal({
               <div className="space-y-4">
                 <div>
                   <div className="flex justify-between items-center mb-1">
-                    <label className="lh-label mb-0">Client access code</label>
+                    <label className="lh-label mb-0">Project ID (Access Code)</label>
                     <button
                       type="button"
                       onClick={() => {
@@ -754,7 +778,7 @@ export default function ClientPortal({
           <div>
             <div className="flex items-center gap-2">
               <span className="lh-badge lh-badge-success">Client Console</span>
-              <span className="lh-badge lh-badge-neutral font-mono">{activeProject.clientCode}</span>
+              <span className="lh-badge lh-badge-neutral font-mono">{activeProject.id}</span>
             </div>
             <h2 className="text-[14px] font-display font-semibold mt-1" style={{ color: 'var(--lh-text-primary)' }}>
               {activeProject.name} — Workspace

@@ -208,7 +208,7 @@ export default function PaymentStatementSheet({
                 <strong style={{ color: '#0B2545' }}>Client:</strong> {project.clientName}
               </div>
               <div style={{ fontSize: '11px', color: '#5B6270' }}>
-                <strong style={{ color: '#0B2545' }}>Access Credential Code:</strong> <span style={{ fontFamily: 'monospace', fontWeight: 'bold', color: '#0A84FF' }}>{project.clientCode || 'N/A'}</span>
+                <strong style={{ color: '#0B2545' }}>Project ID (Access Code):</strong> <span style={{ fontFamily: 'monospace', fontWeight: 'bold', color: '#0A84FF' }}>{project.id || 'N/A'}</span>
               </div>
             </div>
           </div>
