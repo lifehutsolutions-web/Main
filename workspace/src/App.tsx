@@ -31,6 +31,7 @@ import {
   collection, 
   doc, 
   setDoc, 
+  deleteDoc,
   onSnapshot,
   query,
   where,
@@ -489,106 +490,121 @@ export default function App() {
 
   const handleUpdateStages = async (newStages: PaymentStage[]) => {
     if (!db) return;
+    const deletedItems = db.stages.filter(old => !newStages.some(n => n.id === old.id));
+    const changedItems = newStages.filter(s => {
+      const old = db.stages.find(o => o.id === s.id);
+      return !old || JSON.stringify(old) !== JSON.stringify(s);
+    });
+    syncDatabase({ ...db, stages: newStages });
     if (user) {
       try {
-        const changedItems = newStages.filter(s => {
-          const old = db.stages.find(o => o.id === s.id);
-          return !old || JSON.stringify(old) !== JSON.stringify(s);
-        });
-        await Promise.all(
-          changedItems.map(item =>
-            setDoc(doc(fdb, `projects/${selectedProjId}/stages`, item.id), item)
+        await Promise.all([
+          ...changedItems.map(item =>
+            setDoc(doc(fdb, `projects/${item.projectId || selectedProjId}/stages`, item.id), item)
+          ),
+          ...deletedItems.map(item =>
+            deleteDoc(doc(fdb, `projects/${item.projectId || selectedProjId}/stages`, item.id))
           )
-        );
+        ]);
       } catch (e) {
         handleFirestoreError(e, OperationType.WRITE, `projects/${selectedProjId}/stages`);
       }
-    } else {
-      syncDatabase({ ...db, stages: newStages });
     }
   };
 
   const handleUpdateExtraWorks = async (newExtra: ExtraWork[]) => {
     if (!db) return;
+    const deletedItems = db.extraWorks.filter(old => !newExtra.some(n => n.id === old.id));
+    const changedItems = newExtra.filter(e => {
+      const old = db.extraWorks.find(o => o.id === e.id);
+      return !old || JSON.stringify(old) !== JSON.stringify(e);
+    });
+    syncDatabase({ ...db, extraWorks: newExtra });
     if (user) {
       try {
-        const changedItems = newExtra.filter(e => {
-          const old = db.extraWorks.find(o => o.id === e.id);
-          return !old || JSON.stringify(old) !== JSON.stringify(e);
-        });
-        await Promise.all(
-          changedItems.map(item =>
-            setDoc(doc(fdb, `projects/${selectedProjId}/extraWorks`, item.id), item)
+        await Promise.all([
+          ...changedItems.map(item =>
+            setDoc(doc(fdb, `projects/${item.projectId || selectedProjId}/extraWorks`, item.id), item)
+          ),
+          ...deletedItems.map(item =>
+            deleteDoc(doc(fdb, `projects/${item.projectId || selectedProjId}/extraWorks`, item.id))
           )
-        );
+        ]);
       } catch (e) {
         handleFirestoreError(e, OperationType.WRITE, `projects/${selectedProjId}/extraWorks`);
       }
-    } else {
-      syncDatabase({ ...db, extraWorks: newExtra });
     }
   };
 
   const handleUpdateExpenses = async (newExp: Expense[]) => {
     if (!db) return;
+    const deletedItems = db.expenses.filter(old => !newExp.some(n => n.id === old.id));
+    const changedItems = newExp.filter(e => {
+      const old = db.expenses.find(o => o.id === e.id);
+      return !old || JSON.stringify(old) !== JSON.stringify(e);
+    });
+    syncDatabase({ ...db, expenses: newExp });
     if (user) {
       try {
-        const changedItems = newExp.filter(e => {
-          const old = db.expenses.find(o => o.id === e.id);
-          return !old || JSON.stringify(old) !== JSON.stringify(e);
-        });
-        await Promise.all(
-          changedItems.map(item =>
-            setDoc(doc(fdb, `projects/${selectedProjId}/expenses`, item.id), item)
+        await Promise.all([
+          ...changedItems.map(item =>
+            setDoc(doc(fdb, `projects/${item.projectId || selectedProjId}/expenses`, item.id), item)
+          ),
+          ...deletedItems.map(item =>
+            deleteDoc(doc(fdb, `projects/${item.projectId || selectedProjId}/expenses`, item.id))
           )
-        );
+        ]);
       } catch (e) {
         handleFirestoreError(e, OperationType.WRITE, `projects/${selectedProjId}/expenses`);
       }
-    } else {
-      syncDatabase({ ...db, expenses: newExp });
     }
   };
 
   const handleUpdateProgress = async (newProg: DailyProgress[]) => {
     if (!db) return;
+    const deletedItems = db.progress.filter(old => !newProg.some(n => n.id === old.id));
+    const changedItems = newProg.filter(p => {
+      const old = db.progress.find(o => o.id === p.id);
+      return !old || JSON.stringify(old) !== JSON.stringify(p);
+    });
+    syncDatabase({ ...db, progress: newProg });
     if (user) {
       try {
-        const changedItems = newProg.filter(p => {
-          const old = db.progress.find(o => o.id === p.id);
-          return !old || JSON.stringify(old) !== JSON.stringify(p);
-        });
-        await Promise.all(
-          changedItems.map(item =>
-            setDoc(doc(fdb, `projects/${selectedProjId}/progress`, item.id), item)
+        await Promise.all([
+          ...changedItems.map(item =>
+            setDoc(doc(fdb, `projects/${item.projectId || selectedProjId}/progress`, item.id), item)
+          ),
+          ...deletedItems.map(item =>
+            deleteDoc(doc(fdb, `projects/${item.projectId || selectedProjId}/progress`, item.id))
           )
-        );
+        ]);
       } catch (e) {
         handleFirestoreError(e, OperationType.WRITE, `projects/${selectedProjId}/progress`);
       }
-    } else {
-      syncDatabase({ ...db, progress: newProg });
     }
   };
 
   const handleUpdateDocuments = async (newDocs: ProjectDocument[]) => {
     if (!db) return;
+    const deletedItems = db.documents.filter(old => !newDocs.some(n => n.id === old.id));
+    const changedItems = newDocs.filter(d => {
+      const old = db.documents.find(o => o.id === d.id);
+      return !old || JSON.stringify(old) !== JSON.stringify(d);
+    });
+    syncDatabase({ ...db, documents: newDocs });
     if (user) {
       try {
-        const changedItems = newDocs.filter(d => {
-          const old = db.documents.find(o => o.id === d.id);
-          return !old || JSON.stringify(old) !== JSON.stringify(d);
-        });
-        await Promise.all(
-          changedItems.map(item =>
-            setDoc(doc(fdb, `projects/${selectedProjId}/documents`, item.id), item)
+        await Promise.all([
+          ...changedItems.map(item =>
+            setDoc(doc(fdb, `projects/${item.projectId || selectedProjId}/documents`, item.id), item)
+          ),
+          ...deletedItems.map(item =>
+            deleteDoc(doc(fdb, `projects/${item.projectId || selectedProjId}/documents`, item.id))
           )
-        );
+        ]);
       } catch (e) {
         handleFirestoreError(e, OperationType.WRITE, `projects/${selectedProjId}/documents`);
       }
-    } else {
-      syncDatabase({ ...db, documents: newDocs });
     }
   };
 
@@ -863,10 +879,18 @@ export default function App() {
           </div>
 
           <div className="flex flex-wrap items-center gap-2.5 justify-between md:justify-end">
-            <div className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-[10.5px]" style={{ background: 'var(--lh-surface-muted)', border: '1px solid var(--lh-border)' }} id="cloud-sync-status-indicator">
-              <div className="w-1.5 h-1.5 rounded-full flex-shrink-0 animate-pulse" style={{ background: user ? '#1D9E75' : '#EF9F27' }} />
-              <span className="font-medium" style={{ color: 'var(--lh-text-secondary)' }}>
-                {user ? `Connected` : 'Offline'}
+            <div 
+              className="flex items-center gap-2 px-2.5 py-1.5 rounded-lg text-[10.5px] cursor-help relative group" 
+              style={{ background: 'var(--lh-surface-muted)', border: '1px solid var(--lh-border)' }} 
+              id="cloud-sync-status-indicator"
+              title={user ? 'Real-time sync active — every change syncs to Firestore in real time.' : 'Sandbox mode — Sign in to activate secure cloud sync.'}
+            >
+              <span className="relative flex h-2 w-2">
+                <span className="animate-ping absolute inline-flex h-full w-full rounded-full opacity-75" style={{ background: user ? '#1D9E75' : '#EF9F27' }}></span>
+                <span className="relative inline-flex rounded-full h-2 w-2" style={{ background: user ? '#1D9E75' : '#EF9F27' }}></span>
+              </span>
+              <span className="font-semibold tracking-wide" style={{ color: user ? '#1D9E75' : '#EF9F27' }}>
+                {user ? `Cloud Sync Active` : 'Offline Sandbox'}
               </span>
             </div>
 
@@ -935,17 +959,6 @@ export default function App() {
             </div>
           </div>
         )}
-
-        {/* Sync status banner */}
-        <div className="mb-5 p-3.5 rounded-xl flex flex-col md:flex-row md:items-center justify-between gap-2.5 text-[12px]" style={{ background: 'var(--lh-success-bg)', border: '1px solid #9FE1CB' }}>
-          <div className="flex items-start gap-2.5">
-            <ShieldCheck className="w-4 h-4 flex-shrink-0 mt-0.5" style={{ color: 'var(--lh-success-text)' }} />
-            <div style={{ color: 'var(--lh-success-text)' }}>
-              <span className="font-semibold">Real-time sync: </span>
-              {user ? 'Authenticated — every change syncs to Firestore in real time.' : 'Sign in above to activate secure cloud sync. Sandbox edits will migrate automatically.'}
-            </div>
-          </div>
-        </div>
 
         {/* Dynamic portal router */}
         {activeRole === 'Contractor' ? (

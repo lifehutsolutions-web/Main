@@ -166,6 +166,26 @@ service cloud.firestore {
       allow delete: if false;
     }
 
+    match /contractorUsers/{userId} {
+      allow read: if isSignedIn() && isValidId(userId);
+      allow create, update: if isSignedIn() && request.auth.uid == userId && isValidId(userId);
+    }
+
+    match /clientUsers/{userId} {
+      allow read: if isSignedIn() && (request.auth.uid == userId || request.auth.token.firebase.sign_in_provider != 'anonymous') && isValidId(userId);
+      allow create, update: if isSignedIn() && request.auth.uid == userId && isValidId(userId);
+    }
+
+    match /clientPins/{clientCode} {
+      allow get: if isSignedIn() && request.auth.token.firebase.sign_in_provider == 'anonymous' && isValidId(clientCode);
+      allow create, update: if isSignedIn() && request.auth.token.firebase.sign_in_provider == 'anonymous' && isValidId(clientCode);
+    }
+
+    match /clientOtherWorks/{expenseId} {
+      allow read, update, delete: if isSignedIn() && isValidId(expenseId) && existing().clientUid == request.auth.uid;
+      allow create: if isSignedIn() && isValidId(expenseId) && incoming().clientUid == request.auth.uid;
+    }
+
     match /projects/{projectId} {
       allow get: if isSignedIn() && isValidId(projectId) && isProjectMember(projectId);
       allow list: if isSignedIn() && (

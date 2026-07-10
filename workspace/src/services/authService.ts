@@ -36,7 +36,7 @@ export const ContractorAuth = {
     const user = result.user;
 
     // Set up or fetch contractor user profile in Firestore
-    const userRef = doc(fdb, 'users', user.uid);
+    const userRef = doc(fdb, 'contractorUsers', user.uid);
     const userSnap = await getDoc(userRef);
 
     if (!userSnap.exists()) {
@@ -73,9 +73,12 @@ export const ClientAuth = {
       throw new Error("Client access code is required.");
     }
 
-    // 1. Perform anonymous Firebase sign-in FIRST to establish session
-    const result = await signInAnonymously(auth);
-    const currentUser = result.user;
+    // 1. Perform anonymous Firebase sign-in FIRST if not already signed in to establish session
+    let currentUser = auth.currentUser;
+    if (!currentUser) {
+      const result = await signInAnonymously(auth);
+      currentUser = result.user;
+    }
 
     if (!currentUser) {
       throw new Error("Failed to authenticate with secure database anonymously.");
@@ -119,8 +122,8 @@ export const ClientAuth = {
       console.warn("Error setting member document:", err);
     });
 
-    // Also update users metadata collection for role lookup
-    await setDoc(doc(fdb, 'users', currentUser.uid), {
+    // Also update clientUsers metadata collection for role lookup
+    await setDoc(doc(fdb, 'clientUsers', currentUser.uid), {
       role: 'Client',
       clientCode: codeKey,
       updatedAt: new Date().toISOString()
@@ -162,7 +165,7 @@ export const ClientAuth = {
       uid: currentUser.uid
     }, { merge: true }).catch(() => {});
 
-    await setDoc(doc(fdb, 'users', currentUser.uid), {
+    await setDoc(doc(fdb, 'clientUsers', currentUser.uid), {
       role: 'Client',
       clientCode: codeKey
     }, { merge: true });

@@ -45,155 +45,7 @@ const initialProjects: Project[] = [
   }
 ];
 
-const initialStages: PaymentStage[] = [
-  // Green Villa Stages (Sum = 41,33,900)
-  {
-    id: 'stage_gv_1',
-    projectId: 'proj_green_villa',
-    stageName: 'Advance',
-    payableAmount: 500000,
-    receivedAmount: 500000,
-    dueDate: '2026-03-05',
-    status: 'Paid',
-  },
-  {
-    id: 'stage_gv_2',
-    projectId: 'proj_green_villa',
-    stageName: 'Basement Completion',
-    payableAmount: 300000,
-    receivedAmount: 300000,
-    dueDate: '2026-04-10',
-    status: 'Paid',
-  },
-  {
-    id: 'stage_gv_3',
-    projectId: 'proj_green_villa',
-    stageName: 'Lintel Shuttering GF',
-    payableAmount: 200000,
-    receivedAmount: 200000,
-    dueDate: '2026-05-15',
-    status: 'Paid',
-  },
-  {
-    id: 'stage_gv_4',
-    projectId: 'proj_green_villa',
-    stageName: 'Roof Shuttering GF',
-    payableAmount: 300000,
-    receivedAmount: 0,
-    dueDate: '2026-07-15',
-    status: 'Pending',
-  },
-  {
-    id: 'stage_gv_5',
-    projectId: 'proj_green_villa',
-    stageName: 'Brickwork GF',
-    payableAmount: 400000,
-    receivedAmount: 0,
-    dueDate: '2026-08-01',
-    status: 'Pending',
-  },
-  {
-    id: 'stage_gv_6',
-    projectId: 'proj_green_villa',
-    stageName: 'Slab Casting FF',
-    payableAmount: 600000,
-    receivedAmount: 0,
-    dueDate: '2026-08-25',
-    status: 'Pending',
-  },
-  {
-    id: 'stage_gv_7',
-    projectId: 'proj_green_villa',
-    stageName: 'Plastering Inner & Outer',
-    payableAmount: 500000,
-    receivedAmount: 0,
-    dueDate: '2026-09-20',
-    status: 'Pending',
-  },
-  {
-    id: 'stage_gv_8',
-    projectId: 'proj_green_villa',
-    stageName: 'Plumbing & Electrical Piping',
-    payableAmount: 400000,
-    receivedAmount: 0,
-    dueDate: '2026-10-10',
-    status: 'Pending',
-  },
-  {
-    id: 'stage_gv_9',
-    projectId: 'proj_green_villa',
-    stageName: 'Flooring & Tiles',
-    payableAmount: 400000,
-    receivedAmount: 0,
-    dueDate: '2026-11-01',
-    status: 'Pending',
-  },
-  {
-    id: 'stage_gv_10',
-    projectId: 'proj_green_villa',
-    stageName: 'Painting & Interior Finishing',
-    payableAmount: 400000,
-    receivedAmount: 0,
-    dueDate: '2026-11-15',
-    status: 'Pending',
-  },
-  {
-    id: 'stage_gv_11',
-    projectId: 'proj_green_villa',
-    stageName: 'Final Handover',
-    payableAmount: 133900,
-    receivedAmount: 0,
-    dueDate: '2026-11-30',
-    status: 'Pending',
-  },
-
-  // Apex Cabin Stages (Sum = 18,50,000)
-  {
-    id: 'stage_ap_1',
-    projectId: 'proj_skyline_renovation',
-    stageName: 'Advance Booking',
-    payableAmount: 350000,
-    receivedAmount: 0,
-    dueDate: '2026-05-18',
-    status: 'Pending',
-  },
-  {
-    id: 'stage_ap_2',
-    projectId: 'proj_skyline_renovation',
-    stageName: 'Demolition & Partition Framing',
-    payableAmount: 500000,
-    receivedAmount: 0,
-    dueDate: '2026-06-15',
-    status: 'Pending',
-  },
-  {
-    id: 'stage_ap_3',
-    projectId: 'proj_skyline_renovation',
-    stageName: 'Electrical Laying & AC Ducting',
-    payableAmount: 400000,
-    receivedAmount: 0,
-    dueDate: '2026-07-10',
-    status: 'Pending',
-  },
-  {
-    id: 'stage_ap_4',
-    projectId: 'proj_skyline_renovation',
-    stageName: 'Glass Paneling & Fixtures',
-    payableAmount: 400000,
-    receivedAmount: 0,
-    dueDate: '2026-08-10',
-    status: 'Pending',
-  },
-  {
-    id: 'stage_ap_5',
-    projectId: 'proj_skyline_renovation',
-    stageName: 'Handover & Signoff',
-    payableAmount: 200000,
-    receivedAmount: 0,
-    dueDate: '2026-08-30',
-    status: 'Pending',
-  }
-];
+const initialStages: PaymentStage[] = [];
 
 const initialExtraWorks: ExtraWork[] = [
   {
@@ -217,58 +69,7 @@ const initialExtraWorks: ExtraWork[] = [
   }
 ];
 
-const initialExpenses: Expense[] = [
-  {
-    id: 'exp_1',
-    projectId: 'proj_green_villa',
-    category: 'Material',
-    description: 'Cement Purchase - Ultratech premium 250 bags',
-    amount: 112500,
-    supplier: 'ABC Cement Traders, Bengaluru',
-    date: '2026-03-12',
-    billUploaded: true,
-  },
-  {
-    id: 'exp_2',
-    projectId: 'proj_green_villa',
-    category: 'Labour',
-    description: 'Foundation Excavation & Brick laying wages week-1',
-    amount: 85000,
-    supplier: 'Mahesh Contractor (Labour Union)',
-    date: '2026-03-20',
-    billUploaded: false,
-  },
-  {
-    id: 'exp_3',
-    projectId: 'proj_green_villa',
-    category: 'Material',
-    description: 'Fe 550 TMT Steel Bars - 3 Tonnes',
-    amount: 195000,
-    supplier: 'Steel Mart India',
-    date: '2026-04-05',
-    billUploaded: true,
-  },
-  {
-    id: 'exp_4',
-    projectId: 'proj_green_villa',
-    category: 'Machinery',
-    description: 'Excavator Rental (JCB - 5 Days with Driver and fuel)',
-    amount: 45000,
-    supplier: 'Rao Machinery Rentals',
-    date: '2026-04-12',
-    billUploaded: true,
-  },
-  {
-    id: 'exp_5',
-    projectId: 'proj_green_villa',
-    category: 'Plumbing',
-    description: 'Inflow-Outflow conduits and water main layout',
-    amount: 32000,
-    supplier: 'Supreme Pipes Depot',
-    date: '2026-05-02',
-    billUploaded: true,
-  }
-];
+const initialExpenses: Expense[] = [];
 
 const initialProgress: DailyProgress[] = [
   {
@@ -372,6 +173,26 @@ export function initDB() {
     localStorage.setItem(KEYS.PROGRESS, JSON.stringify(initialProgress));
     localStorage.setItem(KEYS.DOCUMENTS, JSON.stringify(initialDocuments));
     localStorage.setItem(KEYS.MESSAGES, JSON.stringify(initialMessages));
+  } else {
+    // Clean up old default stages and expenses containing mock data if they exist in localStorage
+    const storedStages = localStorage.getItem(KEYS.STAGES);
+    if (storedStages) {
+      try {
+        const parsed = JSON.parse(storedStages);
+        if (parsed.some((s: any) => s.id.startsWith('stage_gv') || s.id.startsWith('stage_ap'))) {
+          localStorage.setItem(KEYS.STAGES, JSON.stringify([]));
+        }
+      } catch (e) {}
+    }
+    const storedExpenses = localStorage.getItem(KEYS.EXPENSES);
+    if (storedExpenses) {
+      try {
+        const parsed = JSON.parse(storedExpenses);
+        if (parsed.some((e: any) => e.id.startsWith('exp_'))) {
+          localStorage.setItem(KEYS.EXPENSES, JSON.stringify([]));
+        }
+      } catch (e) {}
+    }
   }
 }
 

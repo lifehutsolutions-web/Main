@@ -251,67 +251,6 @@ export default function ContractorPortal({
 
     onUpdateProjects([...projects, freshProject]);
     setShowProjModal(false);
-
-    // Setup basic template stages automatically for convenience (Advance, Footing, Lintel, Roof, Handover)
-    const baseValue = Number(newProj.contractValue);
-    const autoStages: PaymentStage[] = [
-      {
-        id: `stg_${Date.now()}_1`,
-        projectId: id,
-        stageName: 'Advance Fee',
-        payableAmount: Math.round(baseValue * 0.15),
-        receivedAmount: 0,
-        dueDate: newProj.startDate || '2026-07-01',
-        status: 'Pending',
-      },
-      {
-        id: `stg_${Date.now()}_2`,
-        projectId: id,
-        stageName: 'Foundation/Footing Casting',
-        payableAmount: Math.round(baseValue * 0.25),
-        receivedAmount: 0,
-        dueDate: '2026-08-15',
-        status: 'Pending',
-      },
-      {
-        id: `stg_${Date.now()}_3`,
-        projectId: id,
-        stageName: 'Structural Pillars GF',
-        payableAmount: Math.round(baseValue * 0.20),
-        receivedAmount: 0,
-        dueDate: '2026-09-30',
-        status: 'Pending',
-      },
-      {
-        id: `stg_${Date.now()}_4`,
-        projectId: id,
-        stageName: 'Roof Slab GF Complete',
-        payableAmount: Math.round(baseValue * 0.20),
-        receivedAmount: 0,
-        dueDate: '2026-10-31',
-        status: 'Pending',
-      },
-      {
-        id: `stg_${Date.now()}_5`,
-        projectId: id,
-        stageName: 'Plaster & Brick Finishing',
-        payableAmount: Math.round(baseValue * 0.10),
-        receivedAmount: 0,
-        dueDate: '2026-11-30',
-        status: 'Pending',
-      },
-      {
-        id: `stg_${Date.now()}_6`,
-        projectId: id,
-        stageName: 'Project Handover & Signoff',
-        payableAmount: baseValue - (Math.round(baseValue * 0.15) + Math.round(baseValue * 0.25) + Math.round(baseValue * 0.20) + Math.round(baseValue * 0.20) + Math.round(baseValue * 0.10)),
-        receivedAmount: 0,
-        dueDate: newProj.expectedEndDate || '2026-12-31',
-        status: 'Pending',
-      }
-    ];
-
-    onUpdateStages([...stages, ...autoStages]);
     onSelectProject(id);
 
     // Prompt for client logins sharing details
@@ -1730,16 +1669,7 @@ setIsCompressingPhotos(false);
                                 </td>
                               )}
                               <td className="font-medium">
-                                <div className="flex items-center gap-1.5">
-                                  <span>{stg.stageName}</span>
-                                  <button
-                                    onClick={() => handleEditStageClick(stg)}
-                                    className="p-1 hover:bg-slate-100 dark:hover:bg-slate-800 rounded text-slate-400 hover:text-[var(--lh-blue)] transition-colors"
-                                    title="Edit payment stage"
-                                  >
-                                    <Pencil className="w-3 h-3" />
-                                  </button>
-                                </div>
+                                <span>{stg.stageName}</span>
                               </td>
                               <td style={{ color: 'var(--lh-text-secondary)' }}>
                                 {stg.dueDate ? new Date(stg.dueDate).toLocaleDateString('en-IN', { day: 'numeric', month: 'short' }) : 'TBD'}

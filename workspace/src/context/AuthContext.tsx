@@ -82,27 +82,37 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       } else {
         setUser(firebaseUser);
         
-        // Fetch User Profile and Role from Firestore users collection
-        const userRef = doc(fdb, 'users', firebaseUser.uid);
-        const userSnap = await getDoc(userRef);
+        // Fetch User Profile and Role from separate collection
+        const contractorRef = doc(fdb, 'contractorUsers', firebaseUser.uid);
+        const contractorSnap = await getDoc(contractorRef);
         
-        let role: 'Contractor' | 'Client' = firebaseUser.isAnonymous ? 'Client' : 'Contractor';
+        let role: 'Contractor' | 'Client' = 'Contractor';
         let profileData: UserProfile = {};
+        let found = false;
 
-        if (userSnap.exists()) {
-          const data = userSnap.data() as UserProfile;
-          profileData = data;
-          if (data.role) {
-            role = data.role;
-          }
+        if (contractorSnap.exists()) {
+          role = 'Contractor';
+          profileData = contractorSnap.data() as UserProfile;
+          found = true;
         } else {
-          // Setup default shell if missing
+          const clientRef = doc(fdb, 'clientUsers', firebaseUser.uid);
+          const clientSnap = await getDoc(clientRef);
+          if (clientSnap.exists()) {
+            role = 'Client';
+            profileData = clientSnap.data() as UserProfile;
+            found = true;
+          }
+        }
+
+        if (!found) {
+          role = firebaseUser.isAnonymous ? 'Client' : 'Contractor';
           profileData = {
             ownerName: firebaseUser.displayName || '',
             email: firebaseUser.email || '',
             role: role
           };
-          await setDoc(userRef, { ...profileData, createdAt: new Date().toISOString() }, { merge: true });
+          const destRef = doc(fdb, role === 'Contractor' ? 'contractorUsers' : 'clientUsers', firebaseUser.uid);
+          await setDoc(destRef, { ...profileData, createdAt: new Date().toISOString() }, { merge: true });
         }
 
         setUserRole(role);
@@ -149,7 +159,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       const result = await signInAnonymously(auth);
       const anonUser = result.user;
       
-      const userRef = doc(fdb, 'users', anonUser.uid);
+      const userRef = doc(fdb, 'contractorUsers', anonUser.uid);
       const profile = {
         ownerName: 'Iframe Sandbox Contractor',
         companyName: 'Iframe Sandbox Builders',
@@ -166,8 +176,21 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       setUserProfile(profile);
       setAuthLoading(false);
     } catch (err) {
+      console.warn("Firebase anonymous authentication failed, falling back to local Sandbox Demo mode:", err);
+      // Fallback: Start local offline demo mode!
+      setIsDemoMode(true);
+      setUser(null);
+      setUserRole('Contractor');
+      setUserProfile({
+        companyName: 'Iframe Sandbox Builders (Offline)',
+        ownerName: 'Iframe Sandbox Contractor (Offline)',
+        mobile: '+91 99999 88888',
+        email: 'sandbox-contractor@lifehut.co',
+        role: 'Contractor' as const,
+        createdAt: new Date().toISOString()
+      });
+      setSelectedProjId('proj_green_villa');
       setAuthLoading(false);
-      throw err;
     }
   };
 
@@ -195,7 +218,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     setUserRole(null);
     setUserProfile(null);
     setSelectedProjId('');
-    await signOut(auth);
+    
+    // Non-blocking Firebase sign-out so UI transitions instantly
+    signOut(auth).catch(err => {
+      console.error("Firebase signOut error (ignoring to proceed with local cleanup):", err);
+    });
   };
 
   // 3. Demo Mode Functions
@@ -233,7 +260,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
     if (!user) throw new Error("Must be logged in to update profile.");
     
-    const userRef = doc(fdb, 'users', user.uid);
+    const collectionName = userRole === 'Contractor' ? 'contractorUsers' : 'clientUsers';
+    const userRef = doc(fdb, collectionName, user.uid);
     const updatedProfile = {
       ...profile,
       role: userRole || 'Contractor',

@@ -3,7 +3,7 @@ import { Project, PaymentStage, ExtraWork, DailyProgress, ProjectDocument, ChatM
 import ChatComponent from './ChatComponent';
 import PaymentStatementSheet from './PaymentStatementSheet';
 import RecentActivity from './dashboard/RecentActivity';
-import { doc, getDoc, setDoc, updateDoc, arrayUnion } from 'firebase/firestore';
+import { doc, getDoc, setDoc, updateDoc, arrayUnion, deleteDoc, onSnapshot, query, where, collection } from 'firebase/firestore';
 import { db as fdb, auth, signInAnon } from '../firebase';
 import { useAuth } from '../context/AuthContext';
 import { 
@@ -33,7 +33,13 @@ import {
   Users,
   Briefcase,
   ExternalLink,
-  Lock
+  Lock,
+  Receipt,
+  Plus,
+  Trash2,
+  Edit2,
+  Save,
+  X
 } from 'lucide-react';
 
 interface ClientPortalProps {
@@ -72,8 +78,18 @@ export default function ClientPortal({
   });
   const [loginError, setLoginError] = useState('');
   
+  // PIN states for client login
+  const [loginStep, setLoginStep] = useState<'code' | 'setup-pin' | 'enter-pin'>('code');
+  const [pin, setPin] = useState('');
+  const [confirmPin, setConfirmPin] = useState('');
+  const [tempProjectId, setTempProjectId] = useState('');
+  const [showResetPinModal, setShowResetPinModal] = useState(false);
+  const [newPin, setNewPin] = useState('');
+  const [confirmNewPin, setConfirmNewPin] = useState('');
+  const [resetPinError, setResetPinError] = useState('');
+  
   // Left sidebar module navigation (Unified client experience)
-  const [activeModule, setActiveModule] = useState<'overview' | 'payments' | 'variations' | 'updates' | 'documents' | 'chat'>('overview');
+  const [activeModule, setActiveModule] = useState<'overview' | 'payments' | 'variations' | 'updates' | 'documents' | 'chat' | 'direct-expenses'>('overview');
   
   // Custom interactive toasts and inline comments
   const [toast, setToast] = useState<{ message: string; type: 'success' | 'info' | 'error' } | null>(null);
@@ -114,7 +130,7 @@ export default function ClientPortal({
     const fetchContractor = async () => {
       if (activeProject?.contractorUid) {
         try {
-          const userSnap = await getDoc(doc(fdb, 'users', activeProject.contractorUid));
+          const userSnap = await getDoc(doc(fdb, 'contractorUsers', activeProject.contractorUid));
           if (userSnap.exists()) {
             const data = userSnap.data();
             setContractorProfile({
@@ -135,7 +151,173 @@ export default function ClientPortal({
       }
     };
     fetchContractor();
-  }, [activeProject?.contractorUid]);
+  }, [activeProject?.id, activeProject?.contractorUid]);
+
+  // Other Works Expenses State
+  const [otherExpenses, setOtherExpenses] = useState<any[]>([]);
+  const [loadingOther, setLoadingOther] = useState(false);
+
+  // Form State for Adding Other Expense
+  const [showAddForm, setShowAddForm] = useState(false);
+  const [otherDesc, setOtherDesc] = useState('');
+  const [otherAmount, setOtherAmount] = useState('');
+  const [otherDate, setOtherDate] = useState(new Date().toISOString().split('T')[0]);
+  const [otherCategory, setOtherCategory] = useState('Materials');
+  const [otherNotes, setOtherNotes] = useState('');
+
+  // Form State for Editing Other Expense
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [editDesc, setEditDesc] = useState('');
+  const [editAmount, setEditAmount] = useState('');
+  const [editDate, setEditDate] = useState('');
+  const [editCategory, setEditCategory] = useState('');
+  const [editNotes, setEditNotes] = useState('');
+
+  // Other Works Real-time Sync (Firestore + Offline Fallback)
+  React.useEffect(() => {
+    if (!user?.uid) {
+      // Offline/Demo Mode local fallback
+      const local = localStorage.getItem(`client_other_expenses_${activeProject?.id || 'default'}`);
+      if (local) {
+        setOtherExpenses(JSON.parse(local));
+      } else {
+        setOtherExpenses([]);
+      }
+      return;
+    }
+
+    setLoadingOther(true);
+    const q = query(
+      collection(fdb, 'clientOtherWorks'),
+      where('clientUid', '==', user.uid),
+      where('projectId', '==', activeProject?.id || 'default')
+    );
+
+    const unsubscribe = onSnapshot(q, (snapshot) => {
+      const items: any[] = [];
+      snapshot.forEach(docSnap => {
+        items.push({ id: docSnap.id, ...docSnap.data() });
+      });
+      items.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+      setOtherExpenses(items);
+      setLoadingOther(false);
+    }, (err) => {
+      console.warn("Failed to subscribe to client other works:", err);
+      setLoadingOther(false);
+    });
+
+    return () => unsubscribe();
+  }, [user?.uid, activeProject?.id]);
+
+  const handleAddOtherExpense = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!otherDesc.trim() || !otherAmount.trim()) {
+      showToast("Please provide a description and amount.", "error");
+      return;
+    }
+    const amountNum = parseFloat(otherAmount);
+    if (isNaN(amountNum) || amountNum <= 0) {
+      showToast("Amount must be a positive number.", "error");
+      return;
+    }
+
+    const payload = {
+      description: otherDesc.trim(),
+      amount: amountNum,
+      date: otherDate,
+      category: otherCategory,
+      notes: otherNotes.trim(),
+      clientUid: user?.uid || 'offline_client',
+      projectId: activeProject?.id || 'default',
+      createdAt: new Date().toISOString()
+    };
+
+    try {
+      if (user?.uid) {
+        // Write to Firestore
+        const docRef = doc(collection(fdb, 'clientOtherWorks'), `other_exp_${Date.now()}`);
+        await setDoc(docRef, payload);
+      } else {
+        // LocalStorage offline mode
+        const fresh = { id: `other_exp_${Date.now()}`, ...payload };
+        const updated = [fresh, ...otherExpenses];
+        setOtherExpenses(updated);
+        localStorage.setItem(`client_other_expenses_${activeProject?.id || 'default'}`, JSON.stringify(updated));
+      }
+
+      showToast("Expense logged successfully!", "success");
+      setOtherDesc('');
+      setOtherAmount('');
+      setOtherNotes('');
+      setShowAddForm(false);
+    } catch (err) {
+      console.error("Error adding other expense:", err);
+      showToast("Failed to save expense to database.", "error");
+    }
+  };
+
+  const handleDeleteOtherExpense = async (id: string) => {
+    if (!window.confirm("Are you sure you want to delete this expense entry?")) return;
+    try {
+      if (user?.uid) {
+        await deleteDoc(doc(fdb, 'clientOtherWorks', id));
+      } else {
+        const updated = otherExpenses.filter(e => e.id !== id);
+        setOtherExpenses(updated);
+        localStorage.setItem(`client_other_expenses_${activeProject?.id || 'default'}`, JSON.stringify(updated));
+      }
+      showToast("Expense entry deleted.", "success");
+    } catch (err) {
+      console.error("Error deleting other expense:", err);
+      showToast("Failed to delete expense entry.", "error");
+    }
+  };
+
+  const handleStartEditOtherExpense = (exp: any) => {
+    setEditingId(exp.id);
+    setEditDesc(exp.description);
+    setEditAmount(String(exp.amount));
+    setEditDate(exp.date);
+    setEditCategory(exp.category);
+    setEditNotes(exp.notes || '');
+  };
+
+  const handleSaveEditOtherExpense = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!editDesc.trim() || !editAmount.trim()) {
+      showToast("Description and amount are required.", "error");
+      return;
+    }
+    const amountNum = parseFloat(editAmount);
+    if (isNaN(amountNum) || amountNum <= 0) {
+      showToast("Amount must be a positive number.", "error");
+      return;
+    }
+
+    const updatedPayload = {
+      description: editDesc.trim(),
+      amount: amountNum,
+      date: editDate,
+      category: editCategory,
+      notes: editNotes.trim(),
+      updatedAt: new Date().toISOString()
+    };
+
+    try {
+      if (user?.uid) {
+        await updateDoc(doc(fdb, 'clientOtherWorks', editingId!), updatedPayload);
+      } else {
+        const updated = otherExpenses.map(e => e.id === editingId ? { ...e, ...updatedPayload } : e);
+        setOtherExpenses(updated);
+        localStorage.setItem(`client_other_expenses_${activeProject?.id || 'default'}`, JSON.stringify(updated));
+      }
+      showToast("Expense entry updated!", "success");
+      setEditingId(null);
+    } catch (err) {
+      console.error("Error saving edited expense:", err);
+      showToast("Failed to update expense entry.", "error");
+    }
+  };
 
   React.useEffect(() => {
     const savedCode = localStorage.getItem('metrobuild_client_code');
@@ -150,11 +332,91 @@ export default function ClientPortal({
     setIsLoggingIn(true);
     setLoginError('');
 
+    const codeKey = clientCode.trim().toUpperCase();
+
     try {
-      const projectId = await loginAsClient(clientCode);
-      onSelectProject(projectId);
-      setIsLoggedIn(true);
-      showToast('Successfully authenticated and connected securely!', 'success');
+      if (loginStep === 'code') {
+        // 1. Perform anonymous sign-in to satisfy firebase rules only if not already signed in
+        let currentUser = auth.currentUser;
+        if (!currentUser) {
+          const { signInAnonymously } = await import('firebase/auth');
+          const result = await signInAnonymously(auth);
+          currentUser = result.user;
+        }
+        if (!currentUser) throw new Error("Anonymous authentication failed.");
+
+        // 2. Fetch the client code document
+        const lookupRef = doc(fdb, 'clientCodes', codeKey);
+        const lookupSnap = await getDoc(lookupRef);
+
+        if (!lookupSnap.exists()) {
+          throw new Error(`Invalid client code: "${clientCode}". Please verify and try again.`);
+        }
+
+        const codeData = lookupSnap.data();
+        const projectId = codeData.projectId;
+        setTempProjectId(projectId);
+
+        // 3. Check if PIN exists in clientPins
+        const pinRef = doc(fdb, 'clientPins', codeKey);
+        const pinSnap = await getDoc(pinRef);
+
+        if (pinSnap.exists()) {
+          // PIN exists, ask to enter PIN
+          setLoginStep('enter-pin');
+        } else {
+          // PIN does not exist, ask to setup PIN
+          setLoginStep('setup-pin');
+        }
+      } else if (loginStep === 'setup-pin') {
+        // 1. Validate PIN is 6 digits
+        if (!/^\d{6}$/.test(pin)) {
+          throw new Error("PIN must be a 6-digit number.");
+        }
+        if (pin !== confirmPin) {
+          throw new Error("PINs do not match. Please verify.");
+        }
+
+        // 2. Save the PIN
+        const pinRef = doc(fdb, 'clientPins', codeKey);
+        await setDoc(pinRef, {
+          pin: pin,
+          projectId: tempProjectId,
+          clientCode: codeKey,
+          updatedAt: new Date().toISOString()
+        });
+
+        // 3. Complete loginAsClient
+        const projectId = await loginAsClient(clientCode);
+        onSelectProject(projectId);
+        setIsLoggedIn(true);
+        showToast('PIN configured and authenticated securely!', 'success');
+      } else if (loginStep === 'enter-pin') {
+        // 1. Validate PIN entered
+        if (!/^\d{6}$/.test(pin)) {
+          throw new Error("PIN must be a 6-digit number.");
+        }
+
+        // 2. Fetch stored PIN
+        const pinRef = doc(fdb, 'clientPins', codeKey);
+        const pinSnap = await getDoc(pinRef);
+
+        if (!pinSnap.exists()) {
+          // Edge case: Pin was deleted, go back to setup-pin
+          setLoginStep('setup-pin');
+          throw new Error("PIN document not found. Please set it up now.");
+        }
+
+        if (pinSnap.data().pin !== pin) {
+          throw new Error("Incorrect PIN. Please try again.");
+        }
+
+        // 3. Pin matches, complete login
+        const projectId = await loginAsClient(clientCode);
+        onSelectProject(projectId);
+        setIsLoggedIn(true);
+        showToast('Successfully authenticated and connected securely!', 'success');
+      }
     } catch (err: any) {
       console.error("Secure client login failed:", err);
       setLoginError(err.message || 'Authentication failed. Please verify your connection or client code.');
@@ -181,6 +443,10 @@ export default function ClientPortal({
 
   const pendingAmount = totalAdjustedContractValue - paidAmount;
 
+  // Direct Expenses totals & Overall project value
+  const directExpensesTotal = otherExpenses.reduce((sum, e) => sum + e.amount, 0);
+  const totalProjectValue = totalAdjustedContractValue + directExpensesTotal;
+
   // Progress metrics
   const totalStagesCount = projectStages.length;
   const paidStagesCount = projectStages.filter(s => s.status === 'Paid' || (s.receivedAmount || 0) >= s.payableAmount).length;
@@ -202,7 +468,7 @@ export default function ClientPortal({
   });
 
   interface ClientNav {
-    id: 'overview' | 'payments' | 'variations' | 'updates' | 'documents' | 'chat';
+    id: 'overview' | 'payments' | 'variations' | 'updates' | 'documents' | 'chat' | 'direct-expenses';
     label: string;
     icon: any;
     badge?: number | string;
@@ -215,6 +481,7 @@ export default function ClientPortal({
     { id: 'updates', label: 'Site updates', icon: Camera, badge: projectProgress.length || undefined },
     { id: 'documents', label: 'Documents', icon: FileText, badge: projectDocs.length || undefined },
     { id: 'chat', label: 'Chat', icon: MessageSquare, badge: messages.length ? 'Live' : undefined },
+    { id: 'direct-expenses', label: 'Direct Expenses', icon: Receipt, badge: otherExpenses.length || undefined },
   ];
 
   // Simulate payment stage click
@@ -278,18 +545,126 @@ export default function ClientPortal({
           </div>
 
           <form onSubmit={handleCodeLogin} className="space-y-4">
-            <div>
-              <label className="lh-label">Client access code</label>
-              <input
-                type="text"
-                required
-                disabled={isLoggingIn}
-                value={clientCode}
-                onChange={(e) => setClientCode(e.target.value)}
-                placeholder="e.g., CLIENT-GREEN"
-                className="lh-input text-center font-mono tracking-wide disabled:opacity-50"
-              />
-            </div>
+            {loginStep === 'code' && (
+              <div>
+                <label className="lh-label">Client access code</label>
+                <input
+                  type="text"
+                  required
+                  disabled={isLoggingIn}
+                  value={clientCode}
+                  onChange={(e) => setClientCode(e.target.value)}
+                  placeholder="e.g., CLIENT-GREEN"
+                  className="lh-input text-center font-mono tracking-wide disabled:opacity-50"
+                />
+              </div>
+            )}
+
+            {loginStep === 'setup-pin' && (
+              <div className="space-y-4">
+                <div>
+                  <div className="flex justify-between items-center mb-1">
+                    <label className="lh-label mb-0">Client access code</label>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setLoginStep('code');
+                        setPin('');
+                        setConfirmPin('');
+                        setLoginError('');
+                      }}
+                      className="text-[11px] text-blue-600 hover:underline font-medium"
+                    >
+                      Change code
+                    </button>
+                  </div>
+                  <input
+                    type="text"
+                    disabled
+                    value={clientCode.toUpperCase()}
+                    className="lh-input text-center font-mono tracking-wide bg-slate-50 dark:bg-slate-900 opacity-70"
+                  />
+                </div>
+
+                <div className="p-3 bg-amber-50 dark:bg-amber-950/20 border border-amber-200/50 dark:border-amber-900/40 rounded-xl text-center">
+                  <p className="text-[11.5px] text-amber-800 dark:text-amber-300 font-medium">
+                    ✨ First-Time Login: Set up a secure 6-digit PIN for future access.
+                  </p>
+                </div>
+
+                <div>
+                  <label className="lh-label">Choose 6-Digit PIN</label>
+                  <input
+                    type="password"
+                    pattern="\d*"
+                    maxLength={6}
+                    required
+                    disabled={isLoggingIn}
+                    value={pin}
+                    onChange={(e) => setPin(e.target.value.replace(/\D/g, ''))}
+                    placeholder="Enter 6 digits"
+                    className="lh-input text-center font-mono tracking-widest disabled:opacity-50"
+                  />
+                </div>
+
+                <div>
+                  <label className="lh-label">Confirm 6-Digit PIN</label>
+                  <input
+                    type="password"
+                    pattern="\d*"
+                    maxLength={6}
+                    required
+                    disabled={isLoggingIn}
+                    value={confirmPin}
+                    onChange={(e) => setConfirmPin(e.target.value.replace(/\D/g, ''))}
+                    placeholder="Re-enter 6 digits"
+                    className="lh-input text-center font-mono tracking-widest disabled:opacity-50"
+                  />
+                </div>
+              </div>
+            )}
+
+            {loginStep === 'enter-pin' && (
+              <div className="space-y-4">
+                <div>
+                  <div className="flex justify-between items-center mb-1">
+                    <label className="lh-label mb-0">Client access code</label>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setLoginStep('code');
+                        setPin('');
+                        setLoginError('');
+                      }}
+                      className="text-[11px] text-blue-600 hover:underline font-medium"
+                    >
+                      Change code
+                    </button>
+                  </div>
+                  <input
+                    type="text"
+                    disabled
+                    value={clientCode.toUpperCase()}
+                    className="lh-input text-center font-mono tracking-wide bg-slate-50 dark:bg-slate-900 opacity-70"
+                  />
+                </div>
+
+                <div>
+                  <label className="lh-label">Enter 6-Digit PIN</label>
+                  <input
+                    type="password"
+                    pattern="\d*"
+                    maxLength={6}
+                    required
+                    disabled={isLoggingIn}
+                    value={pin}
+                    onChange={(e) => setPin(e.target.value.replace(/\D/g, ''))}
+                    placeholder="••••••"
+                    className="lh-input text-center font-mono tracking-widest text-lg disabled:opacity-50"
+                  />
+                </div>
+              </div>
+            )}
 
             {loginError && (
               <p className="text-[11.5px] font-medium flex items-center gap-1.5 p-3 rounded-lg" style={{ color: 'var(--lh-danger-text)', background: 'var(--lh-danger-bg)' }}>
@@ -309,7 +684,9 @@ export default function ClientPortal({
                   <span>Connecting securely...</span>
                 </>
               ) : (
-                <span>Access workspace</span>
+                <span>
+                  {loginStep === 'code' ? 'Access workspace' : loginStep === 'setup-pin' ? 'Set PIN & Connect' : 'Verify PIN & Connect'}
+                </span>
               )}
             </button>
           </form>
@@ -440,16 +817,31 @@ export default function ClientPortal({
             </nav>
 
             {/* Switch Account (Small row after modules list) */}
-            <div className="pt-2.5 border-t border-slate-100 dark:border-slate-800">
+            <div className="pt-2.5 border-t border-slate-100 dark:border-slate-800 space-y-1">
               <button
                 onClick={() => {
                   localStorage.removeItem('metrobuild_client_code');
                   setIsLoggedIn(false);
+                  setLoginStep('code');
+                  setPin('');
+                  setConfirmPin('');
                 }}
                 className="w-full text-left px-3 py-1.5 text-[11px] font-semibold text-slate-400 hover:text-indigo-600 dark:hover:text-indigo-400 transition-colors flex items-center gap-1.5"
               >
                 <Users className="w-3.5 h-3.5" />
                 <span>Switch account</span>
+              </button>
+              <button
+                onClick={() => {
+                  setNewPin('');
+                  setConfirmNewPin('');
+                  setResetPinError('');
+                  setShowResetPinModal(true);
+                }}
+                className="w-full text-left px-3 py-1.5 text-[11px] font-semibold text-slate-400 hover:text-indigo-600 dark:hover:text-indigo-400 transition-colors flex items-center gap-1.5"
+              >
+                <Lock className="w-3.5 h-3.5" />
+                <span>Reset Account PIN</span>
               </button>
             </div>
 
@@ -554,30 +946,52 @@ export default function ClientPortal({
                   </span>
                 </div>
 
-                <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
-                  <div className="bg-slate-50/50 dark:bg-slate-800/20 p-3 rounded-lg border border-slate-100 dark:border-slate-800">
-                    <span className="text-[10px] font-semibold text-slate-400 uppercase">Original Contract</span>
-                    <p className="text-sm font-extrabold mt-1" style={{ color: 'var(--lh-text-primary)' }}>
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                  <div className="lh-panel p-4 space-y-1 shadow-xs">
+                    <span className="text-[10px] uppercase font-bold text-slate-400 dark:text-slate-500 tracking-wider block">Original Contract</span>
+                    <p className="text-base sm:text-lg font-black text-slate-800 dark:text-slate-100">
                       ₹{originalContractValue.toLocaleString('en-IN')}
                     </p>
                   </div>
-                  <div className="bg-slate-50/50 dark:bg-slate-800/20 p-3 rounded-lg border border-slate-100 dark:border-slate-800">
-                    <span className="text-[10px] font-semibold text-slate-400 uppercase">Extra Works</span>
-                    <p className="text-sm font-extrabold mt-1 text-indigo-600 dark:text-indigo-400">
+                  <div className="lh-panel p-4 space-y-1 shadow-xs">
+                    <span className="text-[10px] uppercase font-bold text-slate-400 dark:text-slate-500 tracking-wider block">Extra Works</span>
+                    <p className="text-base sm:text-lg font-black text-indigo-600 dark:text-indigo-400">
                       ₹{approvedExtraValue.toLocaleString('en-IN')}
                     </p>
                   </div>
-                  <div className="bg-slate-50/50 dark:bg-slate-800/20 p-3 rounded-lg border border-slate-100 dark:border-slate-800">
-                    <span className="text-[10px] font-semibold text-slate-400 uppercase">Adjusted Total</span>
-                    <p className="text-sm font-extrabold mt-1" style={{ color: 'var(--lh-text-primary)' }}>
+                  <div className="lh-panel p-4 space-y-1 shadow-xs">
+                    <span className="text-[10px] uppercase font-bold text-slate-400 dark:text-slate-500 tracking-wider block">Adjusted Total</span>
+                    <p className="text-base sm:text-lg font-black text-slate-800 dark:text-slate-100">
                       ₹{totalAdjustedContractValue.toLocaleString('en-IN')}
                     </p>
                   </div>
-                  <div className="bg-slate-50/50 dark:bg-slate-800/20 p-3 rounded-lg border border-slate-100 dark:border-slate-800">
-                    <span className="text-[10px] font-semibold text-slate-400 uppercase">Pending Balance</span>
-                    <p className="text-sm font-extrabold mt-1 text-amber-600 dark:text-amber-400">
-                      ₹{pendingAmount.toLocaleString('en-IN')}
+                  <div className="lh-panel p-4 space-y-1 shadow-xs">
+                    <span className="text-[10px] uppercase font-bold text-slate-400 dark:text-slate-500 tracking-wider block">Direct Expenses</span>
+                    <p className="text-base sm:text-lg font-black text-teal-600 dark:text-teal-400">
+                      ₹{directExpensesTotal.toLocaleString('en-IN')}
                     </p>
+                  </div>
+                </div>
+
+                {/* Separate row box for key client-facing totals */}
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <div className="bg-amber-50/40 dark:bg-amber-950/10 p-4 rounded-lg border border-amber-100/70 dark:border-amber-900/30">
+                    <div className="space-y-1">
+                      <span className="text-[10px] font-bold text-amber-600 dark:text-amber-400 uppercase tracking-wider block">Pending Payment</span>
+                      <p className="text-xl font-black text-amber-700 dark:text-amber-300">
+                        ₹{pendingAmount.toLocaleString('en-IN')}
+                      </p>
+                    </div>
+                  </div>
+
+                  <div className="bg-indigo-50/50 dark:bg-indigo-950/25 p-4 rounded-lg border border-indigo-100 dark:border-indigo-900/40 relative overflow-hidden">
+                    <div className="absolute top-0 right-0 w-12 h-12 bg-indigo-500/5 rounded-full blur-xs pointer-events-none" />
+                    <div className="space-y-1">
+                      <span className="text-[10px] font-bold text-indigo-600 dark:text-indigo-400 uppercase tracking-wider block">Total Project Value</span>
+                      <p className="text-xl font-black text-indigo-700 dark:text-indigo-300">
+                        ₹{totalProjectValue.toLocaleString('en-IN')}
+                      </p>
+                    </div>
                   </div>
                 </div>
 
@@ -889,6 +1303,372 @@ export default function ClientPortal({
             </div>
           )}
 
+          {/* G: DIRECT EXPENSES MODULE */}
+          {activeModule === 'direct-expenses' && (
+            <div className="space-y-5 animate-fade-in" id="client-direct-expenses-module">
+              <div className="rounded-xl p-5 space-y-2 bg-gradient-to-r from-slate-900 to-indigo-950 text-white shadow-md border border-indigo-900/40">
+                <div className="flex items-center gap-2">
+                  <Receipt className="w-5 h-5 text-indigo-400" />
+                  <span className="lh-badge" style={{ background: 'rgba(99, 102, 241, 0.2)', color: '#a5b4fc' }}>Client Exclusive</span>
+                </div>
+                <h3 className="text-xl font-display font-semibold tracking-tight text-white">Direct Expenses</h3>
+                <p className="text-[12px] leading-relaxed text-slate-300">
+                  Maintain a personal ledger of other project expenses, independent materials, or specialty vendors that you manage directly. 
+                  <strong className="text-indigo-200 block mt-1">🔒 Private: This information and its ledger are strictly confidential and are NEVER shared with or visible to the contractor.</strong>
+                </p>
+              </div>
+
+              {/* Stat summaries */}
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div className="lh-panel p-4 rounded-xl border border-slate-100 dark:border-slate-800 space-y-1 bg-white dark:bg-slate-900 shadow-xs">
+                  <span className="text-[10px] uppercase font-bold text-slate-400 block tracking-wider">Total Direct Spend</span>
+                  <div className="text-2xl font-black text-slate-800 dark:text-slate-100">
+                    ₹{otherExpenses.reduce((sum, e) => sum + e.amount, 0).toLocaleString('en-IN')}
+                  </div>
+                  <span className="text-[10px] text-emerald-500 font-semibold block">Managed independently</span>
+                </div>
+
+                <div className="lh-panel p-4 rounded-xl border border-slate-100 dark:border-slate-800 space-y-1 bg-white dark:bg-slate-900 shadow-xs">
+                  <span className="text-[10px] uppercase font-bold text-slate-400 block tracking-wider">Logged Entries</span>
+                  <div className="text-2xl font-black text-slate-800 dark:text-slate-100">
+                    {otherExpenses.length}
+                  </div>
+                  <span className="text-[10px] text-slate-400 block">Total entries in ledger</span>
+                </div>
+
+                <div className="lh-panel p-4 rounded-xl border border-slate-100 dark:border-slate-800 space-y-1 bg-white dark:bg-slate-900 shadow-xs flex flex-col justify-between">
+                  <span className="text-[10px] uppercase font-bold text-slate-400 block tracking-wider">Primary Category</span>
+                  <div className="text-lg font-bold text-indigo-600 dark:text-indigo-400 truncate mt-1">
+                    {otherExpenses.length > 0 ? (
+                      (() => {
+                        const counts: Record<string, number> = {};
+                        otherExpenses.forEach(e => { counts[e.category] = (counts[e.category] || 0) + e.amount; });
+                        const topCat = Object.entries(counts).sort((a, b) => b[1] - a[1])[0];
+                        return topCat ? `${topCat[0]} (₹${topCat[1].toLocaleString('en-IN')})` : "No entries logged";
+                      })()
+                    ) : "No entries logged"}
+                  </div>
+                  <span className="text-[10px] text-slate-400 block mt-0.5">By financial volume</span>
+                </div>
+              </div>
+
+              {/* Add Expense Toggle & Search bar */}
+              <div className="flex flex-col sm:flex-row gap-3 justify-between items-stretch sm:items-center">
+                <button
+                  onClick={() => {
+                    setShowAddForm(!showAddForm);
+                    setEditingId(null);
+                  }}
+                  className="lh-btn lh-btn-primary flex items-center justify-center gap-1.5 self-start text-[12.5px] font-semibold py-2 px-4 rounded-lg shadow-sm"
+                >
+                  {showAddForm ? <X className="w-4 h-4" /> : <Plus className="w-4 h-4" />}
+                  <span>{showAddForm ? "Cancel Log Entry" : "Log New Direct Expense"}</span>
+                </button>
+
+                <div className="relative flex-1 max-w-sm">
+                  <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
+                  <input
+                    type="text"
+                    placeholder="Search expenses..."
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                    className="lh-input w-full !pl-9 text-[12.5px] py-1.5 bg-slate-50 dark:bg-slate-800 border-slate-200 dark:border-slate-700 rounded-lg"
+                  />
+                </div>
+              </div>
+
+              {/* Log New Expense Card / Inline Form */}
+              {showAddForm && (
+                <form onSubmit={handleAddOtherExpense} className="lh-panel rounded-xl p-5 border border-slate-100 dark:border-slate-800 space-y-4 bg-slate-50/50 dark:bg-slate-800/10">
+                  <h4 className="font-display font-semibold text-[14px] text-slate-800 dark:text-slate-100 flex items-center gap-2">
+                    <Receipt className="w-4 h-4 text-indigo-500" />
+                    Log Direct Purchase / Expense
+                  </h4>
+                  
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <div className="space-y-1.5">
+                      <label className="lh-label text-xs">Expense / Item Description</label>
+                      <input
+                        type="text"
+                        placeholder="e.g., Purchased premium marble tile slabs"
+                        value={otherDesc}
+                        onChange={(e) => setOtherDesc(e.target.value)}
+                        className="lh-input w-full text-xs"
+                        required
+                      />
+                    </div>
+
+                    <div className="space-y-1.5">
+                      <label className="lh-label text-xs">Amount (₹)</label>
+                      <input
+                        type="number"
+                        placeholder="e.g., 45000"
+                        value={otherAmount}
+                        onChange={(e) => setOtherAmount(e.target.value)}
+                        className="lh-input w-full text-xs"
+                        required
+                      />
+                    </div>
+
+                    <div className="space-y-1.5">
+                      <label className="lh-label text-xs">Purchase/Expense Date</label>
+                      <input
+                        type="date"
+                        value={otherDate}
+                        onChange={(e) => setOtherDate(e.target.value)}
+                        className="lh-input w-full text-xs"
+                        required
+                      />
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <div className="space-y-1.5">
+                      <label className="lh-label text-xs">Category</label>
+                      <select
+                        value={otherCategory}
+                        onChange={(e) => setOtherCategory(e.target.value)}
+                        className="lh-input w-full text-xs"
+                      >
+                        <option value="Materials">Materials</option>
+                        <option value="Labour/Service">Labour/Service</option>
+                        <option value="Sanitary & Plumbing">Sanitary & Plumbing</option>
+                        <option value="Electricals & Lighting">Electricals & Lighting</option>
+                        <option value="Interior & Decor">Interior & Decor</option>
+                        <option value="Appliances">Appliances</option>
+                        <option value="Permits & Approvals">Permits & Approvals</option>
+                        <option value="Other">Other</option>
+                      </select>
+                    </div>
+
+                    <div className="space-y-1.5 md:col-span-2">
+                      <label className="lh-label text-xs">Memo/Notes (Optional)</label>
+                      <input
+                        type="text"
+                        placeholder="Add delivery note, vendor name, or details..."
+                        value={otherNotes}
+                        onChange={(e) => setOtherNotes(e.target.value)}
+                        className="lh-input w-full text-xs"
+                      />
+                    </div>
+                  </div>
+
+                  <div className="flex justify-end gap-2.5 pt-2">
+                    <button
+                      type="button"
+                      onClick={() => setShowAddForm(false)}
+                      className="lh-btn lh-btn-secondary lh-btn-md"
+                    >
+                      Cancel
+                    </button>
+                    <button
+                      type="submit"
+                      className="lh-btn lh-btn-primary lh-btn-md flex items-center gap-1.5"
+                    >
+                      <Save className="w-3.5 h-3.5" />
+                      Save Expense Entry
+                    </button>
+                  </div>
+                </form>
+              )}
+
+              {/* Editing Expense Inline Form */}
+              {editingId && (
+                <form onSubmit={handleSaveEditOtherExpense} className="lh-panel rounded-xl p-5 border border-amber-200 dark:border-amber-900/50 space-y-4 bg-amber-50/10">
+                  <h4 className="font-display font-semibold text-[14px] text-amber-800 dark:text-amber-200 flex items-center gap-2">
+                    <Edit2 className="w-4 h-4 text-amber-500" />
+                    Modify Ledger Entry
+                  </h4>
+
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <div className="space-y-1.5">
+                      <label className="lh-label text-xs">Expense Description</label>
+                      <input
+                        type="text"
+                        value={editDesc}
+                        onChange={(e) => setEditDesc(e.target.value)}
+                        className="lh-input w-full text-xs"
+                        required
+                      />
+                    </div>
+
+                    <div className="space-y-1.5">
+                      <label className="lh-label text-xs">Amount (₹)</label>
+                      <input
+                        type="number"
+                        value={editAmount}
+                        onChange={(e) => setEditAmount(e.target.value)}
+                        className="lh-input w-full text-xs"
+                        required
+                      />
+                    </div>
+
+                    <div className="space-y-1.5">
+                      <label className="lh-label text-xs">Date</label>
+                      <input
+                        type="date"
+                        value={editDate}
+                        onChange={(e) => setEditDate(e.target.value)}
+                        className="lh-input w-full text-xs"
+                        required
+                      />
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <div className="space-y-1.5">
+                      <label className="lh-label text-xs">Category</label>
+                      <select
+                        value={editCategory}
+                        onChange={(e) => setEditCategory(e.target.value)}
+                        className="lh-input w-full text-xs"
+                      >
+                        <option value="Materials">Materials</option>
+                        <option value="Labour/Service">Labour/Service</option>
+                        <option value="Sanitary & Plumbing">Sanitary & Plumbing</option>
+                        <option value="Electricals & Lighting">Electricals & Lighting</option>
+                        <option value="Interior & Decor">Interior & Decor</option>
+                        <option value="Appliances">Appliances</option>
+                        <option value="Permits & Approvals">Permits & Approvals</option>
+                        <option value="Other">Other</option>
+                      </select>
+                    </div>
+
+                    <div className="space-y-1.5 md:col-span-2">
+                      <label className="lh-label text-xs">Notes (Optional)</label>
+                      <input
+                        type="text"
+                        value={editNotes}
+                        onChange={(e) => setEditNotes(e.target.value)}
+                        className="lh-input w-full text-xs"
+                      />
+                    </div>
+                  </div>
+
+                  <div className="flex justify-end gap-2.5 pt-2">
+                    <button
+                      type="button"
+                      onClick={() => setEditingId(null)}
+                      className="lh-btn lh-btn-secondary lh-btn-md"
+                    >
+                      Cancel
+                    </button>
+                    <button
+                      type="submit"
+                      className="lh-btn lh-btn-primary lh-btn-md flex items-center gap-1.5 bg-amber-600 border-amber-600 hover:bg-amber-700 text-white"
+                    >
+                      <Save className="w-3.5 h-3.5" />
+                      Save Changes
+                    </button>
+                  </div>
+                </form>
+              )}
+
+              {/* Expense Ledger Records Table/Cards */}
+              <div className="lh-panel rounded-xl overflow-hidden border border-slate-100 dark:border-slate-800 bg-white dark:bg-slate-900 shadow-xs">
+                {loadingOther ? (
+                  <div className="p-12 text-center text-xs text-slate-400 space-y-2">
+                    <div className="inline-block animate-spin rounded-full h-5 w-5 border-b-2 border-indigo-500" />
+                    <p>Fetching your secure private ledger...</p>
+                  </div>
+                ) : (
+                  <>
+                    {/* Header */}
+                    <div className="p-4 bg-slate-50 dark:bg-slate-800/50 border-b border-slate-100 dark:border-slate-800 flex justify-between items-center">
+                      <h4 className="font-display font-bold text-xs uppercase tracking-wider text-slate-400">Expense Ledger</h4>
+                      <span className="text-[10px] text-slate-400 font-medium">Showing {
+                        otherExpenses.filter(e => 
+                          e.description.toLowerCase().includes(searchQuery.toLowerCase()) ||
+                          e.category.toLowerCase().includes(searchQuery.toLowerCase())
+                        ).length
+                      } items</span>
+                    </div>
+
+                    {/* Ledger List */}
+                    <div className="divide-y divide-slate-100 dark:divide-slate-800/80">
+                      {otherExpenses.filter(e => 
+                        e.description.toLowerCase().includes(searchQuery.toLowerCase()) ||
+                        e.category.toLowerCase().includes(searchQuery.toLowerCase())
+                      ).length === 0 ? (
+                        <div className="p-12 text-center space-y-2">
+                          <p className="text-2xl">📓</p>
+                          <h5 className="font-semibold text-slate-600 dark:text-slate-300 text-sm">Personal Ledger is Empty</h5>
+                          <p className="text-xs text-slate-400 max-w-sm mx-auto leading-relaxed">
+                            Log your personal materials purchases, extra fittings, or independent expenses to maintain a complete picture of your project cost.
+                          </p>
+                        </div>
+                      ) : (
+                        otherExpenses
+                          .filter(e => 
+                            e.description.toLowerCase().includes(searchQuery.toLowerCase()) ||
+                            e.category.toLowerCase().includes(searchQuery.toLowerCase())
+                          )
+                          .map((exp) => (
+                            <div key={exp.id} className="p-4 hover:bg-slate-50/50 dark:hover:bg-slate-800/20 transition-colors flex flex-col md:flex-row md:items-center justify-between gap-4">
+                              <div className="flex-1 min-w-0 space-y-1">
+                                <div className="flex items-center gap-2 flex-wrap">
+                                  <h4 className="font-bold text-[13.5px] text-slate-800 dark:text-slate-200 leading-snug">
+                                    {exp.description}
+                                  </h4>
+                                  <span className={`text-[9.5px] px-2 py-0.5 rounded-full font-bold tracking-wide uppercase ${
+                                    exp.category === 'Materials' ? 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300' :
+                                    exp.category === 'Labour/Service' ? 'bg-orange-100 text-orange-700 dark:bg-orange-900/30 dark:text-orange-300' :
+                                    exp.category === 'Sanitary & Plumbing' ? 'bg-teal-100 text-teal-700 dark:bg-teal-900/30 dark:text-teal-300' :
+                                    exp.category === 'Electricals & Lighting' ? 'bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-300' :
+                                    exp.category === 'Interior & Decor' ? 'bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-300' :
+                                    exp.category === 'Appliances' ? 'bg-rose-100 text-rose-700 dark:bg-rose-900/30 dark:text-rose-300' :
+                                    exp.category === 'Permits & Approvals' ? 'bg-cyan-100 text-cyan-700 dark:bg-cyan-900/30 dark:text-cyan-300' :
+                                    'bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-300'
+                                  }`}>
+                                    {exp.category}
+                                  </span>
+                                </div>
+                                {exp.notes && (
+                                  <p className="text-xs text-slate-500 dark:text-slate-400 italic font-normal">
+                                    “{exp.notes}”
+                                  </p>
+                                )}
+                                <p className="text-[10px] text-slate-400">
+                                  Logged on: {new Date(exp.date).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })}
+                                </p>
+                              </div>
+
+                              <div className="flex items-center gap-4 self-end md:self-center">
+                                <div className="text-right">
+                                  <span className="text-[15px] font-extrabold text-slate-900 dark:text-slate-100 block">
+                                    ₹{exp.amount.toLocaleString('en-IN')}
+                                  </span>
+                                </div>
+
+                                <div className="flex items-center gap-1">
+                                  <button
+                                    onClick={() => handleStartEditOtherExpense(exp)}
+                                    className="p-1.5 rounded bg-slate-50 dark:bg-slate-800 text-slate-500 hover:text-amber-500 hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors"
+                                    title="Edit Entry"
+                                    type="button"
+                                  >
+                                    <Edit2 className="w-3.5 h-3.5" />
+                                  </button>
+                                  <button
+                                    onClick={() => handleDeleteOtherExpense(exp.id)}
+                                    className="p-1.5 rounded bg-slate-50 dark:bg-slate-800 text-slate-500 hover:text-red-500 hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors"
+                                    title="Delete Entry"
+                                    type="button"
+                                  >
+                                    <Trash2 className="w-3.5 h-3.5" />
+                                  </button>
+                                </div>
+                              </div>
+                            </div>
+                          ))
+                      )}
+                    </div>
+                  </>
+                )}
+              </div>
+            </div>
+          )}
+
         </div>
 
       </div>
@@ -913,6 +1693,108 @@ export default function ClientPortal({
             className="max-w-full max-h-[88vh] rounded-lg object-contain"
             onClick={(e) => e.stopPropagation()}
           />
+        </div>
+      )}
+
+      {/* Reset PIN Modal */}
+      {showResetPinModal && (
+        <div className="fixed inset-0 z-[110] flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-xs">
+          <div className="bg-white dark:bg-slate-900 rounded-2xl p-6 max-w-md w-full border border-slate-100 dark:border-slate-800 shadow-2xl relative" onClick={(e) => e.stopPropagation()}>
+            <h3 className="text-base font-display font-bold text-slate-950 dark:text-white flex items-center gap-2">
+              <Lock className="w-5 h-5 text-indigo-600" />
+              Reset Account PIN
+            </h3>
+            <p className="text-[12px] text-slate-500 dark:text-slate-400 mt-1.5">
+              Set a new 6-digit PIN for your client account. The contractor will not have access to this PIN.
+            </p>
+
+            <div className="space-y-4 mt-5">
+              <div>
+                <label className="lh-label">New 6-Digit PIN</label>
+                <input
+                  type="password"
+                  pattern="\d*"
+                  maxLength={6}
+                  value={newPin}
+                  onChange={(e) => setNewPin(e.target.value.replace(/\D/g, ''))}
+                  placeholder="Enter 6 digits"
+                  className="lh-input text-center font-mono tracking-widest"
+                />
+              </div>
+
+              <div>
+                <label className="lh-label">Confirm New 6-Digit PIN</label>
+                <input
+                  type="password"
+                  pattern="\d*"
+                  maxLength={6}
+                  value={confirmNewPin}
+                  onChange={(e) => setConfirmNewPin(e.target.value.replace(/\D/g, ''))}
+                  placeholder="Re-enter 6 digits"
+                  className="lh-input text-center font-mono tracking-widest"
+                />
+              </div>
+
+              {resetPinError && (
+                <p className="text-[11.5px] font-medium flex items-center gap-1.5 p-3 rounded-lg text-red-600 bg-red-50 dark:bg-red-950/20 dark:text-red-400">
+                  <AlertTriangle className="w-3.5 h-3.5 flex-shrink-0" />
+                  <span>{resetPinError}</span>
+                </p>
+              )}
+
+              <div className="flex gap-3 pt-2">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setShowResetPinModal(false);
+                    setNewPin('');
+                    setConfirmNewPin('');
+                    setResetPinError('');
+                  }}
+                  className="flex-1 lh-btn lh-btn-secondary"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="button"
+                  onClick={async () => {
+                    try {
+                      setResetPinError('');
+                      if (!/^\d{6}$/.test(newPin)) {
+                        throw new Error("PIN must be exactly 6 digits.");
+                      }
+                      if (newPin !== confirmNewPin) {
+                        throw new Error("PINs do not match.");
+                      }
+
+                      const savedCode = localStorage.getItem('metrobuild_client_code');
+                      if (!savedCode) {
+                        throw new Error("Client session not found. Please log in again.");
+                      }
+
+                      const codeKey = savedCode.trim().toUpperCase();
+                      await setDoc(doc(fdb, 'clientPins', codeKey), {
+                        pin: newPin,
+                        projectId: activeProject.id,
+                        clientCode: codeKey,
+                        updatedAt: new Date().toISOString()
+                      }, { merge: true });
+
+                      showToast("Account PIN reset successfully!", "success");
+                      setShowResetPinModal(false);
+                      setNewPin('');
+                      setConfirmNewPin('');
+                    } catch (err: any) {
+                      setResetPinError(err.message || "Failed to update PIN.");
+                    }
+                  }}
+                  className="flex-1 lh-btn lh-btn-primary"
+                >
+                  Save PIN
+                </button>
+              </div>
+            </div>
+          </div>
         </div>
       )}
 
