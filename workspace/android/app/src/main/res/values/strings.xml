@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">Lifehut Workspace</string>
+    <string name="title_activity_main">Lifehut Workspace</string>
+    <string name="package_name">com.lifehut.workspace</string>
+    <string name="custom_url_scheme">com.lifehut.workspace</string>
+</resources>
