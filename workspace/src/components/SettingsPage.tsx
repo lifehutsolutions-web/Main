@@ -121,6 +121,36 @@ export default function SettingsPage() {
       const wsExpenses = XLSX.utils.json_to_sheet(currentDb.expenses || []);
       XLSX.utils.book_append_sheet(wb, wsExpenses, 'Expenses');
 
+      // Generate Supplier summary sheet
+      const supplierSummaryMap: Record<string, { "Supplier Name": string; "Total Bill Amount": number; "Paid Amount": number; "Outstanding Due": number; "Expense Count": number }> = {};
+      const rawExpenses = currentDb.expenses || [];
+      rawExpenses.forEach((ex: any) => {
+        const supplierName = (ex.supplier || 'N/A').trim();
+        if (supplierName.toLowerCase() === 'n/a') return;
+        
+        if (!supplierSummaryMap[supplierName]) {
+          supplierSummaryMap[supplierName] = {
+            "Supplier Name": supplierName,
+            "Total Bill Amount": 0,
+            "Paid Amount": 0,
+            "Outstanding Due": 0,
+            "Expense Count": 0
+          };
+        }
+        
+        const amount = Number(ex.amount) || 0;
+        const paidAmount = ex.paidAmount !== undefined ? Number(ex.paidAmount) : (ex.isPaid !== false ? amount : 0);
+        const outstanding = Math.max(0, amount - paidAmount);
+        
+        supplierSummaryMap[supplierName]["Total Bill Amount"] += amount;
+        supplierSummaryMap[supplierName]["Paid Amount"] += paidAmount;
+        supplierSummaryMap[supplierName]["Outstanding Due"] += outstanding;
+        supplierSummaryMap[supplierName]["Expense Count"] += 1;
+      });
+      const supplierRows = Object.values(supplierSummaryMap);
+      const wsSuppliersSummary = XLSX.utils.json_to_sheet(supplierRows);
+      XLSX.utils.book_append_sheet(wb, wsSuppliersSummary, 'Suppliers Summary');
+
       const wsProgress = XLSX.utils.json_to_sheet(currentDb.progress || []);
       XLSX.utils.book_append_sheet(wb, wsProgress, 'Daily Progress');
 

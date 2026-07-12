@@ -56,6 +56,8 @@ export interface Expense {
   supplier: string;
   date: string;
   billUploaded: boolean;
+  isPaid?: boolean;
+  paidAmount?: number;
 }
 
 export interface DailyProgress {

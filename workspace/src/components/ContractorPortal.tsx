@@ -10,6 +10,7 @@ import PaymentStatementSheet, { formatIndianNoCurrency } from './PaymentStatemen
 import { useAuth } from '../context/AuthContext';
 import SettingsPage from './SettingsPage';
 import * as XLSX from 'xlsx';
+import ExcelJS from 'exceljs';
 import { 
   Building2, 
   Plus, 
@@ -183,10 +184,12 @@ export default function ContractorPortal({
     category: 'Material' as const,
     description: '',
     amount: 25000,
+    paidAmount: 25000,
     supplier: '',
     date: '',
     billUploaded: false,
     projectId: '',
+    isPaid: true,
   });
 
   const [newProg, setNewProg] = useState({
@@ -237,12 +240,14 @@ export default function ContractorPortal({
   const activeProj = projects.find(p => p.id === selectedProjId) || projects[0];
 
   // Group items by selected active project (or show all if selectedProjId is 'all')
-  const activeStages = selectedProjId === 'all' ? stages : stages.filter(s => s.projectId === selectedProjId);
+  const activeStages = (selectedProjId === 'all' ? stages : stages.filter(s => s.projectId === selectedProjId))
+    .slice()
+    .sort((a, b) => a.id.localeCompare(b.id));
   const activeExtraWorks = selectedProjId === 'all' ? extraWorks : extraWorks.filter(e => e.projectId === selectedProjId);
   const activeExpenses = expenses.filter(ex => {
     if (filterProject === 'all') return true;
     return ex.projectId === filterProject;
-  });
+  }).slice().sort((a, b) => a.id.localeCompare(b.id));
   const activeProgress = selectedProjId === 'all' ? progress : progress.filter(p => p.projectId === selectedProjId);
   const activeDocs = selectedProjId === 'all' ? documents : documents.filter(d => d.projectId === selectedProjId);
 
@@ -327,7 +332,13 @@ export default function ContractorPortal({
   const handleSaveEditExpense = (e: React.FormEvent) => {
     e.preventDefault();
     if (!editExpense) return;
-    onUpdateExpenses(expenses.map(ex => ex.id === editExpense.id ? editExpense : ex));
+    const finalPaid = editExpense.paidAmount !== undefined ? editExpense.paidAmount : (editExpense.isPaid !== false ? editExpense.amount : 0);
+    const updatedExpense = {
+      ...editExpense,
+      paidAmount: finalPaid,
+      isPaid: finalPaid >= editExpense.amount
+    };
+    onUpdateExpenses(expenses.map(ex => ex.id === editExpense.id ? updatedExpense : ex));
     setShowEditExpenseModal(false);
     setEditExpense(null);
   };
@@ -444,7 +455,7 @@ export default function ContractorPortal({
     }
 
     const compiledStages: PaymentStage[] = newStagesList.map((item, idx) => ({
-      id: `stg_${Date.now()}_custom_${idx}`,
+      id: `stg_${Date.now()}_custom_${String(idx).padStart(5, '0')}`,
       projectId: selectedProjId,
       stageName: item.stageName.trim(),
       payableAmount: Number(item.payableAmount) || 0,
@@ -488,15 +499,20 @@ export default function ContractorPortal({
     const targetProjId = newExpense.projectId || selectedProjId;
     if (!targetProjId) return;
 
+    const billAmt = Number(newExpense.amount);
+    const paidAmt = Number(newExpense.paidAmount !== undefined ? newExpense.paidAmount : (newExpense.isPaid ? newExpense.amount : 0));
+
     const exp: Expense = {
       id: `exp_${Date.now()}`,
       projectId: targetProjId,
       category: newExpense.category,
       description: newExpense.description,
-      amount: Number(newExpense.amount),
+      amount: billAmt,
+      paidAmount: paidAmt,
       supplier: newExpense.supplier || 'N/A',
       date: newExpense.date || new Date().toISOString().split('T')[0],
       billUploaded: newExpense.billUploaded,
+      isPaid: paidAmt >= billAmt,
     };
 
     onUpdateExpenses([...expenses, exp]);
@@ -505,10 +521,12 @@ export default function ContractorPortal({
       category: 'Material',
       description: '',
       amount: 25000,
+      paidAmount: 25000,
       supplier: '',
       date: '',
       billUploaded: false,
       projectId: '',
+      isPaid: true,
     });
   };
 
@@ -624,6 +642,18 @@ setIsCompressingPhotos(false);
     }
   };
 
+  const handleDeleteDocument = (docId: string) => {
+    if (confirm('Are you sure you want to delete this document?')) {
+      onUpdateDocuments(documents.filter(d => d.id !== docId));
+    }
+  };
+
+  const handleDeleteProgress = (progId: string) => {
+    if (confirm('Are you sure you want to delete this site update?')) {
+      onUpdateProgress(progress.filter(p => p.id !== progId));
+    }
+  };
+
   const handleEditStageClick = (stg: PaymentStage) => {
     setEditingStage(stg);
   };
@@ -715,7 +745,7 @@ setIsCompressingPhotos(false);
           }
 
           parsedStages.push({
-            id: `stg_${Date.now()}_bulk_${i}_${Math.random().toString(36).substr(2, 4)}`,
+            id: `stg_${Date.now()}_bulk_${String(i).padStart(5, '0')}_${Math.random().toString(36).substr(2, 4)}`,
             projectId: selectedProjId,
             stageName: String(name).trim(),
             payableAmount: payableAmount,
@@ -760,35 +790,158 @@ setIsCompressingPhotos(false);
     alert("✅ Payment request sent! Client has been notified in the Portal and Chat.");
   };
 
-  const downloadBulkUploadExpensesTemplate = () => {
+  const downloadBulkUploadExpensesTemplate = async () => {
     try {
-      const wb = XLSX.utils.book_new();
-      const templateData = [
-        {
-          "Category": "Material",
-          "Description": "Cement bag purchase - 150 bags",
-          "Amount": 65000,
-          "Supplier": "UltraTech Cement Dealer",
-          "Date (YYYY-MM-DD)": "2026-07-10"
-        },
-        {
-          "Category": "Labour",
-          "Description": "Weekly masonry work wages - Phase 1 GF",
-          "Amount": 42000,
-          "Supplier": "Suresh Contractor",
-          "Date (YYYY-MM-DD)": "2026-07-15"
-        },
-        {
-          "Category": "Machinery",
-          "Description": "Concrete mixer rental - 3 days",
-          "Amount": 12000,
-          "Supplier": "Metro Rentals",
-          "Date (YYYY-MM-DD)": "2026-07-12"
-        }
+      const workbook = new ExcelJS.Workbook();
+      
+      // 1. Create "Available Projects" sheet first
+      const wsProjects = workbook.addWorksheet('Available Projects');
+      wsProjects.columns = [
+        { header: 'Project Name', key: 'name', width: 30 },
+        { header: 'Location', key: 'address', width: 35 },
+        { header: 'Client Name', key: 'clientName', width: 25 }
       ];
-      const ws = XLSX.utils.json_to_sheet(templateData);
-      XLSX.utils.book_append_sheet(wb, ws, "Expenses Template");
-      XLSX.writeFile(wb, "Expenses_Bulk_Upload_Template.xlsx");
+      
+      // Style headers of Available Projects sheet
+      wsProjects.getRow(1).font = { bold: true };
+      
+      projects.forEach(p => {
+        wsProjects.addRow({
+          name: p.name,
+          address: p.address || "",
+          clientName: p.clientName
+        });
+      });
+
+      // 2. Create "Expenses Template" sheet
+      const wsTemplate = workbook.addWorksheet('Expenses Template');
+      wsTemplate.columns = [
+        { header: 'Project Name', key: 'projectName', width: 30 },
+        { header: 'Category', key: 'category', width: 15 },
+        { header: 'Description', key: 'description', width: 35 },
+        { header: 'Amount', key: 'amount', width: 15 },
+        { header: 'Paid Amount', key: 'paidAmount', width: 15 },
+        { header: 'Supplier', key: 'supplier', width: 25 },
+        { header: 'Paid (Yes/No)', key: 'isPaid', width: 15 },
+        { header: 'Date (YYYY-MM-DD)', key: 'date', width: 20 }
+      ];
+
+      // Style headers of Expenses Template sheet
+      wsTemplate.getRow(1).font = { bold: true };
+
+      // Find the name of the currently selected project (if not 'all'), or default to the first project
+      const currentProjObj = selectedProjId !== 'all' ? projects.find(p => p.id === selectedProjId) : null;
+      const defaultProjectName = currentProjObj ? currentProjObj.name : (projects[0]?.name || "Sample Villa Project");
+
+      // Extract unique existing suppliers to add to the drop-down list
+      const uniqueSuppliers = Array.from(new Set(
+        expenses
+          .map(e => e.supplier ? e.supplier.trim() : '')
+          .filter(s => s && s.toLowerCase() !== 'n/a')
+      ));
+
+      // Combine with default common suppliers to make sure there are always helpful starting suggestions
+      const defaultSuppliers = ["UltraTech Cement Dealer", "Suresh Contractor", "Metro Rentals", "Krishna Hardware", "Supreme Pipes"];
+      const supplierSet = new Set([...uniqueSuppliers, ...defaultSuppliers]);
+      const supplierList = Array.from(supplierSet);
+
+      // Create "Available Suppliers" sheet for validation referencing
+      const wsSuppliers = workbook.addWorksheet('Available Suppliers');
+      wsSuppliers.columns = [
+        { header: 'Supplier Name', key: 'supplierName', width: 30 }
+      ];
+      wsSuppliers.getRow(1).font = { bold: true };
+      supplierList.forEach(s => {
+        wsSuppliers.addRow({ supplierName: s });
+      });
+
+      // Add Sample Rows
+      wsTemplate.addRow({
+        projectName: defaultProjectName,
+        category: "Material",
+        description: "Cement bag purchase - 150 bags",
+        amount: 65000,
+        paidAmount: 65000,
+        supplier: "UltraTech Cement Dealer",
+        isPaid: "Yes",
+        date: "2026-07-10"
+      });
+      wsTemplate.addRow({
+        projectName: defaultProjectName,
+        category: "Labour",
+        description: "Weekly masonry work wages - Phase 1 GF",
+        amount: 42000,
+        paidAmount: 42000,
+        supplier: "Suresh Contractor",
+        isPaid: "Yes",
+        date: "2026-07-15"
+      });
+      wsTemplate.addRow({
+        projectName: defaultProjectName,
+        category: "Machinery",
+        description: "Concrete mixer rental - 3 days",
+        amount: 12000,
+        paidAmount: 4000,
+        supplier: "Metro Rentals",
+        isPaid: "No",
+        date: "2026-07-12"
+      });
+
+      // 3. Add drop-down Data Validations
+      const lastRow = projects.length > 0 ? projects.length + 1 : 10;
+      
+      // Populate drop-down validation for Project Name (A2 to A100) using Reference to "Available Projects" sheet
+      for (let i = 2; i <= 100; i++) {
+        const cell = wsTemplate.getCell(`A${i}`);
+        cell.dataValidation = {
+          type: 'list',
+          allowBlank: true,
+          formulae: [`'Available Projects'!$A$2:$A$${lastRow}`]
+        };
+      }
+
+      // Populate drop-down validation for Category (B2 to B100) using a literal list
+      for (let i = 2; i <= 100; i++) {
+        const cell = wsTemplate.getCell(`B${i}`);
+        cell.dataValidation = {
+          type: 'list',
+          allowBlank: true,
+          formulae: ['"Material,Labour,Machinery,Transport,Electrical,Plumbing,Miscellaneous"']
+        };
+      }
+
+      // Populate drop-down validation for Supplier (F2 to F100) using Reference to "Available Suppliers" sheet
+      const lastSupplierRow = supplierList.length + 1;
+      for (let i = 2; i <= 100; i++) {
+        const cell = wsTemplate.getCell(`F${i}`);
+        cell.dataValidation = {
+          type: 'list',
+          allowBlank: true,
+          formulae: [`'Available Suppliers'!$A$2:$A$${lastSupplierRow}`]
+        };
+      }
+
+      // Populate drop-down validation for Paid (Yes/No) (G2 to G100) using literal list
+      for (let i = 2; i <= 100; i++) {
+        const cell = wsTemplate.getCell(`G${i}`);
+        cell.dataValidation = {
+          type: 'list',
+          allowBlank: true,
+          formulae: ['"Yes,No"']
+        };
+      }
+
+      // Write workbook to buffer and initiate client-side download
+      const buffer = await workbook.xlsx.writeBuffer();
+      const blob = new Blob([buffer], { type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" });
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = "Expenses_Bulk_Upload_Template.xlsx";
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      window.URL.revokeObjectURL(url);
     } catch (err: any) {
       console.error(err);
       alert(`Failed to generate bulk upload template: ${err.message}`);
@@ -821,8 +974,62 @@ setIsCompressingPhotos(false);
         const validCategories = ['Material', 'Labour', 'Machinery', 'Transport', 'Electrical', 'Plumbing', 'Miscellaneous'];
 
         const parsedExpenses: Expense[] = [];
+        let skippedDuplicatesCount = 0;
+        let skippedUnmappedCount = 0;
+
+        // A helper to check duplicate within already parsed or existing list
+        const isDuplicateExpense = (newExp: Expense, currentList: Expense[], parsedList: Expense[]) => {
+          const matchInCurrent = currentList.some(ext =>
+            ext.projectId === newExp.projectId &&
+            ext.category === newExp.category &&
+            ext.description.trim().toLowerCase() === newExp.description.trim().toLowerCase() &&
+            Math.round(ext.amount) === Math.round(newExp.amount) &&
+            ext.date === newExp.date
+          );
+          const matchInParsed = parsedList.some(ext =>
+            ext.projectId === newExp.projectId &&
+            ext.category === newExp.category &&
+            ext.description.trim().toLowerCase() === newExp.description.trim().toLowerCase() &&
+            Math.round(ext.amount) === Math.round(newExp.amount) &&
+            ext.date === newExp.date
+          );
+          return matchInCurrent || matchInParsed;
+        };
+
         for (let i = 0; i < rows.length; i++) {
           const row = rows[i];
+
+          // 1. Map to Project Name
+          const rowProjName = String(row["Project Name"] || row["ProjectName"] || row["project name"] || "").trim();
+          let targetProjectId = selectedProjId;
+
+          if (rowProjName) {
+            const matchedProj = projects.find(p => p.name.trim().toLowerCase() === rowProjName.toLowerCase());
+            if (matchedProj) {
+              targetProjectId = matchedProj.id;
+            } else {
+              // If not matched, but we have a single project selected that is not 'all', default to it, otherwise warn/skip
+              if (selectedProjId !== 'all') {
+                targetProjectId = selectedProjId;
+              } else {
+                skippedUnmappedCount++;
+                continue; // Skip this row because we don't know what project to map it to
+              }
+            }
+          } else {
+            // No project name in row:
+            if (selectedProjId === 'all') {
+              // If there's only 1 project in the whole app, default to it, else skip
+              if (projects.length === 1) {
+                targetProjectId = projects[0].id;
+              } else {
+                skippedUnmappedCount++;
+                continue;
+              }
+            } else {
+              targetProjectId = selectedProjId;
+            }
+          }
           
           let categoryRaw = String(row["Category"] || row["category"] || "Miscellaneous").trim();
           // Capitalize first letter, lowercase rest
@@ -866,25 +1073,59 @@ setIsCompressingPhotos(false);
             }
           }
 
-          parsedExpenses.push({
-            id: `exp_${Date.now()}_bulk_${i}_${Math.random().toString(36).substr(2, 4)}`,
-            projectId: selectedProjId,
+          const paidRaw = String(row["Paid (Yes/No)"] || row["Paid"] || row["paid"] || "No").trim().toLowerCase();
+          const isPaid = paidRaw === 'yes' || paidRaw === 'true' || paidRaw === 'y' || paidRaw === 'paid';
+
+          const paidAmountRaw = row["Paid Amount"] || row["paid_amount"] || row["PaidAmount"];
+          const paidAmount = paidAmountRaw !== undefined ? Number(paidAmountRaw) : (isPaid ? amount : 0);
+          const finalIsPaid = paidAmount >= amount;
+
+          const candidateExpense: Expense = {
+            id: `exp_${Date.now()}_bulk_${String(i).padStart(5, '0')}_${Math.random().toString(36).substr(2, 4)}`,
+            projectId: targetProjectId,
             category,
             description,
             amount,
+            paidAmount,
             supplier,
             date: formattedDate,
             billUploaded: false,
-          });
+            isPaid: finalIsPaid,
+          };
+
+          // Deduplication check
+          if (isDuplicateExpense(candidateExpense, expenses, parsedExpenses)) {
+            skippedDuplicatesCount++;
+          } else {
+            parsedExpenses.push(candidateExpense);
+          }
         }
 
         if (parsedExpenses.length === 0) {
-          alert("❌ No valid expenses could be imported. Please make sure the sheet matches the template and contains 'Category' and 'Amount'.");
+          let errorMsg = "❌ No new expenses were imported.";
+          if (skippedDuplicatesCount > 0) {
+            errorMsg += ` (${skippedDuplicatesCount} duplicates were detected and skipped)`;
+          }
+          if (skippedUnmappedCount > 0) {
+            errorMsg += ` (${skippedUnmappedCount} rows had invalid project names and were skipped)`;
+          }
+          alert(errorMsg);
           return;
         }
 
         onUpdateExpenses([...expenses, ...parsedExpenses]);
-        alert(`✅ Successfully imported ${parsedExpenses.length} expenses!`);
+        
+        let successMsg = `✅ Successfully imported ${parsedExpenses.length} expenses!`;
+        if (skippedDuplicatesCount > 0 || skippedUnmappedCount > 0) {
+          successMsg += "\nℹ️ Import summary:";
+          if (skippedDuplicatesCount > 0) {
+            successMsg += `\n- ${skippedDuplicatesCount} duplicates were automatically skipped.`;
+          }
+          if (skippedUnmappedCount > 0) {
+            successMsg += `\n- ${skippedUnmappedCount} rows with unmapped/invalid project names were skipped.`;
+          }
+        }
+        alert(successMsg);
       } catch (err: any) {
         console.error(err);
         alert(`❌ Error parsing Excel file: ${err.message || err}`);
@@ -1011,6 +1252,10 @@ setIsCompressingPhotos(false);
   const paymentsDueToday = projectStages.filter(s => s.status !== 'Paid' && s.dueDate === todayStr).length;
   const ovOverdue = rangedStages.filter(s => (s.receivedAmount || 0) < s.payableAmount && s.dueDate && s.dueDate < todayStr).reduce((s, st) => s + (st.payableAmount - (st.receivedAmount || 0)), 0);
   const ovTotalExpenses = rangedExpenses.reduce((s, e) => s + e.amount, 0);
+  const ovOutstandingSupplierDues = rangedExpenses.reduce((sum, e) => {
+    const paid = e.paidAmount !== undefined ? e.paidAmount : (e.isPaid !== false ? e.amount : 0);
+    return sum + Math.max(0, e.amount - paid);
+  }, 0);
   const ovProfitLoss = ovCollected - ovTotalExpenses;
 
   return (
@@ -1258,10 +1503,14 @@ setIsCompressingPhotos(false);
               {/* Row 3 — P&L */}
               <div>
                 <p className="text-[10.5px] font-semibold uppercase tracking-wider mb-2.5" style={{ color: 'var(--lh-text-tertiary)' }}>Profit & loss</p>
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
                   <div className="lh-metric">
                     <p className="lh-metric-label">Total expenses</p>
-                    <p className="lh-metric-value" style={{ color: 'var(--lh-warning-text)' }}>₹{ovTotalExpenses.toLocaleString('en-IN')}</p>
+                    <p className="lh-metric-value" style={{ color: 'var(--lh-text-primary)' }}>₹{ovTotalExpenses.toLocaleString('en-IN')}</p>
+                  </div>
+                  <div className="lh-metric" style={{ background: 'var(--lh-warning-bg)', borderColor: '#F0D49C' }}>
+                    <p className="lh-metric-label" style={{ color: 'var(--lh-warning-text)' }}>Outstanding dues</p>
+                    <p className="lh-metric-value" style={{ color: 'var(--lh-warning-text)' }}>₹{ovOutstandingSupplierDues.toLocaleString('en-IN')}</p>
                   </div>
                   <div className="lh-metric">
                     <p className="lh-metric-label">Revenue (collected)</p>
@@ -1911,21 +2160,56 @@ setIsCompressingPhotos(false);
                           <th>Project</th>
                           <th>Supplier</th>
                           <th>Date</th>
-                          <th style={{ textAlign: 'right' }}>Amount</th>
+                          <th style={{ textAlign: 'right' }}>Bill Amt</th>
+                          <th style={{ textAlign: 'right' }}>Paid Amt</th>
+                          <th style={{ textAlign: 'right' }}>Due Amt</th>
+                          <th style={{ textAlign: 'center' }}>Status</th>
                           <th style={{ textAlign: 'center' }}>Bill</th>
+                          <th style={{ textAlign: 'right' }}>Action</th>
                         </tr>
                       </thead>
                       <tbody>
                         {activeExpenses.map((exp) => {
                           const matchedProj = projects.find(p => p.id === exp.projectId);
+                          const paidAmt = exp.paidAmount !== undefined ? exp.paidAmount : (exp.isPaid !== false ? exp.amount : 0);
+                          const dueAmt = Math.max(0, exp.amount - paidAmt);
+                          const isFullyPaid = paidAmt >= exp.amount;
+                          const isUnpaid = paidAmt === 0;
+                          
+                          let statusLabel = 'Paid';
+                          let statusClass = 'bg-emerald-100 hover:bg-emerald-200 text-emerald-800 border-emerald-300/30 dark:bg-emerald-950/40 dark:text-emerald-300 dark:border-emerald-800';
+                          if (isUnpaid) {
+                            statusLabel = 'Unpaid';
+                            statusClass = 'bg-rose-100 hover:bg-rose-200 text-rose-800 border-rose-300/30 dark:bg-rose-950/40 dark:text-rose-300 dark:border-rose-800';
+                          } else if (!isFullyPaid) {
+                            statusLabel = 'Partial';
+                            statusClass = 'bg-amber-100 hover:bg-amber-200 text-amber-800 border-amber-300/30 dark:bg-amber-950/40 dark:text-amber-300 dark:border-amber-800';
+                          }
+
                           return (
                             <tr key={exp.id}>
                               <td><span className="lh-badge lh-badge-neutral">{exp.category}</span></td>
-                              <td className="font-medium max-w-[220px] truncate" title={exp.description}>{exp.description}</td>
-                              <td style={{ color: 'var(--lh-text-secondary)' }} className="truncate max-w-[140px]">{matchedProj?.name || 'Unmapped'}</td>
-                              <td style={{ color: 'var(--lh-text-secondary)' }} className="truncate max-w-[140px]">{exp.supplier}</td>
+                              <td className="font-medium max-w-[180px] truncate" title={exp.description}>{exp.description}</td>
+                              <td style={{ color: 'var(--lh-text-secondary)' }} className="truncate max-w-[110px]">{matchedProj?.name || 'Unmapped'}</td>
+                              <td style={{ color: 'var(--lh-text-secondary)' }} className="truncate max-w-[110px]">{exp.supplier}</td>
                               <td style={{ color: 'var(--lh-text-tertiary)' }}>{exp.date}</td>
-                              <td style={{ textAlign: 'right' }} className="font-semibold font-mono">₹{exp.amount.toLocaleString('en-IN')}</td>
+                              <td style={{ textAlign: 'right' }} className="font-semibold font-mono text-gray-900 dark:text-gray-100">₹{exp.amount.toLocaleString('en-IN')}</td>
+                              <td style={{ textAlign: 'right' }} className="font-semibold font-mono text-emerald-600 dark:text-emerald-400">₹{paidAmt.toLocaleString('en-IN')}</td>
+                              <td style={{ textAlign: 'right' }} className="font-semibold font-mono text-amber-600 dark:text-amber-500">₹{dueAmt.toLocaleString('en-IN')}</td>
+                              <td style={{ textAlign: 'center' }}>
+                                <button
+                                  type="button"
+                                  onClick={() => {
+                                    const nextPaid = isFullyPaid ? 0 : exp.amount;
+                                    const updated = expenses.map(e => e.id === exp.id ? { ...e, paidAmount: nextPaid, isPaid: nextPaid >= e.amount } : e);
+                                    onUpdateExpenses(updated);
+                                  }}
+                                  className={`px-2 py-0.5 rounded text-[10px] font-bold cursor-pointer select-none transition-colors border ${statusClass}`}
+                                  title={isFullyPaid ? "Click to reset to Unpaid" : "Click to mark Fully Paid"}
+                                >
+                                  {statusLabel}
+                                </button>
+                              </td>
                               <td style={{ textAlign: 'center' }}>
                                 {exp.billUploaded ? (
                                   <span className="lh-badge lh-badge-success">✓</span>
@@ -2057,9 +2341,18 @@ setIsCompressingPhotos(false);
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-3.5">
                     {activeProgress.map((prog) => (
                       <div key={prog.id} className="lh-panel-flat rounded-lg p-3.5 space-y-2.5">
-                        <div className="flex justify-between text-[10px] font-semibold" style={{ color: 'var(--lh-text-tertiary)' }}>
+                        <div className="flex justify-between items-center text-[10px] font-semibold" style={{ color: 'var(--lh-text-tertiary)' }}>
                           <span>{selectedProjId === 'all' ? (projects.find(p => p.id === prog.projectId)?.name || 'Project update') : 'Update'}</span>
-                          <span>{prog.date}</span>
+                          <div className="flex items-center gap-2">
+                            <span>{prog.date}</span>
+                            <button
+                              onClick={() => handleDeleteProgress(prog.id)}
+                              className="text-rose-500 hover:text-rose-700 hover:bg-rose-50 dark:hover:bg-rose-950/20 p-1 rounded transition-colors"
+                              title="Delete site update"
+                            >
+                              <Trash2 className="w-3.5 h-3.5" />
+                            </button>
+                          </div>
                         </div>
                         <p className="lh-panel p-2.5 rounded-lg text-[12px] leading-relaxed" style={{ color: 'var(--lh-text-primary)' }}>{prog.remarks}</p>
 
@@ -2141,24 +2434,33 @@ setIsCompressingPhotos(false);
                             <td style={{ color: 'var(--lh-text-tertiary)' }}>{doc.fileSize}</td>
                             <td style={{ color: 'var(--lh-text-tertiary)' }}>{doc.date}</td>
                             <td style={{ textAlign: 'right' }}>
-                              {doc.url && doc.url !== '#' ? (
-                                <a
-                                  href={doc.url}
-                                  target="_blank"
-                                  rel="noopener noreferrer"
-                                  className="lh-btn lh-btn-ghost lh-btn-sm inline-flex items-center gap-1.5 text-[var(--lh-blue)]"
-                                >
-                                  <Download className="w-3.5 h-3.5" />
-                                  <span>Download</span>
-                                </a>
-                              ) : (
+                              <div className="flex items-center justify-end gap-1.5">
+                                {doc.url && doc.url !== '#' ? (
+                                  <a
+                                    href={doc.url}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    className="lh-btn lh-btn-ghost lh-btn-sm inline-flex items-center gap-1.5 text-[var(--lh-blue)]"
+                                  >
+                                    <Download className="w-3.5 h-3.5" />
+                                    <span>Download</span>
+                                  </a>
+                                ) : (
+                                  <button
+                                    onClick={() => alert(`Simulating file download: "${doc.name}"`)}
+                                    className="lh-btn lh-btn-ghost lh-btn-sm"
+                                  >
+                                    Download
+                                  </button>
+                                )}
                                 <button
-                                  onClick={() => alert(`Simulating file download: "${doc.name}"`)}
-                                  className="lh-btn lh-btn-ghost lh-btn-sm"
+                                  onClick={() => handleDeleteDocument(doc.id)}
+                                  className="text-rose-500 hover:text-rose-700 hover:bg-rose-50 dark:hover:bg-rose-950/20 p-1.5 rounded-md transition-colors"
+                                  title="Delete document"
                                 >
-                                  Download
+                                  <Trash2 className="w-3.5 h-3.5" />
                                 </button>
-                              )}
+                              </div>
                             </td>
                           </tr>
                         ))}
@@ -2247,6 +2549,11 @@ setIsCompressingPhotos(false);
 
               expenses.forEach(ex => {
                 const proj = projects.find(p => p.id === ex.projectId);
+                const paidAmt = ex.paidAmount !== undefined ? ex.paidAmount : (ex.isPaid !== false ? ex.amount : 0);
+                const isFullyPaid = paidAmt >= ex.amount;
+                const isUnpaid = paidAmt === 0;
+                const statusStr = isFullyPaid ? 'Paid' : (isUnpaid ? 'Pending' : 'Partial');
+
                 rows.push({
                   id: ex.id,
                   projectId: ex.projectId,
@@ -2254,8 +2561,8 @@ setIsCompressingPhotos(false);
                   projectName: proj?.name || 'Unmapped Site',
                   workDone: `[${ex.category}] ${ex.description} (${ex.supplier || 'Vendor'})`,
                   total: ex.amount,
-                  received: ex.amount,
-                  payment: 'Paid',
+                  received: paidAmt,
+                  payment: statusStr,
                   date: ex.date || 'TBD',
                   type: 'expense',
                 });
@@ -2281,6 +2588,22 @@ setIsCompressingPhotos(false);
             });
 
             const isExpenseOnly = reportTypeFilter === 'expense';
+            const supplierDuesMap: Record<string, { total: number; paid: number; due: number }> = {};
+            expenses.forEach(ex => {
+              const supplierName = (ex.supplier || 'N/A').trim();
+              if (supplierName.toLowerCase() === 'n/a') return;
+              if (!supplierDuesMap[supplierName]) {
+                supplierDuesMap[supplierName] = { total: 0, paid: 0, due: 0 };
+              }
+              const paid = ex.paidAmount !== undefined ? ex.paidAmount : (ex.isPaid !== false ? ex.amount : 0);
+              const due = Math.max(0, ex.amount - paid);
+              supplierDuesMap[supplierName].total += ex.amount;
+              supplierDuesMap[supplierName].paid += paid;
+              supplierDuesMap[supplierName].due += due;
+            });
+            const supplierDuesList = Object.entries(supplierDuesMap)
+              .map(([name, stats]) => ({ name, ...stats }))
+              .sort((a, b) => b.due - a.due);
             const revenueRows = filteredReportRows.filter(r => {
               if (reportTypeFilter === 'all') {
                 return r.type === 'milestone' || r.type === 'extrawork';
@@ -2499,15 +2822,32 @@ setIsCompressingPhotos(false);
                   <div className="lg:col-span-4 space-y-4">
                     <div className="lh-panel rounded-xl p-4.5 space-y-3">
                       <div className="px-1 pb-2" style={{ borderBottom: '1px solid var(--lh-border)' }}>
-                        <span className="lh-label">Reporting summary</span>
-                        <h4 className="text-[13px] font-semibold mt-0.5" style={{ color: 'var(--lh-text-primary)' }}>Module compliance</h4>
+                        <span className="lh-label" style={{ color: 'var(--lh-warning-text)' }}>Supplier Ledger</span>
+                        <h4 className="text-[13px] font-semibold mt-0.5" style={{ color: 'var(--lh-text-primary)' }}>Outstanding Supplier Dues</h4>
                       </div>
-                      <ul className="text-[11px] space-y-1.5 list-disc pl-4 font-medium" style={{ color: 'var(--lh-text-secondary)' }}>
-                        <li>Left vertical navigation</li>
-                        <li>Compact status badges</li>
-                        <li>Dense, sortable breakdowns</li>
-                        <li>Instant CSV export</li>
-                      </ul>
+                      
+                      {supplierDuesList.length === 0 ? (
+                        <p className="text-[11px] italic text-center py-4" style={{ color: 'var(--lh-text-tertiary)' }}>No supplier records logged.</p>
+                      ) : (
+                        <div className="space-y-2.5 max-h-[350px] overflow-y-auto pr-1">
+                          {supplierDuesList.map((sup, idx) => (
+                            <div key={idx} className="p-2.5 rounded-lg border border-[var(--lh-border)] bg-[var(--lh-surface-muted)] flex flex-col gap-1 text-[11.5px]">
+                              <div className="flex items-center justify-between font-semibold">
+                                <span className="truncate max-w-[150px]" style={{ color: 'var(--lh-text-primary)' }} title={sup.name}>
+                                  {sup.name}
+                                </span>
+                                <span className={sup.due > 0 ? 'text-amber-600 dark:text-amber-400 font-mono font-bold' : 'text-emerald-600 dark:text-emerald-400 font-bold'}>
+                                  {sup.due > 0 ? `₹${sup.due.toLocaleString('en-IN')}` : 'Settled'}
+                                </span>
+                              </div>
+                              <div className="flex items-center justify-between text-[10px]" style={{ color: 'var(--lh-text-secondary)' }}>
+                                <span>Paid: ₹{sup.paid.toLocaleString('en-IN')}</span>
+                                <span>Total spend: ₹{sup.total.toLocaleString('en-IN')}</span>
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      )}
                     </div>
                   </div>
 
@@ -3040,10 +3380,17 @@ setIsCompressingPhotos(false);
                   </select>
                 </div>
                 <div>
-                  <label className="lh-label">Cost (₹)</label>
+                  <label className="lh-label">Bill Amount (₹)</label>
                   <input
                     type="number" required value={newExpense.amount}
-                    onChange={(e) => setNewExpense({ ...newExpense, amount: Number(e.target.value) })}
+                    onChange={(e) => {
+                      const val = Number(e.target.value);
+                      setNewExpense(prev => ({
+                        ...prev,
+                        amount: val,
+                        paidAmount: prev.isPaid ? val : prev.paidAmount
+                      }));
+                    }}
                     className="lh-input"
                   />
                 </div>
@@ -3056,13 +3403,30 @@ setIsCompressingPhotos(false);
                   className="lh-input"
                 />
               </div>
-              <div>
-                <label className="lh-label">Supplier</label>
-                <input
-                  type="text" placeholder="e.g. ACC Commercial Suppliers"
-                  value={newExpense.supplier} onChange={(e) => setNewExpense({ ...newExpense, supplier: e.target.value })}
-                  className="lh-input"
-                />
+              <div className="grid grid-cols-2 gap-2.5">
+                <div>
+                  <label className="lh-label">Supplier</label>
+                  <input
+                    type="text" placeholder="e.g. ACC Commercial Suppliers"
+                    value={newExpense.supplier} onChange={(e) => setNewExpense({ ...newExpense, supplier: e.target.value })}
+                    className="lh-input"
+                  />
+                </div>
+                <div>
+                  <label className="lh-label">Paid Amount (₹)</label>
+                  <input
+                    type="number" required value={newExpense.paidAmount !== undefined ? newExpense.paidAmount : (newExpense.isPaid ? newExpense.amount : 0)}
+                    onChange={(e) => {
+                      const val = Number(e.target.value);
+                      setNewExpense(prev => ({
+                        ...prev,
+                        paidAmount: val,
+                        isPaid: val >= prev.amount
+                      }));
+                    }}
+                    className="lh-input"
+                  />
+                </div>
               </div>
               <div className="grid grid-cols-2 gap-2.5">
                 <div>
@@ -3073,13 +3437,30 @@ setIsCompressingPhotos(false);
                     className="lh-input"
                   />
                 </div>
-                <div className="flex items-center pt-5">
-                  <input
-                    type="checkbox" id="billCheckInput"
-                    checked={newExpense.billUploaded} onChange={(e) => setNewExpense({ ...newExpense, billUploaded: e.target.checked })}
-                    className="w-4 h-4 mr-2"
-                  />
-                  <label htmlFor="billCheckInput" className="text-[12px] font-medium select-none cursor-pointer" style={{ color: 'var(--lh-text-primary)' }}>Bill attached</label>
+                <div className="space-y-2 flex flex-col justify-end pb-1">
+                  <div className="flex items-center">
+                    <input
+                      type="checkbox" id="billCheckInput"
+                      checked={newExpense.billUploaded} onChange={(e) => setNewExpense({ ...newExpense, billUploaded: e.target.checked })}
+                      className="w-4 h-4 mr-2"
+                    />
+                    <label htmlFor="billCheckInput" className="text-[11.5px] font-medium select-none cursor-pointer" style={{ color: 'var(--lh-text-primary)' }}>Bill attached</label>
+                  </div>
+                  <div className="flex items-center">
+                    <input
+                      type="checkbox" id="createExpensePaidCheck"
+                      checked={newExpense.isPaid !== false} onChange={(e) => {
+                        const paid = e.target.checked;
+                        setNewExpense(prev => ({
+                          ...prev,
+                          isPaid: paid,
+                          paidAmount: paid ? prev.amount : 0
+                        }));
+                      }}
+                      className="w-4 h-4 mr-2"
+                    />
+                    <label htmlFor="createExpensePaidCheck" className="text-[11.5px] font-medium select-none cursor-pointer" style={{ color: 'var(--lh-text-primary)' }}>Expense Paid</label>
+                  </div>
                 </div>
               </div>
               <button
@@ -3360,26 +3741,73 @@ setIsCompressingPhotos(false);
                   </select>
                 </div>
                 <div>
-                  <label className="lh-label">Amount (₹)</label>
-                  <input type="number" required value={editExpense.amount} onChange={e => setEditExpense({ ...editExpense, amount: Number(e.target.value) })} className="lh-input" />
+                  <label className="lh-label">Bill Amount (₹)</label>
+                  <input
+                    type="number" required value={editExpense.amount}
+                    onChange={(e) => {
+                      const val = Number(e.target.value);
+                      const isFullyPaid = (editExpense.paidAmount !== undefined ? editExpense.paidAmount : (editExpense.isPaid !== false ? editExpense.amount : 0)) >= editExpense.amount;
+                      setEditExpense({
+                        ...editExpense,
+                        amount: val,
+                        paidAmount: isFullyPaid ? val : editExpense.paidAmount
+                      });
+                    }}
+                    className="lh-input"
+                  />
                 </div>
               </div>
               <div>
                 <label className="lh-label">Description</label>
                 <input type="text" required value={editExpense.description} onChange={e => setEditExpense({ ...editExpense, description: e.target.value })} className="lh-input" />
               </div>
-              <div>
-                <label className="lh-label">Supplier</label>
-                <input type="text" value={editExpense.supplier} onChange={e => setEditExpense({ ...editExpense, supplier: e.target.value })} className="lh-input" />
+              <div className="grid grid-cols-2 gap-2.5">
+                <div>
+                  <label className="lh-label">Supplier</label>
+                  <input type="text" value={editExpense.supplier} onChange={e => setEditExpense({ ...editExpense, supplier: e.target.value })} className="lh-input" />
+                </div>
+                <div>
+                  <label className="lh-label">Paid Amount (₹)</label>
+                  <input
+                    type="number" required value={editExpense.paidAmount !== undefined ? editExpense.paidAmount : (editExpense.isPaid !== false ? editExpense.amount : 0)}
+                    onChange={(e) => {
+                      const val = Number(e.target.value);
+                      setEditExpense({
+                        ...editExpense,
+                        paidAmount: val,
+                        isPaid: val >= editExpense.amount
+                      });
+                    }}
+                    className="lh-input"
+                  />
+                </div>
               </div>
               <div className="grid grid-cols-2 gap-2.5">
                 <div>
                   <label className="lh-label">Date</label>
                   <input type="date" value={editExpense.date} onChange={e => setEditExpense({ ...editExpense, date: e.target.value })} className="lh-input" />
                 </div>
-                <div className="flex items-center pt-5 gap-2">
-                  <input type="checkbox" id="editBillCheck" checked={editExpense.billUploaded} onChange={e => setEditExpense({ ...editExpense, billUploaded: e.target.checked })} className="w-4 h-4" />
-                  <label htmlFor="editBillCheck" className="text-[12px] font-medium cursor-pointer" style={{ color: 'var(--lh-text-primary)' }}>Bill attached</label>
+                <div className="space-y-2 flex flex-col justify-end pb-1">
+                  <div className="flex items-center">
+                    <input type="checkbox" id="editBillCheck" checked={editExpense.billUploaded} onChange={e => setEditExpense({ ...editExpense, billUploaded: e.target.checked })} className="w-4 h-4 mr-2" />
+                    <label htmlFor="editBillCheck" className="text-[11.5px] font-medium cursor-pointer" style={{ color: 'var(--lh-text-primary)' }}>Bill attached</label>
+                  </div>
+                  <div className="flex items-center">
+                    <input
+                      type="checkbox" id="editExpensePaidCheck"
+                      checked={(editExpense.paidAmount !== undefined ? editExpense.paidAmount : (editExpense.isPaid !== false ? editExpense.amount : 0)) >= editExpense.amount}
+                      onChange={(e) => {
+                        const paid = e.target.checked;
+                        setEditExpense({
+                          ...editExpense,
+                          isPaid: paid,
+                          paidAmount: paid ? editExpense.amount : 0
+                        });
+                      }}
+                      className="w-4 h-4 mr-2"
+                    />
+                    <label htmlFor="editExpensePaidCheck" className="text-[11.5px] font-medium cursor-pointer" style={{ color: 'var(--lh-text-primary)' }}>Expense Paid</label>
+                  </div>
                 </div>
               </div>
               <div className="flex gap-2.5 pt-1">

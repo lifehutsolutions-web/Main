@@ -1,0 +1,47 @@
+{
+  "project_info": {
+    "project_number": "475155871966",
+    "project_id": "lifehut-workspace",
+    "storage_bucket": "lifehut-workspace.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:475155871966:android:5ac9d47fdb253c1cef2a4f",
+        "android_client_info": {
+          "package_name": "com.lifehut.workspace"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "475155871966-ea4qmmc9lo1tbetqa1kjk34ejvf9khtd.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.lifehut.workspace",
+            "certificate_hash": "a2121b540fe9a12ce4347254cbc00d42f1caac7b"
+          }
+        },
+        {
+          "client_id": "475155871966-9s26f6749esv37miafotqt3eu6b13857.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBCOW_LKsxkfMO_CT0lXxCiv8oJDdCthO8"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "475155871966-9s26f6749esv37miafotqt3eu6b13857.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

@@ -15,7 +15,7 @@ import ContractorPortal from './components/ContractorPortal';
 import ClientPortal from './components/ClientPortal';
 import DbManager from './components/DbManager';
 import ProfileSetupModal from "./components/ProfileSetupModal";
-import { HardHat, User, ArrowRight, Building2, ShieldCheck, ChevronRight, AlertTriangle, ExternalLink, ShieldAlert, LogOut, Sparkles } from 'lucide-react';
+import { HardHat, User, ArrowRight, Building2, ShieldCheck, ChevronRight, AlertTriangle, ExternalLink, ShieldAlert, LogOut, Sparkles, ArrowLeft, Mail, Lock } from 'lucide-react';
 import { 
   auth, 
   db as fdb, 
@@ -49,6 +49,9 @@ export default function App() {
     selectedProjId, 
     setSelectedProjId, 
     loginAsContractor, 
+    loginContractorWithEmail,
+    registerContractorWithEmail,
+    sendPasswordResetEmail,
     loginAsTestContractor,
     logout: authLogout, 
     startDemoMode,
@@ -82,6 +85,14 @@ export default function App() {
   const [authError, setAuthError] = useState<string | null>(null);
   const [showAutoFallbackBanner, setShowAutoFallbackBanner] = useState<boolean>(false);
 
+  // Contractor Email Auth sub-states for Capacitor / native mobile support
+  const [contractorAuthSubMode, setContractorAuthSubMode] = useState<'selection' | 'email-signin' | 'email-signup'>('selection');
+  const [emailFormEmail, setEmailFormEmail] = useState('');
+  const [emailFormPassword, setEmailFormPassword] = useState('');
+  const [emailFormName, setEmailFormName] = useState('');
+  const [emailAuthLoading, setEmailAuthLoading] = useState(false);
+  const [passwordResetSuccess, setPasswordResetSuccess] = useState<string | null>(null);
+
   const renderAuthError = () => {
     if (!authError) return null;
 
@@ -111,32 +122,47 @@ export default function App() {
           </div>
         </div>
         
-        <div className="pt-2 border-t border-red-100 dark:border-red-900/30 flex flex-col sm:flex-row gap-2">
-          <button 
-            onClick={async () => {
-              setAuthError(null);
-              try {
-                await loginAsTestContractor();
-                setViewingMode('portal');
-              } catch (err) {
-                setAuthError(err instanceof Error ? err.message : String(err));
-              }
-            }}
-            className="px-3 py-1.5 rounded-lg text-white font-medium bg-red-600 hover:bg-red-700 transition-colors text-center text-[11px]"
-          >
-            Iframe-Safe Contractor Login
-          </button>
-          <a 
-            href={window.location.href} 
-            target="_blank" 
-            rel="noopener noreferrer"
-            className="px-3 py-1.5 rounded-lg font-medium border border-slate-200 dark:border-slate-800 hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors text-center text-[11px] flex items-center justify-center gap-1"
-            style={{ color: 'var(--lh-text-primary)' }}
-          >
-            <ExternalLink className="w-3 h-3" />
-            Open in New Tab
-          </a>
-        </div>
+        {window.self !== window.top && (
+          <div className="pt-2 border-t border-red-100 dark:border-red-900/30 flex flex-col sm:flex-row gap-2">
+            <button 
+              onClick={async () => {
+                setAuthError(null);
+                try {
+                  await loginAsTestContractor();
+                  setViewingMode('portal');
+                } catch (err) {
+                  setAuthError(err instanceof Error ? err.message : String(err));
+                }
+              }}
+              className="px-3 py-1.5 rounded-lg text-white font-medium bg-red-600 hover:bg-red-700 transition-colors text-center text-[11px]"
+            >
+              Iframe-Safe Contractor Login
+            </button>
+            <a 
+              href={window.location.href} 
+              target="_blank" 
+              rel="noopener noreferrer"
+              className="px-3 py-1.5 rounded-lg font-medium border border-slate-200 dark:border-slate-800 hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors text-center text-[11px] flex items-center justify-center gap-1"
+              style={{ color: 'var(--lh-text-primary)' }}
+            >
+              <ExternalLink className="w-3 h-3" />
+              Open in New Tab
+            </a>
+          </div>
+        )}
+      </div>
+    );
+  };
+
+  const renderPasswordResetSuccess = () => {
+    if (!passwordResetSuccess) return null;
+
+    return (
+      <div className="p-4 rounded-xl text-left bg-emerald-50 dark:bg-emerald-950/10 border border-emerald-200 dark:border-emerald-900/40 space-y-1" style={{ fontSize: '12px' }}>
+        <p className="font-semibold text-emerald-800 dark:text-emerald-300">Password Reset Sent</p>
+        <p className="text-emerald-600 dark:text-emerald-400 leading-relaxed text-[11.5px]">
+          {passwordResetSuccess}
+        </p>
       </div>
     );
   };
@@ -706,19 +732,110 @@ export default function App() {
 
           {/* RIGHT: Combined profile selector / entry panel */}
           <div className="lg:col-span-3 p-9 md:p-11 flex flex-col justify-center space-y-7 animate-fade-in" style={{ background: 'var(--lh-surface)' }}>
-            <div className="space-y-1">
-              <h3 className="text-lg font-display font-semibold tracking-tight" style={{ color: 'var(--lh-text-primary)' }}>Select active profile</h3>
-              <p className="text-[12.5px]" style={{ color: 'var(--lh-text-secondary)' }}>Sign in as contractor or enter a client access code</p>
-            </div>
+            {contractorAuthSubMode === 'selection' ? (
+              <>
+                <div className="space-y-1">
+                  <h3 className="text-lg font-display font-semibold tracking-tight" style={{ color: 'var(--lh-text-primary)' }}>Select active profile</h3>
+                  <p className="text-[12.5px]" style={{ color: 'var(--lh-text-secondary)' }}>Sign in as contractor or enter a client access code</p>
+                </div>
 
-            {renderAuthError()}
+                {renderAuthError()}
 
-            <div className="space-y-3">
-              
-              <button
-                onClick={async () => {
-                  setAuthError(null);
-                  if (!user) {
+                <div className="space-y-3">
+                  
+                  <button
+                    onClick={() => {
+                      setAuthError(null);
+                      setContractorAuthSubMode('email-signin');
+                    }}
+                    className="w-full p-4 text-left rounded-xl transition-all flex items-center justify-between gap-3.5 group"
+                    style={{ border: '1px solid var(--lh-border)', background: 'var(--lh-surface)' }}
+                    onMouseEnter={(e) => { e.currentTarget.style.borderColor = 'var(--lh-blue)'; }}
+                    onMouseLeave={(e) => { e.currentTarget.style.borderColor = 'var(--lh-border)'; }}
+                  >
+                    <div className="flex items-center gap-3.5 flex-1">
+                      <div className="p-2.5 rounded-lg flex-shrink-0" style={{ background: 'var(--lh-info-bg)', color: 'var(--lh-blue-dark)' }}>
+                        <HardHat className="w-4.5 h-4.5" />
+                      </div>
+                      <div className="space-y-0.5 flex-1">
+                        <span className="font-display font-semibold text-[13px] block" style={{ color: 'var(--lh-text-primary)' }}>Contractor sign in</span>
+                        <p className="text-[11.5px] leading-normal" style={{ color: 'var(--lh-text-secondary)' }}>
+                          Manage projects, payments and approvals (Email or Google)
+                        </p>
+                      </div>
+                    </div>
+                    <ChevronRight className="w-4 h-4 text-gray-400 group-hover:translate-x-0.5 transition-transform" />
+                  </button>
+
+                  <button
+                    onClick={() => handleSelectRole('Client')}
+                    className="w-full p-4 text-left rounded-xl transition-all flex items-center justify-between gap-3.5 group"
+                    style={{ border: '1px solid var(--lh-border)', background: 'var(--lh-surface)' }}
+                    onMouseEnter={(e) => { e.currentTarget.style.borderColor = 'var(--lh-amber)'; }}
+                    onMouseLeave={(e) => { e.currentTarget.style.borderColor = 'var(--lh-border)'; }}
+                  >
+                    <div className="flex items-center gap-3.5 flex-1">
+                      <div className="p-2.5 rounded-lg flex-shrink-0" style={{ background: 'var(--lh-warning-bg)', color: 'var(--lh-amber-dark)' }}>
+                        <User className="w-4.5 h-4.5" />
+                      </div>
+                      <div className="space-y-0.5 flex-1">
+                        <span className="font-display font-semibold text-[13px] block" style={{ color: 'var(--lh-text-primary)' }}>Client access</span>
+                        <p className="text-[11.5px] leading-normal" style={{ color: 'var(--lh-text-secondary)' }}>
+                          View your project using your access code
+                        </p>
+                      </div>
+                    </div>
+                    <ChevronRight className="w-4 h-4 text-gray-400 group-hover:translate-x-0.5 transition-transform" />
+                  </button>
+
+                  <button
+                    onClick={() => {
+                      setAuthError(null);
+                      startDemoMode();
+                      setViewingMode('portal');
+                    }}
+                    className="w-full p-4 text-left rounded-xl transition-all flex items-center justify-between gap-3.5 group"
+                    style={{ border: '1px solid var(--lh-border)', background: 'var(--lh-surface)' }}
+                    onMouseEnter={(e) => { e.currentTarget.style.borderColor = '#8b5cf6'; }}
+                    onMouseLeave={(e) => { e.currentTarget.style.borderColor = 'var(--lh-border)'; }}
+                  >
+                    <div className="flex items-center gap-3.5 flex-1">
+                      <div className="p-2.5 rounded-lg flex-shrink-0" style={{ background: 'rgba(139, 92, 246, 0.08)', color: '#7c3aed' }}>
+                        <Sparkles className="w-4.5 h-4.5" />
+                      </div>
+                      <div className="space-y-0.5 flex-1">
+                        <span className="font-display font-semibold text-[13px] block" style={{ color: 'var(--lh-text-primary)' }}>Demo projects</span>
+                        <p className="text-[11.5px] leading-normal" style={{ color: 'var(--lh-text-secondary)' }}>
+                          Explore pre-loaded project examples for marketing
+                        </p>
+                      </div>
+                    </div>
+                    <ChevronRight className="w-4 h-4 text-gray-400 group-hover:translate-x-0.5 transition-transform" />
+                  </button>
+
+                </div>
+              </>
+            ) : contractorAuthSubMode === 'email-signin' ? (
+              <div className="space-y-5 animate-fade-in">
+                <div className="space-y-1">
+                  <button 
+                    onClick={() => { setContractorAuthSubMode('selection'); setAuthError(null); setPasswordResetSuccess(null); }} 
+                    className="flex items-center gap-1.5 text-xs font-semibold mb-2 text-slate-500 hover:text-slate-800 dark:hover:text-slate-200 transition-colors"
+                  >
+                    <ArrowLeft className="w-3.5 h-3.5" /> Back to profiles
+                  </button>
+                  <h3 className="text-lg font-display font-semibold tracking-tight" style={{ color: 'var(--lh-text-primary)' }}>Contractor Sign In</h3>
+                  <p className="text-[12.5px]" style={{ color: 'var(--lh-text-secondary)' }}>Sign in with email/password or use Google</p>
+                </div>
+
+                {renderAuthError()}
+                {renderPasswordResetSuccess()}
+
+                {/* Google sign-in fallback trigger */}
+                <button
+                  type="button"
+                  onClick={async () => {
+                    setAuthError(null);
                     try {
                       await loginAsContractor();
                       handleSelectRole('Contractor');
@@ -727,10 +844,10 @@ export default function App() {
                                           err?.code?.toLowerCase().includes('unauthorized-domain') ||
                                           err?.message?.toLowerCase().includes('popup-closed') ||
                                           err?.code?.toLowerCase().includes('popup-closed-by-user') ||
-                                          true; // auto fallback to test contractor login in iframe environment
+                                          true; 
                       
                       if (isAuthIssue) {
-                        console.warn("Expected Google sign in exception (unauthorized domain or popup blocked), executing sandbox/test contractor fallback:", err);
+                        console.warn("Expected Google sign in exception, executing sandbox fallback:", err);
                         try {
                           await loginAsTestContractor();
                           setShowAutoFallbackBanner(true);
@@ -745,80 +862,205 @@ export default function App() {
                         setAuthError(err?.message || "Google sign in failed.");
                       }
                     }
-                  } else {
-                    handleSelectRole('Contractor');
-                  }
-                }}
-                className="w-full p-4 text-left rounded-xl transition-all flex items-center justify-between gap-3.5 group"
-                style={{ border: '1px solid var(--lh-border)', background: 'var(--lh-surface)' }}
-                onMouseEnter={(e) => { e.currentTarget.style.borderColor = 'var(--lh-blue)'; }}
-                onMouseLeave={(e) => { e.currentTarget.style.borderColor = 'var(--lh-border)'; }}
-              >
-                <div className="flex items-center gap-3.5 flex-1">
-                  <div className="p-2.5 rounded-lg flex-shrink-0" style={{ background: 'var(--lh-info-bg)', color: 'var(--lh-blue-dark)' }}>
-                    <HardHat className="w-4.5 h-4.5" />
-                  </div>
-                  <div className="space-y-0.5 flex-1">
-                    <span className="font-display font-semibold text-[13px] block" style={{ color: 'var(--lh-text-primary)' }}>Contractor sign in</span>
-                    <p className="text-[11.5px] leading-normal" style={{ color: 'var(--lh-text-secondary)' }}>
-                      Manage projects, payments and approvals
-                    </p>
-                  </div>
-                </div>
-                <ChevronRight className="w-4 h-4 text-gray-400 group-hover:translate-x-0.5 transition-transform" />
-              </button>
+                  }}
+                  className="w-full py-2.5 px-4 text-xs font-semibold rounded-lg flex items-center justify-center gap-2 border transition-all"
+                  style={{ borderColor: 'var(--lh-border)', color: 'var(--lh-text-primary)', background: 'var(--lh-surface)' }}
+                  onMouseEnter={(e) => { e.currentTarget.style.borderColor = 'var(--lh-blue)'; }}
+                  onMouseLeave={(e) => { e.currentTarget.style.borderColor = 'var(--lh-border)'; }}
+                >
+                  <svg className="w-4 h-4 flex-shrink-0" viewBox="0 0 24 24">
+                    <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" />
+                    <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" />
+                    <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.06H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.94l2.85-2.22.81-.63z" />
+                    <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.06l3.66 2.84c.87-2.6 3.3-4.52 6.16-4.52z" />
+                  </svg>
+                  Continue with Google
+                </button>
 
-              <button
-                onClick={() => handleSelectRole('Client')}
-                className="w-full p-4 text-left rounded-xl transition-all flex items-center justify-between gap-3.5 group"
-                style={{ border: '1px solid var(--lh-border)', background: 'var(--lh-surface)' }}
-                onMouseEnter={(e) => { e.currentTarget.style.borderColor = 'var(--lh-amber)'; }}
-                onMouseLeave={(e) => { e.currentTarget.style.borderColor = 'var(--lh-border)'; }}
-              >
-                <div className="flex items-center gap-3.5 flex-1">
-                  <div className="p-2.5 rounded-lg flex-shrink-0" style={{ background: 'var(--lh-warning-bg)', color: 'var(--lh-amber-dark)' }}>
-                    <User className="w-4.5 h-4.5" />
-                  </div>
-                  <div className="space-y-0.5 flex-1">
-                    <span className="font-display font-semibold text-[13px] block" style={{ color: 'var(--lh-text-primary)' }}>Client access</span>
-                    <p className="text-[11.5px] leading-normal" style={{ color: 'var(--lh-text-secondary)' }}>
-                      View your project using your access code
-                    </p>
-                  </div>
+                <div className="p-3 bg-blue-50/50 dark:bg-slate-900/40 rounded-lg text-left border border-blue-100/30">
+                  <p className="text-[11px] leading-relaxed" style={{ color: 'var(--lh-text-secondary)' }}>
+                    <strong>Capacitor Mobile Note:</strong> Google popup sign-in is restricted on native Android/webview environments. Please register/sign-in with an email address below.
+                  </p>
                 </div>
-                <ChevronRight className="w-4 h-4 text-gray-400 group-hover:translate-x-0.5 transition-transform" />
-              </button>
 
-              <button
-                onClick={() => {
+                <div className="flex items-center gap-3 text-[10px] font-bold uppercase tracking-wider text-slate-400 py-1">
+                  <div className="h-px bg-slate-200 dark:bg-slate-800 flex-1" />
+                  <span>or use email address</span>
+                  <div className="h-px bg-slate-200 dark:bg-slate-800 flex-1" />
+                </div>
+
+                <form onSubmit={async (e) => {
+                  e.preventDefault();
                   setAuthError(null);
-                  startDemoMode();
-                  setViewingMode('portal');
-                }}
-                className="w-full p-4 text-left rounded-xl transition-all flex items-center justify-between gap-3.5 group"
-                style={{ border: '1px solid var(--lh-border)', background: 'var(--lh-surface)' }}
-                onMouseEnter={(e) => { e.currentTarget.style.borderColor = '#8b5cf6'; }}
-                onMouseLeave={(e) => { e.currentTarget.style.borderColor = 'var(--lh-border)'; }}
-              >
-                <div className="flex items-center gap-3.5 flex-1">
-                  <div className="p-2.5 rounded-lg flex-shrink-0" style={{ background: 'rgba(139, 92, 246, 0.08)', color: '#7c3aed' }}>
-                    <Sparkles className="w-4.5 h-4.5" />
+                  setEmailAuthLoading(true);
+                  try {
+                    await loginContractorWithEmail(emailFormEmail, emailFormPassword);
+                    handleSelectRole('Contractor');
+                  } catch (err: any) {
+                    console.error("Email login failed:", err);
+                    setAuthError(err?.message || "Invalid email or password. Please verify and try again.");
+                  } finally {
+                    setEmailAuthLoading(false);
+                  }
+                }} className="space-y-4">
+                  <div>
+                    <label className="lh-label block mb-1">Email address</label>
+                    <div className="relative">
+                      <Mail className="absolute left-3 top-2.5 w-4 h-4 text-slate-400" />
+                      <input
+                        type="email" required placeholder="contractor@yourfirm.com"
+                        value={emailFormEmail} onChange={e => setEmailFormEmail(e.target.value)}
+                        className="lh-input w-full"
+                        style={{ paddingLeft: '38px' }}
+                      />
+                    </div>
                   </div>
-                  <div className="space-y-0.5 flex-1">
-                    <span className="font-display font-semibold text-[13px] block" style={{ color: 'var(--lh-text-primary)' }}>Demo projects</span>
-                    <p className="text-[11.5px] leading-normal" style={{ color: 'var(--lh-text-secondary)' }}>
-                      Explore pre-loaded project examples for marketing
-                    </p>
+                  <div>
+                    <div className="flex justify-between items-center mb-1">
+                      <label className="lh-label block">Password</label>
+                      <button
+                        type="button"
+                        onClick={async () => {
+                          if (!emailFormEmail.trim()) {
+                            setAuthError("Please enter your email address in the field above first, then click 'Forgot password?' to receive a password reset link.");
+                            setPasswordResetSuccess(null);
+                            return;
+                          }
+                          setAuthError(null);
+                          setPasswordResetSuccess(null);
+                          setEmailAuthLoading(true);
+                          try {
+                            await sendPasswordResetEmail(emailFormEmail.trim());
+                            setPasswordResetSuccess(`A password reset link has been sent to ${emailFormEmail.trim()}. Please open the link in your email inbox to set a secure password for your email login.`);
+                          } catch (err: any) {
+                            console.error("Password reset failed:", err);
+                            setAuthError(err?.message || "Failed to send password reset email. Please verify the email address is correct.");
+                          } finally {
+                            setEmailAuthLoading(false);
+                          }
+                        }}
+                        className="text-[11.5px] font-semibold transition-colors hover:underline"
+                        style={{ color: 'var(--lh-blue)' }}
+                      >
+                        Forgot password?
+                      </button>
+                    </div>
+                    <div className="relative">
+                      <Lock className="absolute left-3 top-2.5 w-4 h-4 text-slate-400" />
+                      <input
+                        type="password" required placeholder="Enter your password"
+                        value={emailFormPassword} onChange={e => setEmailFormPassword(e.target.value)}
+                        className="lh-input w-full"
+                        style={{ paddingLeft: '38px' }}
+                      />
+                    </div>
                   </div>
-                </div>
-                <ChevronRight className="w-4 h-4 text-gray-400 group-hover:translate-x-0.5 transition-transform" />
-              </button>
+                  <button
+                    type="submit" disabled={emailAuthLoading}
+                    className="w-full py-3 px-4 text-xs font-semibold text-white rounded-lg transition-all flex items-center justify-center gap-2"
+                    style={{ background: 'var(--lh-blue)' }}
+                  >
+                    {emailAuthLoading ? 'Authenticating...' : 'Sign In as Contractor'}
+                  </button>
+                </form>
 
-            </div>
+                <p className="text-center text-[12px] pt-1" style={{ color: 'var(--lh-text-secondary)' }}>
+                  Don't have an account yet?{' '}
+                  <button onClick={() => { setContractorAuthSubMode('email-signup'); setAuthError(null); }} className="underline font-semibold" style={{ color: 'var(--lh-blue)' }}>
+                    Register now
+                  </button>
+                </p>
+              </div>
+            ) : (
+              <div className="space-y-5 animate-fade-in">
+                <div className="space-y-1">
+                  <button 
+                    onClick={() => { setContractorAuthSubMode('selection'); setAuthError(null); }} 
+                    className="flex items-center gap-1.5 text-xs font-semibold mb-2 text-slate-500 hover:text-slate-800 dark:hover:text-slate-200 transition-colors"
+                  >
+                    <ArrowLeft className="w-3.5 h-3.5" /> Back to profiles
+                  </button>
+                  <h3 className="text-lg font-display font-semibold tracking-tight" style={{ color: 'var(--lh-text-primary)' }}>Create Contractor Account</h3>
+                  <p className="text-[12.5px]" style={{ color: 'var(--lh-text-secondary)' }}>Register directly for native mobile & workspace access</p>
+                </div>
+
+                {renderAuthError()}
+
+                <form onSubmit={async (e) => {
+                  e.preventDefault();
+                  if (emailFormPassword.length < 6) {
+                    setAuthError("Password must be at least 6 characters.");
+                    return;
+                  }
+                  if (!emailFormName.trim()) {
+                    setAuthError("Owner name is required.");
+                    return;
+                  }
+                  setAuthError(null);
+                  setEmailAuthLoading(true);
+                  try {
+                    await registerContractorWithEmail(emailFormEmail, emailFormPassword, emailFormName);
+                    handleSelectRole('Contractor');
+                  } catch (err: any) {
+                    console.error("Email registration failed:", err);
+                    setAuthError(err?.message || "Registration failed. Please check your inputs.");
+                  } finally {
+                    setEmailAuthLoading(false);
+                  }
+                }} className="space-y-4">
+                  <div>
+                    <label className="lh-label block mb-1">Your Name / Owner Name</label>
+                    <input
+                      type="text" required placeholder="e.g. Rajesh Kumar"
+                      value={emailFormName} onChange={e => setEmailFormName(e.target.value)}
+                      className="lh-input w-full"
+                    />
+                  </div>
+                  <div>
+                    <label className="lh-label block mb-1">Email address</label>
+                    <div className="relative">
+                      <Mail className="absolute left-3 top-2.5 w-4 h-4 text-slate-400" />
+                      <input
+                        type="email" required placeholder="contractor@yourfirm.com"
+                        value={emailFormEmail} onChange={e => setEmailFormEmail(e.target.value)}
+                        className="lh-input w-full"
+                        style={{ paddingLeft: '38px' }}
+                      />
+                    </div>
+                  </div>
+                  <div>
+                    <label className="lh-label block mb-1">Password (min 6 characters)</label>
+                    <div className="relative">
+                      <Lock className="absolute left-3 top-2.5 w-4 h-4 text-slate-400" />
+                      <input
+                        type="password" required placeholder="Create a strong password" minLength={6}
+                        value={emailFormPassword} onChange={e => setEmailFormPassword(e.target.value)}
+                        className="lh-input w-full"
+                        style={{ paddingLeft: '38px' }}
+                      />
+                    </div>
+                  </div>
+                  <button
+                    type="submit" disabled={emailAuthLoading}
+                    className="w-full py-3 px-4 text-xs font-semibold text-white rounded-lg transition-all flex items-center justify-center gap-2"
+                    style={{ background: 'var(--lh-blue)' }}
+                  >
+                    {emailAuthLoading ? 'Creating profile...' : 'Register Contractor Account'}
+                  </button>
+                </form>
+
+                <p className="text-center text-[12px] pt-1" style={{ color: 'var(--lh-text-secondary)' }}>
+                  Already have a contractor account?{' '}
+                  <button onClick={() => { setContractorAuthSubMode('email-signin'); setAuthError(null); }} className="underline font-semibold" style={{ color: 'var(--lh-blue)' }}>
+                    Sign in here
+                  </button>
+                </p>
+              </div>
+            )}
 
             <div className="pt-1 flex items-center gap-1.5 text-[10.5px]" style={{ color: 'var(--lh-text-tertiary)' }}>
               <span className="w-1.5 h-1.5 rounded-full animate-pulse" style={{ background: user ? '#1D9E75' : '#EF9F27' }} />
-              <span>{user ? 'Connected to cloud workspace' : 'Offline mode'}</span>
+              <span>{user ? 'Connected to cloud workspace' : 'Ready for device login'}</span>
             </div>
           </div>
 

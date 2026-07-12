@@ -7,6 +7,10 @@ import {
   signInWithPopup, 
   signOut, 
   signInAnonymously, 
+  signInWithEmailAndPassword,
+  createUserWithEmailAndPassword,
+  updateProfile,
+  sendPasswordResetEmail,
   User as FirebaseUser 
 } from 'firebase/auth';
 import { 
@@ -53,6 +57,62 @@ export const ContractorAuth = {
     }
 
     return user;
+  },
+
+  /**
+   * Login with email and password for native capacitor / mobile compatibility
+   */
+  async loginWithEmail(email: string, password: string): Promise<FirebaseUser> {
+    const result = await signInWithEmailAndPassword(auth, email, password);
+    const user = result.user;
+
+    // Set up or fetch contractor user profile in Firestore
+    const userRef = doc(fdb, 'contractorUsers', user.uid);
+    const userSnap = await getDoc(userRef);
+
+    if (!userSnap.exists()) {
+      await setDoc(userRef, {
+        ownerName: user.displayName || email.split('@')[0],
+        email: user.email || email,
+        createdAt: new Date().toISOString(),
+        role: 'Contractor'
+      }, { merge: true });
+    } else {
+      await setDoc(userRef, { role: 'Contractor' }, { merge: true });
+    }
+
+    return user;
+  },
+
+  /**
+   * Register with email and password for native capacitor / mobile compatibility
+   */
+  async registerWithEmail(email: string, password: string, name: string): Promise<FirebaseUser> {
+    const result = await createUserWithEmailAndPassword(auth, email, password);
+    const user = result.user;
+
+    await updateProfile(user, { displayName: name });
+
+    const userRef = doc(fdb, 'contractorUsers', user.uid);
+    await setDoc(userRef, {
+      ownerName: name,
+      email: email,
+      createdAt: new Date().toISOString(),
+      role: 'Contractor'
+    }, { merge: true });
+
+    return user;
+  },
+
+  /**
+   * Send password reset email for Contractor
+   */
+  async sendPasswordReset(email: string): Promise<void> {
+    console.log("sendPasswordResetEmail function is:", sendPasswordResetEmail, typeof sendPasswordResetEmail);
+    if (typeof sendPasswordResetEmail !== 'function') {
+      throw new Error(`The Firebase 'sendPasswordResetEmail' function is not loaded correctly. Type: ${typeof sendPasswordResetEmail}`);
+    }
+    await sendPasswordResetEmail(auth, email);
   },
 
   async logout(): Promise<void> {

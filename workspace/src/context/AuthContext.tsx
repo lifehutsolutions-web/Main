@@ -48,6 +48,9 @@ interface AuthContextType {
   
   // Auth Functions
   loginAsContractor: () => Promise<void>;
+  loginContractorWithEmail: (email: string, password: string) => Promise<void>;
+  registerContractorWithEmail: (email: string, password: string, name: string) => Promise<void>;
+  sendPasswordResetEmail: (email: string) => Promise<void>;
   loginAsTestContractor: () => Promise<void>;
   loginAsClient: (clientCode: string) => Promise<string>; // returns projectId
   logout: () => Promise<void>;
@@ -148,6 +151,36 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       await ContractorAuth.login();
     } catch (err) {
       setAuthLoading(false);
+      throw err;
+    }
+  };
+
+  const loginContractorWithEmail = async (email: string, password: string) => {
+    setIsDemoMode(false);
+    setAuthLoading(true);
+    try {
+      await ContractorAuth.loginWithEmail(email, password);
+    } catch (err) {
+      setAuthLoading(false);
+      throw err;
+    }
+  };
+
+  const registerContractorWithEmail = async (email: string, password: string, name: string) => {
+    setIsDemoMode(false);
+    setAuthLoading(true);
+    try {
+      await ContractorAuth.registerWithEmail(email, password, name);
+    } catch (err) {
+      setAuthLoading(false);
+      throw err;
+    }
+  };
+
+  const sendPasswordResetEmail = async (email: string) => {
+    try {
+      await ContractorAuth.sendPasswordReset(email);
+    } catch (err) {
       throw err;
     }
   };
@@ -298,6 +331,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         setSelectedProjId,
         permissionGuard,
         loginAsContractor,
+        loginContractorWithEmail,
+        registerContractorWithEmail,
+        sendPasswordResetEmail,
         loginAsTestContractor,
         loginAsClient,
         logout,
