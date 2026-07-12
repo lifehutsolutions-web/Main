@@ -75,7 +75,7 @@ export default function RecentActivity({
         const amt = s.receivedAmount || s.payableAmount;
         const isClient = userRole === "Client";
         list.push({
-          id: `stage-${s.id}`,
+          id: `stage-${s.projectId || ''}-${s.id}`,
           type: "payment",
           title: isClient ? `${projName} payment paid` : `${projName} payment received`,
           subtitle: `Milestone "${s.stageName}" completed: ₹${amt.toLocaleString("en-IN")}`,

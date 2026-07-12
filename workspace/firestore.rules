@@ -237,8 +237,8 @@ service cloud.firestore {
         allow update: if isSignedIn() && isValidId(projectId) && isValidId(stageId) && isValidPaymentStage(incoming()) && incoming().projectId == projectId && (
           // Contractor can update anything
           isProjectContractor(projectId) ||
-          // Client can ONLY update status and receivedAmount
-          (isProjectMember(projectId) && incoming().diff(existing()).affectedKeys().hasOnly(['status', 'receivedAmount']))
+          // Client can ONLY update status, receivedAmount, and paymentLog
+          (isProjectMember(projectId) && incoming().diff(existing()).affectedKeys().hasOnly(['status', 'receivedAmount', 'paymentLog']))
         );
         allow delete: if isSignedIn() && isValidId(projectId) && isValidId(stageId) && isProjectContractor(projectId);
       }

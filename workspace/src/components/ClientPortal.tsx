@@ -39,7 +39,9 @@ import {
   Trash2,
   Edit2,
   Save,
-  X
+  RotateCcw,
+  X,
+  Menu
 } from 'lucide-react';
 
 interface ClientPortalProps {
@@ -90,6 +92,7 @@ export default function ClientPortal({
   
   // Left sidebar module navigation (Unified client experience)
   const [activeModule, setActiveModule] = useState<'overview' | 'payments' | 'variations' | 'updates' | 'documents' | 'chat' | 'direct-expenses'>('overview');
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   
   // Custom interactive toasts and inline comments
   const [toast, setToast] = useState<{ message: string; type: 'success' | 'info' | 'error' } | null>(null);
@@ -512,10 +515,35 @@ export default function ClientPortal({
   const handleSimulatePayment = (stageId: string) => {
     const updated = stages.map(s => {
       if (s.id === stageId) {
+        let currentLog = s.paymentLog || [];
+        const currentSum = currentLog.reduce((sum, l) => sum + (l.amount || 0), 0);
+        if (s.receivedAmount > 0 && currentSum === 0) {
+          currentLog = [{
+            id: `pay_initial_${s.id}`,
+            amount: s.receivedAmount,
+            date: s.dueDate || new Date().toISOString().split('T')[0],
+            reference: 'Existing Received Balance'
+          }];
+        }
+        const actualReceived = currentLog.reduce((sum, l) => sum + (l.amount || 0), 0);
+        const payingAmount = s.payableAmount - actualReceived;
+        if (payingAmount <= 0) return s;
+        
+        const newEntry = {
+          id: `pay_${Date.now()}`,
+          amount: payingAmount,
+          date: new Date().toISOString().split('T')[0],
+          reference: 'Client Portal (Online Sim)'
+        };
+        
+        const updatedLog = [...currentLog, newEntry];
+        const newReceived = updatedLog.reduce((sum, l) => sum + (l.amount || 0), 0);
+        
         return {
           ...s,
           status: 'Paid' as const,
-          receivedAmount: s.payableAmount
+          receivedAmount: newReceived,
+          paymentLog: updatedLog
         };
       }
       return s;
@@ -538,7 +566,7 @@ export default function ClientPortal({
   };
 
   // Client approvals for variation proposals
-  const handleExtraWorkApproval = (ewId: string, status: 'Approved' | 'Rejected') => {
+  const handleExtraWorkApproval = (ewId: string, status: 'Approved' | 'Rejected' | 'Revision Requested') => {
     const comment = extraWorkComments[ewId] || '';
     const updated = extraWorks.map(ew => {
       if (ew.id === ewId) {
@@ -739,9 +767,9 @@ export default function ClientPortal({
       )}
 
       {/* Payment Request Alerts */}
-      {projectStages.filter(s => s.paymentRequested && s.status !== 'Paid' && (s.receivedAmount || 0) < s.payableAmount).map(stg => (
+      {projectStages.filter(s => s.paymentRequested && s.status !== 'Paid' && (s.receivedAmount || 0) < s.payableAmount).map((stg, idx) => (
         <div 
-          key={`req-alert-${stg.id}`} 
+          key={`req-alert-${stg.id}-${idx}`} 
           className="p-4 rounded-xl flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 border shadow-xs" 
           style={{ background: 'var(--lh-surface)', borderColor: 'rgba(217, 119, 6, 0.45)' }}
         >
@@ -891,26 +919,162 @@ export default function ClientPortal({
             </div>
           </div>
 
-          {/* Mobile responsive horizontal scroll selection bar */}
-          <div className="flex lg:hidden overflow-x-auto py-1 gap-2 no-scrollbar mb-4" id="client-mobile-bar">
-            {clientTabs.map((tab) => {
-              const Icon = tab.icon;
-              const isSelected = activeModule === tab.id;
-              return (
-                <button
-                  key={tab.id}
-                  onClick={() => setActiveModule(tab.id as any)}
-                  className="px-4 py-2 rounded-full text-xs font-semibold whitespace-nowrap flex items-center gap-1.5 transition-all flex-shrink-0 shadow-2xs"
-                  style={isSelected 
-                    ? { background: 'var(--lh-blue)', color: '#fff' } 
-                    : { background: 'var(--lh-surface-muted)', border: '1px solid var(--lh-border)', color: 'var(--lh-text-secondary)' }}
-                >
-                  <Icon className="w-3.5 h-3.5" />
-                  <span>{tab.label}</span>
-                </button>
-              );
-            })}
+          {/* Mobile Navigation Header with Burger Icon */}
+          <div className="flex lg:hidden items-center justify-between p-3 px-3.5 rounded-xl bg-white dark:bg-slate-900 border border-slate-100 dark:border-slate-800 shadow-xs mb-4" id="client-mobile-nav-trigger">
+            <div className="flex items-center gap-2">
+              <button
+                onClick={() => setIsMobileMenuOpen(true)}
+                className="p-1.5 rounded-lg bg-slate-50 hover:bg-slate-100 dark:bg-slate-800 dark:hover:bg-slate-700 transition-colors border border-slate-200/60 dark:border-slate-700"
+                aria-label="Toggle navigation menu"
+                id="mobile-client-burger-btn"
+              >
+                <Menu className="w-5 h-5 text-slate-700 dark:text-slate-300" />
+              </button>
+              <div className="flex items-center gap-2 pl-1">
+                {(() => {
+                  const activeTabItem = clientTabs.find(t => t.id === activeModule);
+                  if (!activeTabItem) return null;
+                  const Icon = activeTabItem.icon;
+                  return (
+                    <>
+                      <Icon className="w-4 h-4 text-blue-600 dark:text-blue-400" />
+                      <span className="text-[12.5px] font-bold text-slate-800 dark:text-slate-200">{activeTabItem.label}</span>
+                    </>
+                  );
+                })()}
+              </div>
+            </div>
+            
+            <div className="text-right">
+              <span className="text-[9px] font-bold text-slate-400 block uppercase leading-none">Code</span>
+              <span className="text-[11.5px] font-mono font-bold text-indigo-600 dark:text-indigo-400">{activeProject.id}</span>
+            </div>
           </div>
+
+          {/* Mobile Off-Canvas Sidebar Drawer */}
+          {isMobileMenuOpen && (
+            <div className="fixed inset-0 z-50 flex lg:hidden" id="client-mobile-sidebar-drawer">
+              {/* Backdrop */}
+              <div 
+                className="fixed inset-0 bg-slate-900/40 backdrop-blur-xs transition-opacity" 
+                onClick={() => setIsMobileMenuOpen(false)}
+              />
+              
+              {/* Drawer Content */}
+              <div className="relative flex w-full max-w-[280px] flex-col bg-white dark:bg-slate-900 h-full p-5 shadow-2xl transition-transform duration-300 ease-in-out overflow-y-auto">
+                <div className="flex items-center justify-between pb-4 border-b border-slate-100 dark:border-slate-800">
+                  <div className="flex items-center gap-2">
+                    <div className="w-7 h-7 rounded-lg flex items-center justify-center text-white text-[10px] font-bold" style={{ background: 'var(--lh-amber)' }}>
+                      CL
+                    </div>
+                    <div>
+                      <span className="text-[9px] font-bold text-slate-400 block tracking-wider uppercase leading-none">Client Portal</span>
+                      <span className="text-[12px] font-extrabold text-slate-800 dark:text-slate-100 truncate max-w-[150px] block">{activeProject.name}</span>
+                    </div>
+                  </div>
+                  <button 
+                    onClick={() => setIsMobileMenuOpen(false)}
+                    className="p-1.5 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors border border-transparent"
+                  >
+                    <X className="w-5 h-5 text-slate-500" />
+                  </button>
+                </div>
+                
+                {/* Modules Navigation */}
+                <div className="py-4 space-y-1">
+                  <span className="text-[9.5px] font-bold text-slate-400 uppercase tracking-wider block px-2 mb-2">Modules</span>
+                  <nav className="space-y-0.5">
+                    {clientTabs.map((tab) => {
+                      const Icon = tab.icon;
+                      const isSelected = activeModule === tab.id;
+                      return (
+                        <button
+                          key={tab.id}
+                          onClick={() => {
+                            setActiveModule(tab.id as any);
+                            setIsMobileMenuOpen(false);
+                          }}
+                          className={`w-full flex items-center justify-between py-2 px-2.5 rounded-lg text-[12px] font-semibold transition-all ${
+                            isSelected 
+                              ? 'bg-blue-50 text-blue-700 dark:bg-blue-950/30 dark:text-blue-300 font-bold' 
+                              : 'text-slate-600 hover:bg-slate-50 dark:text-slate-300 dark:hover:bg-slate-800/50'
+                          }`}
+                        >
+                          <div className="flex items-center gap-2.5">
+                            <Icon className={`w-4 h-4 ${isSelected ? 'text-blue-600 dark:text-blue-400' : 'text-slate-400'}`} />
+                            <span>{tab.label}</span>
+                          </div>
+                          {tab.badge && (
+                            <span className={`px-1.5 py-0.5 rounded text-[9px] font-bold ${
+                              tab.id === 'payments' ? 'bg-amber-100 text-amber-800 dark:bg-amber-950/40 dark:text-amber-300'
+                              : tab.id === 'variations' ? 'bg-indigo-100 text-indigo-800 dark:bg-indigo-950/40 dark:text-indigo-300'
+                              : tab.id === 'chat' ? 'bg-emerald-100 text-emerald-800 dark:bg-emerald-950/40 dark:text-emerald-300 animate-pulse'
+                              : 'bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-300'
+                            }`}>
+                              {tab.badge}
+                            </span>
+                          )}
+                        </button>
+                      );
+                    })}
+                  </nav>
+                </div>
+
+                {/* Switch Account and Reset PIN */}
+                <div className="pt-4 border-t border-slate-100 dark:border-slate-800 space-y-3">
+                  <div className="space-y-1">
+                    <button
+                      onClick={() => {
+                        setIsMobileMenuOpen(false);
+                        localStorage.removeItem('metrobuild_client_code');
+                        setIsLoggedIn(false);
+                        setLoginStep('code');
+                        setPin('');
+                        setConfirmPin('');
+                      }}
+                      className="w-full text-left px-3 py-1.5 text-[11px] font-semibold text-slate-400 hover:text-indigo-600 dark:hover:text-indigo-400 transition-colors flex items-center gap-1.5"
+                    >
+                      <Users className="w-3.5 h-3.5" />
+                      <span>Switch account</span>
+                    </button>
+                    <button
+                      onClick={() => {
+                        setIsMobileMenuOpen(false);
+                        setNewPin('');
+                        setConfirmNewPin('');
+                        setResetPinError('');
+                        setShowResetPinModal(true);
+                      }}
+                      className="w-full text-left px-3 py-1.5 text-[11px] font-semibold text-slate-400 hover:text-indigo-600 dark:hover:text-indigo-400 transition-colors flex items-center gap-1.5"
+                    >
+                      <Lock className="w-3.5 h-3.5" />
+                      <span>Reset Account PIN</span>
+                    </button>
+                  </div>
+
+                  {/* Contractor Profile */}
+                  <div className="pt-3 text-[11px] space-y-2 border-t border-slate-100 dark:border-slate-800" style={{ color: 'var(--lh-text-secondary)' }}>
+                    <span className="font-extrabold uppercase tracking-wider text-[9.5px] block text-slate-400">
+                      Your contractor
+                    </span>
+                    <div className="space-y-1 bg-slate-50/50 dark:bg-slate-800/30 p-2 rounded-lg border border-slate-100 dark:border-slate-800">
+                      <p className="font-bold text-[12px] text-slate-800 dark:text-slate-200 truncate">
+                        {contractorProfile?.companyName || activeProject?.contractorName || 'Workspace'}
+                      </p>
+                      <p className="flex items-center gap-1.5 text-slate-500 dark:text-slate-400">
+                        <Phone className="w-3 h-3" /> 
+                        <span>{contractorProfile?.mobile || activeProject?.contractorPhone || 'N/A'}</span>
+                      </p>
+                      <p className="flex items-center gap-1.5 truncate text-slate-500 dark:text-slate-400">
+                        <Mail className="w-3 h-3" /> 
+                        <span className="truncate">{contractorProfile?.email || activeProject?.contractorEmail || 'N/A'}</span>
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
         </div>
 
         {/* RIGHT MODULE WORKSPACE */}
@@ -1142,6 +1306,7 @@ export default function ClientPortal({
                         <span className={`lh-badge ${
                           ew.approvalStatus === 'Approved' ? 'lh-badge-success'
                           : ew.approvalStatus === 'Rejected' ? 'lh-badge-neutral'
+                          : ew.approvalStatus === 'Revision Requested' ? 'bg-amber-100 text-amber-800 dark:bg-amber-950/40 dark:text-amber-300 border border-amber-200/50'
                           : 'lh-badge-warning'
                         }`}>
                           {ew.approvalStatus}
@@ -1175,25 +1340,32 @@ export default function ClientPortal({
                             <label className="lh-label text-[10px] mb-1 block">Feedback Comment (Optional)</label>
                             <input 
                               type="text" 
-                              placeholder="e.g. Approved, please proceed immediately..."
+                              placeholder="e.g. Please revise the price or list of materials..."
                               value={extraWorkComments[ew.id] || ''}
                               onChange={(e) => setExtraWorkComments(prev => ({ ...prev, [ew.id]: e.target.value }))}
                               className="lh-input lh-input-sm w-full"
                             />
                           </div>
-                          <div className="flex gap-2">
+                          <div className="flex flex-wrap md:flex-nowrap gap-2">
                             <button
                               onClick={() => handleExtraWorkApproval(ew.id, 'Approved')}
-                              className="flex-1 lh-btn lh-btn-sm text-white bg-blue-600 hover:bg-blue-700 border-none transition-colors"
+                              className="flex-1 lh-btn lh-btn-sm text-white bg-emerald-600 hover:bg-emerald-700 border-none transition-colors flex items-center justify-center gap-1"
                             >
-                              <ThumbsUp className="w-3 h-3 mr-1" />
+                              <ThumbsUp className="w-3 h-3" />
                               <span>Approve</span>
                             </button>
                             <button
-                              onClick={() => handleExtraWorkApproval(ew.id, 'Rejected')}
-                              className="flex-1 lh-btn lh-btn-secondary lh-btn-sm hover:bg-slate-100 dark:hover:bg-slate-800"
+                              onClick={() => handleExtraWorkApproval(ew.id, 'Revision Requested')}
+                              className="flex-1 lh-btn lh-btn-sm text-white bg-amber-500 hover:bg-amber-600 border-none transition-colors flex items-center justify-center gap-1"
                             >
-                              <ThumbsDown className="w-3 h-3 mr-1" />
+                              <RotateCcw className="w-3 h-3" />
+                              <span>Re-request</span>
+                            </button>
+                            <button
+                              onClick={() => handleExtraWorkApproval(ew.id, 'Rejected')}
+                              className="flex-1 lh-btn lh-btn-secondary lh-btn-sm hover:bg-slate-100 dark:hover:bg-slate-800 flex items-center justify-center gap-1"
+                            >
+                              <ThumbsDown className="w-3 h-3" />
                               <span>Reject</span>
                             </button>
                           </div>

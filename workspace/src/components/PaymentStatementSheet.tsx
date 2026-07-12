@@ -37,7 +37,12 @@ export default function PaymentStatementSheet({
 
   // Compute stats
   const totalPayable = stages.reduce((sum, s) => sum + s.payableAmount, 0);
-  const totalReceived = stages.reduce((sum, s) => sum + (s.receivedAmount || 0), 0);
+  const totalReceived = stages.reduce((sum, s) => {
+    const logSum = s.paymentLog && s.paymentLog.length > 0
+      ? s.paymentLog.reduce((logSumVal, l) => logSumVal + (l.amount || 0), 0)
+      : (s.receivedAmount || 0);
+    return sum + logSum;
+  }, 0);
   const totalBalance = totalPayable - totalReceived;
 
   const handlePrint = () => {
@@ -112,13 +117,29 @@ export default function PaymentStatementSheet({
           </thead>
           <tbody>
             {stages.map((stg, index) => {
-              const isPaid = stg.status === 'Paid' || (stg.receivedAmount || 0) >= stg.payableAmount;
-              const received = stg.receivedAmount || 0;
+              const logSum = stg.paymentLog && stg.paymentLog.length > 0
+                ? stg.paymentLog.reduce((sum, l) => sum + (l.amount || 0), 0)
+                : (stg.receivedAmount || 0);
+              const isPaid = stg.status === 'Paid' || logSum >= stg.payableAmount;
+              const received = logSum;
               const balance = stg.payableAmount - received;
               return (
-                <tr key={stg.id}>
+                <tr key={`${stg.projectId || ''}_${stg.id}_${index}`}>
                   <td style={{ color: 'var(--lh-text-tertiary)' }}>{index + 1}</td>
-                  <td className="font-medium">{stg.stageName}</td>
+                  <td className="font-medium">
+                    <div>{stg.stageName}</div>
+                    {stg.paymentLog && stg.paymentLog.length > 0 && (
+                      <div className="mt-1 space-y-1">
+                        {stg.paymentLog.map((log, lIdx) => (
+                          <div key={log.id || lIdx} className="text-[10px] text-emerald-600 dark:text-emerald-400 font-mono flex flex-wrap items-center gap-1 bg-emerald-500/5 dark:bg-emerald-500/10 px-1.5 py-0.5 rounded w-fit border border-emerald-500/10">
+                            <span className="font-sans font-medium text-slate-500 dark:text-slate-400">📅 Paid:</span>
+                            <strong>₹{log.amount.toLocaleString('en-IN')}</strong>
+                            <span className="text-slate-400 dark:text-slate-500 text-[9px]">({log.date}{log.reference ? ` - ${log.reference}` : ''})</span>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </td>
                   <td style={{ textAlign: 'right' }} className="font-mono">₹{stg.payableAmount.toLocaleString('en-IN')}</td>
                   <td style={{ textAlign: 'right' }} className="font-mono">
                     {received > 0 ? (
@@ -262,17 +283,30 @@ export default function PaymentStatementSheet({
               {stages.map((stg, index) => {
                 const sNo = index + 1;
                 const payable = stg.payableAmount;
-                const received = stg.receivedAmount || 0;
+                const logSum = stg.paymentLog && stg.paymentLog.length > 0
+                  ? stg.paymentLog.reduce((sum, l) => sum + (l.amount || 0), 0)
+                  : (stg.receivedAmount || 0);
+                const received = logSum;
                 const balance = payable - received;
                 const isPaid = stg.status === 'Paid' || balance <= 0;
 
                 return (
-                  <tr key={stg.id} style={{ borderBottom: '1px solid #E2E5EA', background: isPaid ? '#F4FAF8' : '#ffffff' }}>
+                  <tr key={`${stg.projectId || ''}_${stg.id}_${index}`} style={{ borderBottom: '1px solid #E2E5EA', background: isPaid ? '#F4FAF8' : '#ffffff' }}>
                     <td style={{ padding: '10px 12px', textAlign: 'center', fontWeight: 'bold', color: '#5B6270', border: '1px solid #E2E5EA' }}>
                       {sNo}
                     </td>
                     <td style={{ padding: '10px 12px', fontWeight: 600, color: '#16191F', border: '1px solid #E2E5EA', fontFamily: "'Poppins', sans-serif" }}>
-                      {stg.stageName}
+                      <div>{stg.stageName}</div>
+                      {stg.paymentLog && stg.paymentLog.length > 0 && (
+                        <div style={{ marginTop: '5px', display: 'flex', flexDirection: 'column', gap: '3px' }}>
+                          {stg.paymentLog.map((log, lIdx) => (
+                            <div key={log.id || lIdx} style={{ fontSize: '9px', color: '#085041', fontFamily: 'monospace', display: 'inline-block', background: '#E1F5EE', padding: '2px 6px', borderRadius: '4px', border: '1px solid #A3E2CD', width: 'fit-content' }}>
+                              <span style={{ fontFamily: 'sans-serif', fontWeight: 500, color: '#5B6270' }}>📅 Paid:</span>
+                              <strong> ₹{log.amount.toLocaleString('en-IN')}</strong> on {log.date} {log.reference ? `(${log.reference})` : ''}
+                            </div>
+                          ))}
+                        </div>
+                      )}
                     </td>
                     <td style={{ padding: '10px 12px', textAlign: 'right', fontWeight: 'bold', fontFamily: 'monospace', color: '#0B2545', border: '1px solid #E2E5EA', fontSize: '12px' }}>
                       {formatIndianNoCurrency(payable)}

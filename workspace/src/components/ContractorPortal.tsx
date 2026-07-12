@@ -52,7 +52,9 @@ import {
   Copy,
   RotateCcw,
   Key,
-  RefreshCw
+  RefreshCw,
+  Menu,
+  X
 } from 'lucide-react';
 
 interface ContractorPortalProps {
@@ -124,6 +126,7 @@ export default function ContractorPortal({
 
   // Navigation State
   const [activeTab, setActiveTab] = useState<'dashboard' | 'projects' | 'milestones' | 'expenses' | 'extraworks' | 'progress' | 'documents' | 'chat' | 'reports' | 'settings'>('dashboard');
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
   // Projects tab sub-view
   const [projectsSubTab, setProjectsSubTab] = useState<'ongoing' | 'completed'>('ongoing');
@@ -179,6 +182,8 @@ export default function ContractorPortal({
     amount: 50000,
     date: '',
   });
+
+  const [editingExtraId, setEditingExtraId] = useState<string | null>(null);
 
   const [newExpense, setNewExpense] = useState({
     category: 'Material' as const,
@@ -296,11 +301,13 @@ export default function ContractorPortal({
   const [receiptStageId, setReceiptStageId] = useState<string | null>(null);
   const [receiptAmount, setReceiptAmount] = useState(0);
   const [receiptDate, setReceiptDate] = useState('');
+  const [receiptReference, setReceiptReference] = useState('');
 
   const handleOpenReceipt = (stg: PaymentStage) => {
     setReceiptStageId(stg.id);
     setReceiptAmount(stg.payableAmount - stg.receivedAmount);
     setReceiptDate(new Date().toISOString().split('T')[0]);
+    setReceiptReference('');
     setShowReceiptModal(true);
   };
 
@@ -309,12 +316,30 @@ export default function ContractorPortal({
     if (!receiptStageId) return;
     const updated = stages.map(s => {
       if (s.id !== receiptStageId) return s;
-      const newReceived = s.receivedAmount + Number(receiptAmount);
+      let currentLog = s.paymentLog || [];
+      const currentSum = currentLog.reduce((sum, l) => sum + (l.amount || 0), 0);
+      if (s.receivedAmount > 0 && currentSum === 0) {
+        currentLog = [{
+          id: `pay_initial_${s.id}`,
+          amount: s.receivedAmount,
+          date: s.dueDate || new Date().toISOString().split('T')[0],
+          reference: 'Existing Received Balance'
+        }];
+      }
+      const newEntry = {
+        id: `pay_${Date.now()}`,
+        amount: Number(receiptAmount),
+        date: receiptDate || new Date().toISOString().split('T')[0],
+        reference: receiptReference || 'Logged by Contractor'
+      };
+      const updatedLog = [...currentLog, newEntry];
+      const newReceived = updatedLog.reduce((sum, entry) => sum + (entry.amount || 0), 0);
       const isPaid = newReceived >= s.payableAmount;
       return {
         ...s,
         receivedAmount: newReceived,
         status: isPaid ? 'Paid' as const : 'Pending' as const,
+        paymentLog: updatedLog
       };
     });
     onUpdateStages(updated);
@@ -475,18 +500,37 @@ export default function ContractorPortal({
     e.preventDefault();
     if (!selectedProjId) return;
 
-    const work: ExtraWork = {
-      id: `ew_${Date.now()}`,
-      projectId: selectedProjId,
-      description: newExtra.description,
-      amount: Number(newExtra.amount),
-      date: newExtra.date || new Date().toISOString().split('T')[0],
-      approvalStatus: 'Pending',
-      photos: [],
-    };
+    if (editingExtraId) {
+      const updated = extraWorks.map(ew => {
+        if (ew.id === editingExtraId) {
+          return {
+            ...ew,
+            description: newExtra.description,
+            amount: Number(newExtra.amount),
+            date: newExtra.date || new Date().toISOString().split('T')[0],
+            approvalStatus: 'Pending' as const, // Reset status to Pending on re-request
+          };
+        }
+        return ew;
+      });
+      onUpdateExtraWorks(updated);
+      alert('✅ Scope variation proposal updated and re-submitted to client!');
+    } else {
+      const work: ExtraWork = {
+        id: `ew_${Date.now()}`,
+        projectId: selectedProjId,
+        description: newExtra.description,
+        amount: Number(newExtra.amount),
+        date: newExtra.date || new Date().toISOString().split('T')[0],
+        approvalStatus: 'Pending',
+        photos: [],
+      };
+      onUpdateExtraWorks([...extraWorks, work]);
+      alert('✅ Scope variation proposal sent to client!');
+    }
 
-    onUpdateExtraWorks([...extraWorks, work]);
     setShowExtraModal(false);
+    setEditingExtraId(null);
     setNewExtra({
       description: '',
       amount: 50000,
@@ -1303,26 +1347,159 @@ setIsCompressingPhotos(false);
         {/* Left Sidebar and Navigation */}
         <div className="lg:col-span-3 space-y-4">
           
-          {/* Mobile responsive horizontal scroll selection bar */}
-          <div className="flex lg:hidden overflow-x-auto py-1 gap-2 no-scrollbar" id="contractor-mobile-bar">
-            {contractorTabs.map((tab) => {
-              const Icon = tab.icon;
-              const isSelected = activeTab === tab.id;
-              return (
-                <button
-                  key={tab.id}
-                  onClick={() => setActiveTab(tab.id)}
-                  className="flex-shrink-0 px-3 py-2 rounded-lg text-[11.5px] font-semibold flex items-center gap-1.5 transition-colors"
-                  style={isSelected
-                    ? { background: 'var(--lh-blue)', color: '#fff' }
-                    : { background: 'var(--lh-surface)', color: 'var(--lh-text-secondary)', border: '1px solid var(--lh-border)' }}
-                >
-                  <Icon className="w-3.5 h-3.5" />
-                  <span>{tab.label}</span>
-                </button>
-              );
-            })}
+          {/* Mobile Navigation Header with Burger Icon */}
+          <div className="flex lg:hidden items-center justify-between p-3 px-3.5 rounded-xl bg-white dark:bg-slate-900 border border-slate-100 dark:border-slate-800 shadow-xs" id="contractor-mobile-nav-trigger">
+            <div className="flex items-center gap-2">
+              <button
+                onClick={() => setIsMobileMenuOpen(true)}
+                className="p-1.5 rounded-lg bg-slate-50 hover:bg-slate-100 dark:bg-slate-800 dark:hover:bg-slate-700 transition-colors border border-slate-200/60 dark:border-slate-700"
+                aria-label="Toggle navigation menu"
+                id="mobile-burger-btn"
+              >
+                <Menu className="w-5 h-5 text-slate-700 dark:text-slate-300" />
+              </button>
+              <div className="flex items-center gap-2 pl-1">
+                {(() => {
+                  const activeTabItem = contractorTabs.find(t => t.id === activeTab);
+                  if (!activeTabItem) return null;
+                  const Icon = activeTabItem.icon;
+                  return (
+                    <>
+                      <Icon className="w-4 h-4 text-blue-600 dark:text-blue-400" />
+                      <span className="text-[12.5px] font-bold text-slate-800 dark:text-slate-200">{activeTabItem.label}</span>
+                    </>
+                  );
+                })()}
+              </div>
+            </div>
+            
+            {/* Quick action button */}
+            <button
+              onClick={() => setShowProjModal(true)}
+              className="p-1.5 px-3 rounded-lg text-[10.5px] font-bold text-white bg-blue-600 hover:bg-blue-700 flex items-center gap-1"
+            >
+              <Plus className="w-3.5 h-3.5" />
+              <span>Project</span>
+            </button>
           </div>
+
+          {/* Mobile Off-Canvas Sidebar Drawer */}
+          {isMobileMenuOpen && (
+            <div className="fixed inset-0 z-50 flex lg:hidden" id="mobile-sidebar-drawer">
+              {/* Backdrop */}
+              <div 
+                className="fixed inset-0 bg-slate-900/40 backdrop-blur-xs transition-opacity" 
+                onClick={() => setIsMobileMenuOpen(false)}
+              />
+              
+              {/* Drawer Content */}
+              <div className="relative flex w-full max-w-[280px] flex-col bg-white dark:bg-slate-900 h-full p-5 shadow-2xl transition-transform duration-300 ease-in-out overflow-y-auto">
+                <div className="flex items-center justify-between pb-4 border-b border-slate-100 dark:border-slate-800">
+                  <div className="flex items-center gap-2">
+                    <div className="w-7 h-7 rounded-lg flex items-center justify-center text-white text-[10px] font-bold" style={{ background: 'var(--lh-blue)' }}>
+                      LH
+                    </div>
+                    <div>
+                      <span className="text-[9px] font-bold text-slate-400 block tracking-wider uppercase leading-none">Console</span>
+                      <span className="text-[12px] font-extrabold text-slate-800 dark:text-slate-100">Contractor Menu</span>
+                    </div>
+                  </div>
+                  <button 
+                    onClick={() => setIsMobileMenuOpen(false)}
+                    className="p-1.5 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors border border-transparent"
+                  >
+                    <X className="w-5 h-5 text-slate-500" />
+                  </button>
+                </div>
+                
+                {/* Modules Navigation */}
+                <div className="py-4 space-y-1">
+                  <span className="text-[9.5px] font-bold text-slate-400 uppercase tracking-wider block px-2 mb-2">Modules</span>
+                  <nav className="space-y-0.5">
+                    {contractorTabs.map((tab) => {
+                      const Icon = tab.icon;
+                      const isSelected = activeTab === tab.id;
+                      return (
+                        <button
+                          key={tab.id}
+                          onClick={() => {
+                            setActiveTab(tab.id);
+                            setIsMobileMenuOpen(false);
+                          }}
+                          className={`w-full flex items-center justify-between py-2 px-2.5 rounded-lg text-[12px] font-semibold transition-all ${
+                            isSelected 
+                              ? 'bg-blue-50 text-blue-700 dark:bg-blue-950/30 dark:text-blue-300 font-bold' 
+                              : 'text-slate-600 hover:bg-slate-50 dark:text-slate-300 dark:hover:bg-slate-800/50'
+                          }`}
+                        >
+                          <div className="flex items-center gap-2.5">
+                            <Icon className={`w-4 h-4 ${isSelected ? 'text-blue-600 dark:text-blue-400' : 'text-slate-400'}`} />
+                            <span>{tab.label}</span>
+                          </div>
+                          {tab.badge !== undefined && tab.badge !== 0 && (
+                            <span className="px-1.5 py-0.5 rounded text-[9px] font-bold bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-300">
+                              {tab.badge}
+                            </span>
+                          )}
+                        </button>
+                      );
+                    })}
+                  </nav>
+                </div>
+
+                {/* Quick Add and Connected Projects */}
+                <div className="pt-4 border-t border-slate-100 dark:border-slate-800 space-y-4">
+                  <button
+                    onClick={() => {
+                      setIsMobileMenuOpen(false);
+                      setShowProjModal(true);
+                    }}
+                    className="lh-btn lh-btn-primary lh-btn-md w-full flex items-center justify-center gap-2"
+                  >
+                    <Plus className="w-4 h-4" />
+                    <span>New project</span>
+                  </button>
+
+                  <div className="space-y-2">
+                    <span className="text-[9.5px] font-bold text-slate-400 uppercase tracking-wider block px-2">Connected Projects</span>
+                    <div className="space-y-0.5 max-h-[160px] overflow-y-auto">
+                      <button
+                        onClick={() => {
+                          onSelectProject('all');
+                          setIsMobileMenuOpen(false);
+                        }}
+                        className="w-full px-2.5 py-2 rounded-lg text-left text-[11.5px] font-medium truncate flex items-center justify-between transition-colors"
+                        style={selectedProjId === 'all'
+                          ? { background: 'var(--lh-surface-muted)', border: '1px solid var(--lh-blue)', color: 'var(--lh-text-primary)' }
+                          : { background: 'transparent', border: '1px solid transparent', color: 'var(--lh-text-secondary)' }}
+                      >
+                        <span className="truncate font-semibold">All projects</span>
+                        <span className="text-[9px] flex-shrink-0 px-1 rounded bg-slate-100 text-slate-500">A</span>
+                      </button>
+                      {projects
+                        .filter(p => p.status !== 'Completed')
+                        .map((p) => (
+                        <button
+                          key={p.id}
+                          onClick={() => {
+                            onSelectProject(p.id);
+                            setIsMobileMenuOpen(false);
+                          }}
+                          className="w-full px-2.5 py-2 rounded-lg text-left text-[11.5px] font-medium truncate flex items-center justify-between transition-colors"
+                          style={p.id === selectedProjId
+                            ? { background: 'var(--lh-surface-muted)', border: '1px solid var(--lh-blue)', color: 'var(--lh-text-primary)' }
+                            : { background: 'transparent', border: '1px solid transparent', color: 'var(--lh-text-secondary)' }}
+                        >
+                          <span className="truncate">{p.name}</span>
+                          <span className="text-[9px] flex-shrink-0 px-1 rounded bg-slate-100 text-slate-500">{p.type.charAt(0)}</span>
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
 
           {/* Desktop sidebar */}
           <div className="hidden lg:block lh-panel rounded-xl p-3.5 space-y-3.5">
@@ -1741,7 +1918,7 @@ setIsCompressingPhotos(false);
                                 </thead>
                                 <tbody>
                                   {cpStages.map((s, i) => (
-                                    <tr key={s.id}>
+                                    <tr key={`${s.projectId || ''}_${s.id}_${i}`}>
                                       <td style={{ color: 'var(--lh-text-tertiary)' }}>{i + 1}</td>
                                       <td className="font-medium">{s.stageName}</td>
                                       <td style={{ textAlign: 'right' }} className="font-mono">₹{s.payableAmount.toLocaleString('en-IN')}</td>
@@ -1965,7 +2142,7 @@ setIsCompressingPhotos(false);
                         {activeStages.map((stg, sIdx) => {
                           const isPaid = stg.status === 'Paid';
                           return (
-                            <tr key={stg.id}>
+                            <tr key={`${stg.projectId || ''}_${stg.id}_${sIdx}`}>
                               <td style={{ color: 'var(--lh-text-tertiary)' }}>{sIdx + 1}</td>
                               {selectedProjId === 'all' && (
                                 <td className="text-[11px] font-medium text-[var(--lh-text-secondary)]">
@@ -2278,6 +2455,7 @@ setIsCompressingPhotos(false);
                           <th style={{ textAlign: 'right' }}>Estimated cost</th>
                           <th style={{ textAlign: 'center' }}>Status</th>
                           <th>Client feedback</th>
+                          <th style={{ textAlign: 'center' }}>Actions</th>
                         </tr>
                       </thead>
                       <tbody>
@@ -2292,12 +2470,39 @@ setIsCompressingPhotos(false);
                             <td style={{ color: 'var(--lh-text-tertiary)' }}>{ew.date}</td>
                             <td style={{ textAlign: 'right' }} className="font-semibold font-mono">+₹{ew.amount.toLocaleString('en-IN')}</td>
                             <td style={{ textAlign: 'center' }}>
-                              <span className={`lh-badge ${ew.approvalStatus === 'Approved' ? 'lh-badge-success' : ew.approvalStatus === 'Rejected' ? 'lh-badge-neutral' : 'lh-badge-warning'}`}>
+                              <span className={`lh-badge ${
+                                ew.approvalStatus === 'Approved' ? 'lh-badge-success' 
+                                : ew.approvalStatus === 'Rejected' ? 'lh-badge-neutral' 
+                                : ew.approvalStatus === 'Revision Requested' ? 'bg-amber-100 text-amber-800 dark:bg-amber-950/40 dark:text-amber-300 border border-amber-200/50'
+                                : 'lh-badge-warning'
+                              }`}>
                                 {ew.approvalStatus}
                               </span>
                             </td>
                             <td style={{ color: 'var(--lh-text-secondary)' }} className="max-w-[200px] truncate italic" title={ew.clientComment}>
                               {ew.clientComment || '—'}
+                            </td>
+                            <td style={{ textAlign: 'center' }}>
+                              {ew.approvalStatus !== 'Approved' ? (
+                                <button
+                                  onClick={() => {
+                                    setEditingExtraId(ew.id);
+                                    setNewExtra({
+                                      description: ew.description,
+                                      amount: ew.amount,
+                                      date: ew.date,
+                                    });
+                                    setShowExtraModal(true);
+                                  }}
+                                  className="lh-btn lh-btn-secondary py-1 px-2.5 text-[10.5px] font-semibold hover:bg-amber-50 hover:text-amber-700 hover:border-amber-200 transition-all flex items-center justify-center gap-1 mx-auto"
+                                  title="Edit details and re-request client approval"
+                                >
+                                  <RotateCcw className="w-3 h-3" />
+                                  <span>Edit & Re-submit</span>
+                                </button>
+                              ) : (
+                                <span className="text-xs text-emerald-600 font-bold">Approved</span>
+                              )}
                             </td>
                           </tr>
                         ))}
@@ -3302,8 +3507,14 @@ setIsCompressingPhotos(false);
         <div className="fixed inset-0 lh-modal-backdrop flex items-center justify-center p-4 z-50">
           <div className="lh-modal p-5 max-w-sm w-full">
             <div className="flex items-center justify-between pb-2.5 mb-3" style={{ borderBottom: '1px solid var(--lh-border)' }}>
-              <h3 className="text-[13px] font-semibold" style={{ color: 'var(--lh-text-primary)' }}>Request scope variation</h3>
-              <button onClick={() => setShowExtraModal(false)} className="text-sm font-bold" style={{ color: 'var(--lh-text-tertiary)' }}>✕</button>
+              <h3 className="text-[13px] font-semibold" style={{ color: 'var(--lh-text-primary)' }}>
+                {editingExtraId ? 'Edit & Re-submit variation' : 'Request scope variation'}
+              </h3>
+              <button onClick={() => { 
+                setShowExtraModal(false); 
+                setEditingExtraId(null); 
+                setNewExtra({ description: '', amount: 50000, date: '' }); 
+              }} className="text-sm font-bold" style={{ color: 'var(--lh-text-tertiary)' }}>✕</button>
             </div>
             <form onSubmit={handleAddExtraWork} className="space-y-3.5">
               <div>
@@ -3334,7 +3545,7 @@ setIsCompressingPhotos(false);
                 type="submit"
                 className="lh-btn lh-btn-primary lh-btn-lg w-full mt-1"
               >
-                Send proposal
+                {editingExtraId ? 'Update & Re-submit proposal' : 'Send proposal'}
               </button>
             </form>
           </div>
@@ -3625,10 +3836,10 @@ setIsCompressingPhotos(false);
                 {isUploadingDoc ? (
                   <span className="flex items-center justify-center gap-2">
                     <span className="w-3.5 h-3.5 border-2 border-white border-t-transparent rounded-full animate-spin"></span>
-                    Uploading to Supabase...
+                    Uploading...
                   </span>
                 ) : (
-                  'Upload to Supabase Storage'
+                  'Upload'
                 )}
               </button>
             </form>
@@ -3673,21 +3884,133 @@ setIsCompressingPhotos(false);
                   onChange={(e) => setEditingStage({ ...editingStage, dueDate: e.target.value })}
                 />
               </div>
-              <div>
-                <label className="lh-label">Received Amount (₹)</label>
-                <input
-                  type="number"
-                  className="lh-input"
-                  value={editingStage.receivedAmount || 0}
-                  onChange={(e) => {
-                    const rec = Number(e.target.value) || 0;
-                    setEditingStage({ 
-                      ...editingStage, 
-                      receivedAmount: rec,
-                      status: rec >= editingStage.payableAmount ? 'Paid' : 'Pending'
-                    });
-                  }}
-                />
+              <div className="pt-2 border-t border-[var(--lh-border)] space-y-2">
+                <span className="lh-label block font-semibold">Payment History Logs</span>
+                
+                {(!editingStage.paymentLog || editingStage.paymentLog.length === 0) ? (
+                  <p className="text-[11px] text-slate-400 italic">No payments logged yet.</p>
+                ) : (
+                  <div className="space-y-1.5 max-h-[140px] overflow-y-auto pr-1">
+                    {editingStage.paymentLog.map((log, idx) => (
+                      <div key={log.id || idx} className="flex justify-between items-center bg-slate-50 dark:bg-slate-900/40 p-2 rounded border border-slate-100 dark:border-slate-800 text-[11.5px]">
+                        <div className="flex flex-col">
+                          <span className="font-medium text-slate-700 dark:text-slate-300">
+                            ₹{log.amount.toLocaleString('en-IN')}
+                          </span>
+                          <span className="text-[10px] text-slate-400">
+                            {log.date} {log.reference ? `(${log.reference})` : ''}
+                          </span>
+                        </div>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            const updatedLog = (editingStage.paymentLog || []).filter((_, lIdx) => lIdx !== idx);
+                            const newRec = updatedLog.reduce((sum, l) => sum + (l.amount || 0), 0);
+                            setEditingStage({
+                              ...editingStage,
+                              paymentLog: updatedLog,
+                              receivedAmount: newRec,
+                              status: newRec >= editingStage.payableAmount ? 'Paid' : 'Pending'
+                            });
+                          }}
+                          className="text-red-500 hover:text-red-700 p-1 rounded hover:bg-red-50 dark:hover:bg-red-950/20 transition-colors cursor-pointer"
+                          title="Delete this payment log"
+                        >
+                          <Trash2 className="w-3.5 h-3.5" />
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                )}
+                
+                {/* Add dynamic receipt from within editing modal */}
+                <div className="bg-slate-500/5 p-2.5 rounded-lg border border-slate-500/10 space-y-2 mt-2">
+                  <span className="text-[10.5px] font-extrabold uppercase text-slate-400 tracking-wide block">Log Additional Payment Receipt</span>
+                  <div className="grid grid-cols-2 gap-2 text-[11px]">
+                    <div>
+                      <label className="text-[10px] text-slate-400 block mb-0.5">Amount (₹)</label>
+                      <input
+                        id="add-log-amount"
+                        type="number"
+                        placeholder="Amount"
+                        className="lh-input p-1 text-[11px]"
+                      />
+                    </div>
+                    <div>
+                      <label className="text-[10px] text-slate-400 block mb-0.5">Reference / Mode</label>
+                      <input
+                        id="add-log-reference"
+                        type="text"
+                        placeholder="e.g. Cash, G pay"
+                        className="lh-input p-1 text-[11px]"
+                      />
+                    </div>
+                  </div>
+                  <div className="flex gap-2 text-[11px]">
+                    <div className="flex-1">
+                      <label className="text-[10px] text-slate-400 block mb-0.5">Payment Date</label>
+                      <input
+                        id="add-log-date"
+                        type="date"
+                        defaultValue={new Date().toISOString().split('T')[0]}
+                        className="lh-input p-1 text-[11px]"
+                      />
+                    </div>
+                    <div className="flex items-end">
+                      <button
+                        type="button"
+                        onClick={() => {
+                          const amtEl = document.getElementById('add-log-amount') as HTMLInputElement;
+                          const refEl = document.getElementById('add-log-reference') as HTMLInputElement;
+                          const dateEl = document.getElementById('add-log-date') as HTMLInputElement;
+                          
+                          const amt = Number(amtEl?.value) || 0;
+                          const ref = refEl?.value || 'Logged by Contractor';
+                          const dt = dateEl?.value || new Date().toISOString().split('T')[0];
+                          
+                          if (amt <= 0) {
+                            alert('Please enter a valid amount greater than 0.');
+                            return;
+                          }
+                          
+                          const newLogEntry = {
+                            id: `pay_${Date.now()}`,
+                            amount: amt,
+                            date: dt,
+                            reference: ref
+                          };
+                          
+                          let currentLog = editingStage.paymentLog || [];
+                          const currentSum = currentLog.reduce((sum, l) => sum + (l.amount || 0), 0);
+                          if ((editingStage.receivedAmount || 0) > 0 && currentSum === 0) {
+                            currentLog = [{
+                              id: `pay_initial_${editingStage.id}`,
+                              amount: editingStage.receivedAmount || 0,
+                              date: editingStage.dueDate || new Date().toISOString().split('T')[0],
+                              reference: 'Existing Received Balance'
+                            }];
+                          }
+                          const updatedLog = [...currentLog, newLogEntry];
+                          const newRec = updatedLog.reduce((sum, l) => sum + (l.amount || 0), 0);
+                          
+                          setEditingStage({
+                            ...editingStage,
+                            paymentLog: updatedLog,
+                            receivedAmount: newRec,
+                            status: newRec >= editingStage.payableAmount ? 'Paid' : 'Pending'
+                          });
+                          
+                          if (amtEl) amtEl.value = '';
+                          if (refEl) refEl.value = '';
+                        }}
+                        className="lh-btn lh-btn-primary p-1.5 h-[30px] flex items-center justify-center gap-1 w-full cursor-pointer"
+                        style={{ background: 'var(--lh-success)' }}
+                      >
+                        <Plus className="w-3.5 h-3.5" /> Add Log
+                      </button>
+                    </div>
+                  </div>
+                </div>
               </div>
               <div>
                 <label className="lh-label">Status</label>
@@ -3711,7 +4034,38 @@ setIsCompressingPhotos(false);
               </button>
               <button
                 onClick={() => {
-                  const updated = stages.map(s => s.id === editingStage.id ? editingStage : s);
+                  let rec = editingStage.receivedAmount || 0;
+                  let status = editingStage.status;
+                  let logs = editingStage.paymentLog || [];
+
+                  if (status === 'Paid' && rec < editingStage.payableAmount) {
+                    rec = editingStage.payableAmount;
+                  } else if (rec >= editingStage.payableAmount) {
+                    status = 'Paid';
+                  }
+
+                  // Ensure logs sum up exactly to rec
+                  const sumLogs = logs.reduce((sum, l) => sum + (l.amount || 0), 0);
+                  if (rec === 0) {
+                    logs = [];
+                  } else if (sumLogs !== rec) {
+                    const diff = rec - sumLogs;
+                    logs = [...logs, {
+                      id: `pay_${Date.now()}`,
+                      amount: diff,
+                      date: new Date().toISOString().split('T')[0],
+                      reference: 'Status Auto-Update Balance Adjustment'
+                    }];
+                  }
+
+                  const finalStage = {
+                    ...editingStage,
+                    receivedAmount: rec,
+                    status: status,
+                    paymentLog: logs
+                  };
+
+                  const updated = stages.map(s => s.id === finalStage.id ? finalStage : s);
                   onUpdateStages(updated);
                   setEditingStage(null);
                 }}
@@ -3846,6 +4200,22 @@ setIsCompressingPhotos(false);
                   <span className="font-semibold" style={{ color: 'var(--lh-text-primary)' }}>Balance due</span>
                   <span className="font-mono font-semibold" style={{ color: 'var(--lh-warning-text)' }}>₹{balance.toLocaleString('en-IN')}</span>
                 </div>
+                
+                {stg.paymentLog && stg.paymentLog.length > 0 && (
+                  <div className="mt-2.5 pt-2.5 border-t border-[var(--lh-border)] space-y-1 text-[10.5px]">
+                    <span className="font-extrabold uppercase text-[9px] text-slate-400 block tracking-wide">Recorded Payments Log:</span>
+                    <div className="max-h-[85px] overflow-y-auto space-y-1.5 pr-1">
+                      {stg.paymentLog.map((entry, idx) => (
+                        <div key={entry.id || idx} className="flex justify-between items-center bg-slate-50 dark:bg-slate-900/40 p-1.5 rounded border border-slate-100 dark:border-slate-800">
+                          <span className="text-[var(--lh-text-secondary)] font-medium">
+                            {entry.date} <span className="text-slate-400 dark:text-slate-500">({entry.reference})</span>
+                          </span>
+                          <span className="font-mono font-bold text-emerald-600 dark:text-emerald-400">₹{entry.amount.toLocaleString('en-IN')}</span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
               </div>
 
               <form onSubmit={handleSaveReceipt} className="space-y-3">
@@ -3871,6 +4241,16 @@ setIsCompressingPhotos(false);
                     required
                     value={receiptDate}
                     onChange={e => setReceiptDate(e.target.value)}
+                    className="lh-input"
+                  />
+                </div>
+                <div>
+                  <label className="lh-label">Payment Mode / Ref (Optional)</label>
+                  <input
+                    type="text"
+                    placeholder="e.g. UPI, Bank Transfer, Cash..."
+                    value={receiptReference}
+                    onChange={e => setReceiptReference(e.target.value)}
                     className="lh-input"
                   />
                 </div>
