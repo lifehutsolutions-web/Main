@@ -813,7 +813,8 @@ async function loadFromCloud() {
   if (!file) throw new Error('products.json not found in Gist');
   const remote = JSON.parse(file.content || '[]');
   products = Array.isArray(remote) ? remote : [];
-  localStorage.setItem(CACHE_KEY, JSON.stringify(products)); // update cache
+  localStorage.setItem(CACHE_KEY, JSON.stringify(products));
+  localStorage.setItem('ls-live-products', JSON.stringify(products)); // keep index.html in sync
   return products;
 }
 
@@ -822,7 +823,9 @@ async function saveToCloud() {
   await gistRequest('PATCH', {
     files: { 'products.json': { content: JSON.stringify(products, null, 2) } }
   });
-  localStorage.setItem(CACHE_KEY, JSON.stringify(products)); // update cache
+  localStorage.setItem(CACHE_KEY, JSON.stringify(products)); // update manager cache
+  // Also update LIVE_KEY so index.html can read live products immediately
+  localStorage.setItem('ls-live-products', JSON.stringify(products));
 }
 
 /* ── Load from local cache (offline fallback only) ── */
@@ -1808,31 +1811,43 @@ function updateLiveIndicator() {
    APP INIT — called after successful login
    ===================================================== */
 async function initApp() {
-  // 1. Show cached data instantly while cloud loads
-  loadFromCache();
-  renderList();
+  loadGistConfigUI();
   renderSlides();
   renderFeatures();
   livePreview();
-  updateLiveIndicator();
-  loadGistConfigUI();
 
-  // 2. Load from cloud — this is the source of truth
   const cfg = getGistConfig();
   if (!cfg) {
+    // No config — show empty state with setup prompt
+    renderList();
     showToast('⚠️ No Gist config — go to Settings to set up GitHub sync');
     return;
   }
+
+  // Show loading state in product table
+  const body = document.getElementById('productTableBody');
+  if (body) body.innerHTML = '<div style="text-align:center;padding:40px;color:var(--text3);font-size:13px"><i class="ti ti-loader-2" style="animation:spin .8s linear infinite;font-size:20px;display:block;margin-bottom:8px"></i>Loading products from cloud...</div>';
+  const sc = document.getElementById('sbCount');
+  if (sc) sc.textContent = '…';
+
   try {
-    await loadFromCloud();   // fetches from Gist, updates products + cache
+    await loadFromCloud(); // Gist → products array + CACHE_KEY
     renderList();
     updateLiveIndicator();
-    showToast('☁️ ' + products.length + ' product(s) loaded from cloud');
+    showToast('☁️ ' + products.length + ' product(s) loaded');
   } catch(e) {
-    // Keep showing cached data — don't wipe it
-    showToast('⚠️ Cloud load failed — showing cached data. Check Settings.');
+    // Cloud failed — fall back to cache
+    loadFromCache();
+    renderList();
+    updateLiveIndicator();
+    showToast('⚠️ Cloud load failed — showing cached data');
   }
 }
+
+/* spin for loader */
+const _pmSpin = document.createElement('style');
+_pmSpin.textContent = '@keyframes spin{to{transform:rotate(360deg)}}';
+document.head.appendChild(_pmSpin);
 
 /* =====================================================
    BOOT — check session on page load
