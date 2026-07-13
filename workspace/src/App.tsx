@@ -8,14 +8,20 @@ import { useAuth } from './context/AuthContext';
 import { 
   fetchAll, 
   saveAll, 
-  initDB 
+  initDB,
+  resetDB
 } from './data';
 import { Project, PaymentStage, ExtraWork, Expense, DailyProgress, ProjectDocument, ChatMessage } from './types';
 import ContractorPortal from './components/ContractorPortal';
 import ClientPortal from './components/ClientPortal';
 import DbManager from './components/DbManager';
 import ProfileSetupModal from "./components/ProfileSetupModal";
-import { HardHat, User, ArrowRight, Building2, ShieldCheck, ChevronRight, AlertTriangle, ExternalLink, ShieldAlert, LogOut, Sparkles, ArrowLeft, Mail, Lock } from 'lucide-react';
+import PullToRefresh from "./components/PullToRefresh";
+import Logo from './components/Logo';
+import { ClientNotification } from './services/notifications/clientNotification';
+import { ContractorNotification } from './services/notifications/contractorNotification';
+import { SystemNotification } from './services/notifications/systemNotification';
+import { HardHat, User, ArrowRight, Building2, ShieldCheck, ChevronRight, AlertTriangle, ExternalLink, ShieldAlert, LogOut, Sparkles, ArrowLeft, Mail, Lock, Eye, EyeOff } from 'lucide-react';
 import { 
   auth, 
   db as fdb, 
@@ -62,6 +68,7 @@ export default function App() {
     localStorage.removeItem('metrobuild_client_code');
     setShowAutoFallbackBanner(false);
     try {
+      resetDB();
       await authLogout();
     } catch (err) {
       console.error("authLogout failed:", err);
@@ -69,6 +76,7 @@ export default function App() {
     setViewingMode('welcome');
   };
 
+ 
   // DB States
   const [db, setDb] = useState<{
     projects: Project[];
@@ -92,6 +100,7 @@ export default function App() {
   const [emailFormName, setEmailFormName] = useState('');
   const [emailAuthLoading, setEmailAuthLoading] = useState(false);
   const [passwordResetSuccess, setPasswordResetSuccess] = useState<string | null>(null);
+  const [showPassword, setShowPassword] = useState(false);
 
   const renderAuthError = () => {
     if (!authError) return null;
@@ -184,12 +193,31 @@ export default function App() {
     }
   }, [isDemoMode, user]);
 
+  // Clear local demo data when entering Cloud Mode to prevent any leakage or mixed state
+  useEffect(() => {
+    if (user && !isDemoMode) {
+      setDb(null);
+    }
+  }, [user, isDemoMode]);
+
   // Sync local activeRole toggle state with central userRole
   useEffect(() => {
     if (userRole) {
       setActiveRole(userRole);
     }
   }, [userRole]);
+
+  // Network connection status listeners for SystemNotifications
+  useEffect(() => {
+    const handleOffline = () => {
+      SystemNotification.offline().catch(err => console.log("Offline notice error:", err));
+    };
+    
+    window.addEventListener('offline', handleOffline);
+    return () => {
+      window.removeEventListener('offline', handleOffline);
+    };
+  }, []);
 
   const [showProfileSetup, setShowProfileSetup] = useState(false);
   const [profileForm, setProfileForm] = useState({
@@ -462,7 +490,9 @@ export default function App() {
   // Sync to Storage Helper (Local/Offline Mode)
   const syncDatabase = (updatedDb: typeof db) => {
     if (!updatedDb) return;
-    saveAll(updatedDb);
+    if (!user || isDemoMode) {
+      saveAll(updatedDb);
+    }
     setDb({ ...updatedDb });
   };
 
@@ -521,6 +551,19 @@ export default function App() {
       const old = db.stages.find(o => o.id === s.id);
       return !old || JSON.stringify(old) !== JSON.stringify(s);
     });
+
+    // Check if any stage status changed to 'Pending' / 'Overdue' or became requested to trigger a payment reminder notification
+    const hasDueStage = changedItems.some(item => {
+      const old = db.stages.find(o => o.id === item.id);
+      const becameOverdueOrPending = (item.status === 'Pending' && (!old || old.status !== 'Pending')) ||
+                                     (item.status === 'Overdue' && (!old || old.status !== 'Overdue'));
+      const becameRequested = !!item.paymentRequested && (!old || !old.paymentRequested);
+      return becameOverdueOrPending || becameRequested;
+    });
+    if (hasDueStage) {
+      ClientNotification.paymentReminder().catch(err => console.log("Payment reminder notification failed:", err));
+    }
+
     syncDatabase({ ...db, stages: newStages });
     if (user) {
       try {
@@ -569,6 +612,13 @@ export default function App() {
       const old = db.expenses.find(o => o.id === e.id);
       return !old || JSON.stringify(old) !== JSON.stringify(e);
     });
+
+    // Check if a new expense is logged (i.e. present in changedItems but not in old db.expenses)
+    const hasNewExpense = changedItems.some(item => !db.expenses.some(old => old.id === item.id));
+    if (hasNewExpense) {
+      ClientNotification.expenseApproval().catch(err => console.log("Expense approval notification failed:", err));
+    }
+
     syncDatabase({ ...db, expenses: newExp });
     if (user) {
       try {
@@ -593,6 +643,13 @@ export default function App() {
       const old = db.progress.find(o => o.id === p.id);
       return !old || JSON.stringify(old) !== JSON.stringify(p);
     });
+
+    // Check if a new daily progress item is added
+    const hasNewProgress = changedItems.some(item => !db.progress.some(old => old.id === item.id));
+    if (hasNewProgress) {
+      ClientNotification.progressUploaded().catch(err => console.log("Progress uploaded notification failed:", err));
+    }
+
     syncDatabase({ ...db, progress: newProg });
     if (user) {
       try {
@@ -682,8 +739,8 @@ export default function App() {
     return (
       <div className="min-h-screen flex items-center justify-center font-sans" style={{ background: 'var(--lh-surface-sunken)' }}>
         <div className="flex flex-col items-center gap-3">
-          <div className="w-9 h-9 rounded-lg flex items-center justify-center text-white text-xs font-semibold animate-pulse" style={{ background: 'var(--lh-blue)' }}>
-            LH
+          <div className="w-9 h-9 rounded-lg flex items-center justify-center bg-white border border-slate-100 shadow-xs animate-pulse p-1 flex-shrink-0">
+            <Logo className="w-7 h-7" />
           </div>
           <p className="text-xs font-medium" style={{ color: 'var(--lh-text-secondary)' }}>Initializing Lifehut Workspace…</p>
         </div>
@@ -700,8 +757,8 @@ export default function App() {
           {/* LEFT: Brand panel */}
           <div className="lg:col-span-2 p-9 md:p-11 flex flex-col justify-between relative animate-fade-in" style={{ background: 'var(--lh-navy)' }}>
             <div className="flex items-center gap-2.5">
-              <div className="w-9 h-9 rounded-lg flex items-center justify-center text-white text-xs font-bold" style={{ background: 'var(--lh-blue)' }}>
-                LH
+              <div className="w-9 h-9 rounded-lg flex items-center justify-center bg-white border border-slate-100 shadow-xs p-1 flex-shrink-0">
+                <Logo className="w-7 h-7" />
               </div>
               <span className="font-display font-semibold tracking-tight text-sm text-white">Lifehut Workspace</span>
             </div>
@@ -791,6 +848,7 @@ export default function App() {
                   <button
                     onClick={() => {
                       setAuthError(null);
+                      resetDB();
                       startDemoMode();
                       setViewingMode('portal');
                     }}
@@ -877,11 +935,7 @@ export default function App() {
                   Continue with Google
                 </button>
 
-                <div className="p-3 bg-blue-50/50 dark:bg-slate-900/40 rounded-lg text-left border border-blue-100/30">
-                  <p className="text-[11px] leading-relaxed" style={{ color: 'var(--lh-text-secondary)' }}>
-                    <strong>Capacitor Mobile Note:</strong> Google popup sign-in is restricted on native Android/webview environments. Please register/sign-in with an email address below.
-                  </p>
-                </div>
+
 
                 <div className="flex items-center gap-3 text-[10px] font-bold uppercase tracking-wider text-slate-400 py-1">
                   <div className="h-px bg-slate-200 dark:bg-slate-800 flex-1" />
@@ -948,11 +1002,18 @@ export default function App() {
                     <div className="relative">
                       <Lock className="absolute left-3 top-2.5 w-4 h-4 text-slate-400" />
                       <input
-                        type="password" required placeholder="Enter your password"
+                        type={showPassword ? "text" : "password"} required placeholder="Enter your password"
                         value={emailFormPassword} onChange={e => setEmailFormPassword(e.target.value)}
                         className="lh-input w-full"
-                        style={{ paddingLeft: '38px' }}
+                        style={{ paddingLeft: '38px', paddingRight: '40px' }}
                       />
+                      <button
+                        type="button"
+                        onClick={() => setShowPassword(!showPassword)}
+                        className="absolute right-3 top-2.5 text-slate-400 hover:text-slate-600 dark:hover:text-slate-300 focus:outline-none"
+                      >
+                        {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                      </button>
                     </div>
                   </div>
                   <button
@@ -1033,11 +1094,18 @@ export default function App() {
                     <div className="relative">
                       <Lock className="absolute left-3 top-2.5 w-4 h-4 text-slate-400" />
                       <input
-                        type="password" required placeholder="Create a strong password" minLength={6}
+                        type={showPassword ? "text" : "password"} required placeholder="Create a strong password" minLength={6}
                         value={emailFormPassword} onChange={e => setEmailFormPassword(e.target.value)}
                         className="lh-input w-full"
-                        style={{ paddingLeft: '38px' }}
+                        style={{ paddingLeft: '38px', paddingRight: '40px' }}
                       />
+                      <button
+                        type="button"
+                        onClick={() => setShowPassword(!showPassword)}
+                        className="absolute right-3 top-2.5 text-slate-400 hover:text-slate-600 dark:hover:text-slate-300 focus:outline-none"
+                      >
+                        {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                      </button>
                     </div>
                   </div>
                   <button
@@ -1108,8 +1176,8 @@ export default function App() {
           
           <div className="flex items-center justify-between w-full md:w-auto">
             <div className="flex items-center gap-2.5">
-              <div className="w-8 h-8 rounded-lg flex items-center justify-center text-white text-[11px] font-bold flex-shrink-0" style={{ background: 'var(--lh-blue)' }}>
-                LH
+              <div className="w-8 h-8 rounded-lg flex items-center justify-center bg-white border border-slate-100 shadow-xs p-1 flex-shrink-0">
+                <Logo className="w-6 h-6" />
               </div>
               <div>
                 <h1 className="text-[13px] font-semibold leading-none" style={{ color: 'var(--lh-text-primary)' }}>Lifehut Workspace</h1>
@@ -1136,29 +1204,7 @@ export default function App() {
               </span>
             </div>
 
-            <div className="flex items-center gap-0.5 p-0.5 rounded-lg" style={{ background: 'var(--lh-surface-muted)', border: '1px solid var(--lh-border)' }} id="role-toggle-container">
-              <button
-                onClick={() => setActiveRole('Contractor')}
-                className="px-3 py-1.5 rounded-md text-[10.5px] font-semibold transition-all flex items-center gap-1.5"
-                style={activeRole === 'Contractor'
-                  ? { background: 'var(--lh-blue)', color: '#fff' }
-                  : { color: 'var(--lh-text-secondary)' }}
-              >
-                <HardHat className="w-3 h-3" />
-                <span>Contractor</span>
-              </button>
 
-              <button
-                onClick={() => setActiveRole('Client')}
-                className="px-3 py-1.5 rounded-md text-[10.5px] font-semibold transition-all flex items-center gap-1.5"
-                style={activeRole === 'Client'
-                  ? { background: 'var(--lh-amber)', color: '#fff' }
-                  : { color: 'var(--lh-text-secondary)' }}
-              >
-                <User className="w-3 h-3" />
-                <span>Client</span>
-              </button>
-            </div>
 
             <button
               onClick={async () => {
@@ -1175,75 +1221,87 @@ export default function App() {
       </header>
 
       {/* 2. DUAL-ROLE LIVE WORKSPACE APP VIEWPORT */}
-      <main className="max-w-7xl mx-auto px-5 py-6">
-        
-        {/* Automatic Sandbox Fallback Banner */}
-        {showAutoFallbackBanner && (
-          <div className="mb-5 p-4 rounded-xl text-left bg-amber-50/90 dark:bg-amber-950/20 border border-amber-200 dark:border-amber-900/50 space-y-2 animate-fade-in" style={{ fontSize: '12px' }}>
-            <div className="flex items-start gap-2.5 justify-between">
-              <div className="flex items-start gap-2.5">
-                <ShieldAlert className="w-4.5 h-4.5 text-amber-600 dark:text-amber-400 flex-shrink-0 mt-0.5" />
-                <div className="space-y-1">
-                  <p className="font-semibold text-amber-800 dark:text-amber-300">Google Auth Sandbox Redirect Active</p>
-                  <p className="text-amber-700 dark:text-amber-400 leading-relaxed text-[11.5px]">
-                    Google Sign-In is restricted inside preview iframe sandboxes (due to Firebase's unauthorized-domain policy). 
-                    To ensure a seamless developer/preview experience, we have automatically activated the <strong>Iframe-Safe Sandbox Contractor</strong> session. 
-                    Your changes will save to the sandbox environment smoothly!
-                  </p>
+      <PullToRefresh onRefresh={async () => {
+        // Fetch or re-read active database data to force state re-sync and UI update
+        await new Promise(resolve => setTimeout(resolve, 1000));
+        if (isDemoMode || !user) {
+          loadLocalDatabase();
+        } else {
+          // Cloud mode is automatically synced with Firestore in real-time.
+          // Resolving directly prevents re-injecting local demo data into the active session.
+          console.log("Real-time cloud sync refreshed from live subscription.");
+        }
+      }}>
+        <main className="max-w-7xl mx-auto px-5 py-6">
+          
+          {/* Automatic Sandbox Fallback Banner */}
+          {showAutoFallbackBanner && (
+            <div className="mb-5 p-4 rounded-xl text-left bg-amber-50/90 dark:bg-amber-950/20 border border-amber-200 dark:border-amber-900/50 space-y-2 animate-fade-in" style={{ fontSize: '12px' }}>
+              <div className="flex items-start gap-2.5 justify-between">
+                <div className="flex items-start gap-2.5">
+                  <ShieldAlert className="w-4.5 h-4.5 text-amber-600 dark:text-amber-400 flex-shrink-0 mt-0.5" />
+                  <div className="space-y-1">
+                    <p className="font-semibold text-amber-800 dark:text-amber-300">Google Auth Sandbox Redirect Active</p>
+                    <p className="text-amber-700 dark:text-amber-400 leading-relaxed text-[11.5px]">
+                      Google Sign-In is restricted inside preview iframe sandboxes (due to Firebase's unauthorized-domain policy). 
+                      To ensure a seamless developer/preview experience, we have automatically activated the <strong>Iframe-Safe Sandbox Contractor</strong> session. 
+                      Your changes will save to the sandbox environment smoothly!
+                    </p>
+                  </div>
                 </div>
+                <button 
+                  onClick={() => setShowAutoFallbackBanner(false)} 
+                  className="text-amber-600 hover:text-amber-800 dark:text-amber-400 dark:hover:text-amber-300 font-bold px-1.5 py-0.5 rounded text-[11px]"
+                >
+                  ✕ Dismiss
+                </button>
               </div>
-              <button 
-                onClick={() => setShowAutoFallbackBanner(false)} 
-                className="text-amber-600 hover:text-amber-800 dark:text-amber-400 dark:hover:text-amber-300 font-bold px-1.5 py-0.5 rounded text-[11px]"
-              >
-                ✕ Dismiss
-              </button>
             </div>
-          </div>
-        )}
+          )}
 
-        {/* Dynamic portal router */}
-        {activeRole === 'Contractor' ? (
-          <ContractorPortal
-            projects={db.projects}
-            stages={db.stages}
-            extraWorks={db.extraWorks}
-            expenses={db.expenses}
-            progress={db.progress}
-            documents={db.documents}
-            messages={db.messages}
-            onUpdateProjects={handleUpdateProjects}
-            onUpdateStages={handleUpdateStages}
-            onUpdateExtraWorks={handleUpdateExtraWorks}
-            onUpdateExpenses={handleUpdateExpenses}
-            onUpdateProgress={handleUpdateProgress}
-            onUpdateDocuments={handleUpdateDocuments}
-            onSendMessage={handleSendMessage}
-            selectedProjId={selectedProjId}
-            onSelectProject={setSelectedProjId}
-            ownerName={userProfile?.ownerName || user?.displayName || "Contractor"}
-          />
-        ) : (
-          <ClientPortal
-            projects={db.projects}
-            stages={db.stages}
-            extraWorks={db.extraWorks}
-            progress={db.progress}
-            documents={db.documents}
-            messages={db.messages}
-            onUpdateStages={handleUpdateStages}
-            onUpdateExtraWorks={handleUpdateExtraWorks}
-            onUpdateProjects={handleUpdateProjects}
-            onSendMessage={handleSendMessage}
-            selectedProjId={selectedProjId}
-            onSelectProject={setSelectedProjId}
-          />
-        )}
+          {/* Dynamic portal router */}
+          {activeRole === 'Contractor' ? (
+            <ContractorPortal
+              projects={db.projects}
+              stages={db.stages}
+              extraWorks={db.extraWorks}
+              expenses={db.expenses}
+              progress={db.progress}
+              documents={db.documents}
+              messages={db.messages}
+              onUpdateProjects={handleUpdateProjects}
+              onUpdateStages={handleUpdateStages}
+              onUpdateExtraWorks={handleUpdateExtraWorks}
+              onUpdateExpenses={handleUpdateExpenses}
+              onUpdateProgress={handleUpdateProgress}
+              onUpdateDocuments={handleUpdateDocuments}
+              onSendMessage={handleSendMessage}
+              selectedProjId={selectedProjId}
+              onSelectProject={setSelectedProjId}
+              ownerName={userProfile?.ownerName || user?.displayName || "Contractor"}
+            />
+          ) : (
+            <ClientPortal
+              projects={db.projects}
+              stages={db.stages}
+              extraWorks={db.extraWorks}
+              progress={db.progress}
+              documents={db.documents}
+              messages={db.messages}
+              onUpdateStages={handleUpdateStages}
+              onUpdateExtraWorks={handleUpdateExtraWorks}
+              onUpdateProjects={handleUpdateProjects}
+              onSendMessage={handleSendMessage}
+              selectedProjId={selectedProjId}
+              onSelectProject={setSelectedProjId}
+            />
+          )}
 
-      </main>
+        </main>
+      </PullToRefresh>
 
       {/* 3. DB BACKUP TOOL - Sandbox Details hidden for contractors and clients */}
-      {!user && !isDemoMode && (
+      {!user && !isDemoMode && activeRole !== 'Client' && (
         <DbManager 
           onRefresh={loadLocalDatabase} 
         />

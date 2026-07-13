@@ -19,14 +19,17 @@ import {
   Upload, 
   RefreshCw, 
   Trash2,
-  FileSpreadsheet
+  FileSpreadsheet,
+  Bell
 } from 'lucide-react';
 import { fetchAll, saveAll, resetDB } from '../data';
+import { ClientNotification } from '../services/notifications/clientNotification';
+import { ContractorNotification } from '../services/notifications/contractorNotification';
 import * as XLSX from 'xlsx';
 
 export default function SettingsPage() {
   const { user, userRole, userProfile, isDemoMode, updateUserProfile } = useAuth();
-  const [activeSection, setActiveSection] = useState<'profile' | 'defaults' | 'backup'>('profile');
+  const [activeSection, setActiveSection] = useState<'profile' | 'defaults' | 'notifications' | 'backup'>('profile');
 
   // Form states for Company Profile
   const [companyName, setCompanyName] = useState(userProfile?.companyName || '');
@@ -288,6 +291,16 @@ export default function SettingsPage() {
           </button>
 
           <button
+            onClick={() => setActiveSection('notifications')}
+            className={`w-full text-left px-3.5 py-2.5 rounded-lg text-xs font-semibold flex items-center gap-2.5 transition-colors ${
+              activeSection === 'notifications' ? 'bg-[var(--lh-blue)] text-white' : 'text-[var(--lh-text-secondary)] hover:bg-[var(--lh-surface-muted)]'
+            }`}
+          >
+            <Bell className="w-4 h-4" />
+            <span>Notification System</span>
+          </button>
+
+          <button
             onClick={() => setActiveSection('backup')}
             className={`w-full text-left px-3.5 py-2.5 rounded-lg text-xs font-semibold flex items-center gap-2.5 transition-colors ${
               activeSection === 'backup' ? 'bg-[var(--lh-blue)] text-white' : 'text-[var(--lh-text-secondary)] hover:bg-[var(--lh-surface-muted)]'
@@ -461,6 +474,203 @@ export default function SettingsPage() {
                 </button>
               </div>
             </form>
+          )}
+
+          {/* SECTION: NOTIFICATIONS SYSTEM */}
+          {activeSection === 'notifications' && (
+            <div className="space-y-6">
+              <div>
+                <h4 className="text-sm font-semibold mb-1" style={{ color: 'var(--lh-text-primary)' }}>Workspace Notifications Engine</h4>
+                <p className="text-[11.5px]" style={{ color: 'var(--lh-text-secondary)' }}>
+                  Verify, configure and test live local/push notification streams for client-contractor coordination.
+                </p>
+              </div>
+
+              <div className="overflow-x-auto rounded-xl border border-[var(--lh-border)] bg-[var(--lh-surface-muted)]">
+                <table className="min-w-full divide-y divide-[var(--lh-border)] text-[11.5px]">
+                  <thead>
+                    <tr className="bg-slate-50 dark:bg-slate-900/50">
+                      <th scope="col" className="px-4 py-3 text-left font-bold uppercase tracking-wider text-slate-400 text-[10px]">Event</th>
+                      <th scope="col" className="px-4 py-3 text-left font-bold uppercase tracking-wider text-slate-400 text-[10px]">Receiver</th>
+                      <th scope="col" className="px-4 py-3 text-left font-bold uppercase tracking-wider text-slate-400 text-[10px]">Type</th>
+                      <th scope="col" className="px-4 py-3 text-right font-bold uppercase tracking-wider text-slate-400 text-[10px]">Simulation</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-[var(--lh-border)] bg-white dark:bg-slate-900">
+                    {/* Event 1 */}
+                    <tr>
+                      <td className="px-4 py-3 font-semibold text-slate-800 dark:text-slate-200">Daily progress reminder</td>
+                      <td className="px-4 py-3 text-slate-500">Contractor</td>
+                      <td className="px-4 py-3">
+                        <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-blue-50 text-blue-700 dark:bg-blue-950/40 dark:text-blue-300">Local</span>
+                      </td>
+                      <td className="px-4 py-3 text-right">
+                        <button
+                          type="button"
+                          onClick={() => {
+                            ContractorNotification.dailyProgressReminder();
+                          }}
+                          className="px-2.5 py-1 rounded bg-[var(--lh-blue)] text-white font-bold text-[10.5px] shadow-xs hover:opacity-90 active:scale-95 transition-all inline-flex items-center gap-1 cursor-pointer"
+                        >
+                          <Bell className="w-3 h-3" />
+                          <span>Trigger</span>
+                        </button>
+                      </td>
+                    </tr>
+                    {/* Event 2 */}
+                    <tr>
+                      <td className="px-4 py-3 font-semibold text-slate-800 dark:text-slate-200">Progress uploaded</td>
+                      <td className="px-4 py-3 text-slate-500">Client</td>
+                      <td className="px-4 py-3">
+                        <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-amber-50 text-amber-700 dark:bg-amber-950/40 dark:text-amber-300">Push</span>
+                      </td>
+                      <td className="px-4 py-3 text-right">
+                        <button
+                          type="button"
+                          onClick={() => {
+                            ClientNotification.progressUploaded('Westfield Residences');
+                          }}
+                          className="px-2.5 py-1 rounded bg-[var(--lh-blue)] text-white font-bold text-[10.5px] shadow-xs hover:opacity-90 active:scale-95 transition-all inline-flex items-center gap-1 cursor-pointer"
+                        >
+                          <Bell className="w-3 h-3" />
+                          <span>Trigger</span>
+                        </button>
+                      </td>
+                    </tr>
+                    {/* Event 3 */}
+                    <tr>
+                      <td className="px-4 py-3 font-semibold text-slate-800 dark:text-slate-200">Variation requested</td>
+                      <td className="px-4 py-3 text-slate-500">Client</td>
+                      <td className="px-4 py-3">
+                        <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-amber-50 text-amber-700 dark:bg-amber-950/40 dark:text-amber-300">Push</span>
+                      </td>
+                      <td className="px-4 py-3 text-right">
+                        <button
+                          type="button"
+                          onClick={() => {
+                            ClientNotification.variationRequested('Westfield Residences', 'Italian Marble Flooring Upgrade');
+                          }}
+                          className="px-2.5 py-1 rounded bg-[var(--lh-blue)] text-white font-bold text-[10.5px] shadow-xs hover:opacity-90 active:scale-95 transition-all inline-flex items-center gap-1 cursor-pointer"
+                        >
+                          <Bell className="w-3 h-3" />
+                          <span>Trigger</span>
+                        </button>
+                      </td>
+                    </tr>
+                    {/* Event 4 */}
+                    <tr>
+                      <td className="px-4 py-3 font-semibold text-slate-800 dark:text-slate-200">Variation approved</td>
+                      <td className="px-4 py-3 text-slate-500">Contractor</td>
+                      <td className="px-4 py-3">
+                        <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-amber-50 text-amber-700 dark:bg-amber-950/40 dark:text-amber-300">Push</span>
+                      </td>
+                      <td className="px-4 py-3 text-right">
+                        <button
+                          type="button"
+                          onClick={() => {
+                            ContractorNotification.variationApproved('Westfield Residences');
+                          }}
+                          className="px-2.5 py-1 rounded bg-[var(--lh-blue)] text-white font-bold text-[10.5px] shadow-xs hover:opacity-90 active:scale-95 transition-all inline-flex items-center gap-1 cursor-pointer"
+                        >
+                          <Bell className="w-3 h-3" />
+                          <span>Trigger</span>
+                        </button>
+                      </td>
+                    </tr>
+                    {/* Event 5 */}
+                    <tr>
+                      <td className="px-4 py-3 font-semibold text-slate-800 dark:text-slate-200">Payment requested</td>
+                      <td className="px-4 py-3 text-slate-500">Client</td>
+                      <td className="px-4 py-3">
+                        <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-amber-50 text-amber-700 dark:bg-amber-950/40 dark:text-amber-300">Push</span>
+                      </td>
+                      <td className="px-4 py-3 text-right">
+                        <button
+                          type="button"
+                          onClick={() => {
+                            ClientNotification.paymentRequested('Westfield Residences', 'Foundation Slab Completed');
+                          }}
+                          className="px-2.5 py-1 rounded bg-[var(--lh-blue)] text-white font-bold text-[10.5px] shadow-xs hover:opacity-90 active:scale-95 transition-all inline-flex items-center gap-1 cursor-pointer"
+                        >
+                          <Bell className="w-3 h-3" />
+                          <span>Trigger</span>
+                        </button>
+                      </td>
+                    </tr>
+                    {/* Event 6 */}
+                    <tr>
+                      <td className="px-4 py-3 font-semibold text-slate-800 dark:text-slate-200">Payment approved</td>
+                      <td className="px-4 py-3 text-slate-500">Contractor</td>
+                      <td className="px-4 py-3">
+                        <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-amber-50 text-amber-700 dark:bg-amber-950/40 dark:text-amber-300">Push</span>
+                      </td>
+                      <td className="px-4 py-3 text-right">
+                        <button
+                          type="button"
+                          onClick={() => {
+                            ContractorNotification.paymentApproved('Westfield Residences', 'Foundation Slab Completed');
+                          }}
+                          className="px-2.5 py-1 rounded bg-[var(--lh-blue)] text-white font-bold text-[10.5px] shadow-xs hover:opacity-90 active:scale-95 transition-all inline-flex items-center gap-1 cursor-pointer"
+                        >
+                          <Bell className="w-3 h-3" />
+                          <span>Trigger</span>
+                        </button>
+                      </td>
+                    </tr>
+                    {/* Event 7 */}
+                    <tr>
+                      <td className="px-4 py-3 font-semibold text-slate-800 dark:text-slate-200">Chat message</td>
+                      <td className="px-4 py-3 text-slate-500">Other party</td>
+                      <td className="px-4 py-3">
+                        <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-amber-50 text-amber-700 dark:bg-amber-950/40 dark:text-amber-300">Push</span>
+                      </td>
+                      <td className="px-4 py-3 text-right">
+                        <div className="flex justify-end gap-1.5">
+                          <button
+                            type="button"
+                            onClick={() => {
+                              ClientNotification.chatMessage('Contractor Lead', 'We just updated the site photos.');
+                            }}
+                            className="px-2 py-0.5 rounded bg-amber-600 text-white font-bold text-[9.5px] shadow-xs hover:opacity-90 transition-all cursor-pointer"
+                          >
+                            To Client
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => {
+                              ContractorNotification.chatMessage('Client Coordinator', 'Can you verify the bathroom fittings size?');
+                            }}
+                            className="px-2 py-0.5 rounded bg-indigo-600 text-white font-bold text-[9.5px] shadow-xs hover:opacity-90 transition-all cursor-pointer"
+                          >
+                            To Contractor
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                    {/* Event 8 */}
+                    <tr>
+                      <td className="px-4 py-3 font-semibold text-slate-800 dark:text-slate-200">Backup reminder</td>
+                      <td className="px-4 py-3 text-slate-500">Contractor</td>
+                      <td className="px-4 py-3">
+                        <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-blue-50 text-blue-700 dark:bg-blue-950/40 dark:text-blue-300">Local</span>
+                      </td>
+                      <td className="px-4 py-3 text-right">
+                        <button
+                          type="button"
+                          onClick={() => {
+                            ContractorNotification.backupReminder();
+                          }}
+                          className="px-2.5 py-1 rounded bg-[var(--lh-blue)] text-white font-bold text-[10.5px] shadow-xs hover:opacity-90 active:scale-95 transition-all inline-flex items-center gap-1 cursor-pointer"
+                        >
+                          <Bell className="w-3 h-3" />
+                          <span>Trigger</span>
+                        </button>
+                      </td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+            </div>
           )}
 
           {/* SECTION 5: BACKUP & SYNC */}

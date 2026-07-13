@@ -9,6 +9,9 @@ import ChatComponent from './ChatComponent';
 import PaymentStatementSheet, { formatIndianNoCurrency } from './PaymentStatementSheet';
 import { useAuth } from '../context/AuthContext';
 import SettingsPage from './SettingsPage';
+import Logo from './Logo';
+import { ClientNotification } from '../services/notifications/clientNotification';
+import { ContractorNotification } from '../services/notifications/contractorNotification';
 import * as XLSX from 'xlsx';
 import ExcelJS from 'exceljs';
 import { 
@@ -243,6 +246,7 @@ export default function ContractorPortal({
 
   // Active highlighted project 
   const activeProj = projects.find(p => p.id === selectedProjId) || projects[0];
+  const displayCompanyName = userProfile?.companyName || activeProj?.contractorName || displayOwnerName;
 
   // Group items by selected active project (or show all if selectedProjId is 'all')
   const activeStages = (selectedProjId === 'all' ? stages : stages.filter(s => s.projectId === selectedProjId))
@@ -515,6 +519,12 @@ export default function ContractorPortal({
       });
       onUpdateExtraWorks(updated);
       alert('✅ Scope variation proposal updated and re-submitted to client!');
+
+      // Trigger Variation Requested Notification (Push style)
+      const currentProject = projects.find(p => p.id === selectedProjId);
+      ClientNotification.variationRequested(currentProject?.name || 'your project', newExtra.description).catch(err => {
+        console.warn('Variation requested notification failed:', err);
+      });
     } else {
       const work: ExtraWork = {
         id: `ew_${Date.now()}`,
@@ -527,6 +537,12 @@ export default function ContractorPortal({
       };
       onUpdateExtraWorks([...extraWorks, work]);
       alert('✅ Scope variation proposal sent to client!');
+
+      // Trigger Variation Requested Notification (Push style)
+      const currentProject = projects.find(p => p.id === selectedProjId);
+      ClientNotification.variationRequested(currentProject?.name || 'your project', newExtra.description).catch(err => {
+        console.warn('Variation requested notification failed:', err);
+      });
     }
 
     setShowExtraModal(false);
@@ -832,6 +848,15 @@ setIsCompressingPhotos(false);
     });
     onUpdateStages(updated);
     alert("✅ Payment request sent! Client has been notified in the Portal and Chat.");
+
+    // Trigger Payment Requested Notification (Push style)
+    const currentProject = projects.find(p => p.id === selectedProjId);
+    const currentStage = stages.find(s => s.id === stageId);
+    if (currentProject && currentStage) {
+      ClientNotification.paymentRequested(currentProject.name, currentStage.stageName).catch(err => {
+        console.warn('Payment requested notification failed:', err);
+      });
+    }
   };
 
   const downloadBulkUploadExpensesTemplate = async () => {
@@ -1396,8 +1421,8 @@ setIsCompressingPhotos(false);
               <div className="relative flex w-full max-w-[280px] flex-col bg-white dark:bg-slate-900 h-full p-5 shadow-2xl transition-transform duration-300 ease-in-out overflow-y-auto">
                 <div className="flex items-center justify-between pb-4 border-b border-slate-100 dark:border-slate-800">
                   <div className="flex items-center gap-2">
-                    <div className="w-7 h-7 rounded-lg flex items-center justify-center text-white text-[10px] font-bold" style={{ background: 'var(--lh-blue)' }}>
-                      LH
+                    <div className="w-7 h-7 rounded-lg flex items-center justify-center bg-white border border-slate-100 shadow-xs p-0.5 flex-shrink-0">
+                      <Logo className="w-5 h-5" />
                     </div>
                     <div>
                       <span className="text-[9px] font-bold text-slate-400 block tracking-wider uppercase leading-none">Console</span>
@@ -2110,7 +2135,7 @@ setIsCompressingPhotos(false);
                         project={activeProj} 
                         stages={activeStages} 
                         isClientView={false}
-                        contractorName={displayOwnerName}
+                        contractorName={displayCompanyName}
                       />
                     </div>
                   )}

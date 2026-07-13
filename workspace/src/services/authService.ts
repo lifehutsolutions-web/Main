@@ -21,6 +21,8 @@ import {
   arrayUnion 
 } from 'firebase/firestore';
 import { auth, db as fdb, googleProvider } from '../firebase';
+import { ContractorNotification } from './notifications/contractorNotification';
+import { ClientNotification } from './notifications/clientNotification';
 
 export interface AuthSession {
   user: FirebaseUser;
@@ -55,7 +57,8 @@ export const ContractorAuth = {
       // Ensure role is marked as Contractor
       await setDoc(userRef, { role: 'Contractor' }, { merge: true });
     }
-
+    
+    await ContractorNotification.progressReminder();
     return user;
   },
 
@@ -188,6 +191,8 @@ export const ClientAuth = {
       clientCode: codeKey,
       updatedAt: new Date().toISOString()
     }, { merge: true });
+
+    await ClientNotification.progressUploaded();
 
     return { user: currentUser, projectId };
   },

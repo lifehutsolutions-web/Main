@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useState } from "react";
 import { 
   CheckCircle, 
   Plus, 
@@ -6,7 +6,9 @@ import {
   ArrowUpRight, 
   Layers, 
   FileText, 
-  LucideIcon 
+  LucideIcon,
+  ChevronDown,
+  ChevronUp
 } from "lucide-react";
 import { Project, PaymentStage, ExtraWork, Expense, DailyProgress, ProjectDocument } from "../../types";
 
@@ -38,6 +40,7 @@ export default function RecentActivity({
   documents,
   userRole,
 }: RecentActivityProps) {
+  const [isCollapsed, setIsCollapsed] = useState(false);
   const today = new Date();
   const todayStr = today.toISOString().split("T")[0];
 
@@ -139,7 +142,7 @@ export default function RecentActivity({
     });
 
     // Sort descending
-    return list.sort((a, b) => b.rawDate.getTime() - a.rawDate.getTime()).slice(0, 5);
+    return list.sort((a, b) => b.rawDate.getTime() - a.rawDate.getTime()).slice(0, 10);
   }, [projects, stages, extraWorks, expenses, progress, documents, projectMap, todayStr]);
 
   const formatRelativeTime = (item: ActivityItem) => {
@@ -195,43 +198,57 @@ export default function RecentActivity({
             <span className="relative inline-flex rounded-full h-2 w-2 bg-indigo-500"></span>
           </span>
           Recent Activity
+          {activities.length > 0 && (
+            <span className="text-[10px] font-normal text-slate-400">({activities.length})</span>
+          )}
         </h3>
-        <span className="text-[11px] font-medium text-slate-400 uppercase tracking-wider">Live Feed</span>
+        <button
+          onClick={() => setIsCollapsed(!isCollapsed)}
+          className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-slate-50 hover:bg-slate-100 dark:bg-slate-800/40 dark:hover:bg-slate-800 text-[11px] font-semibold text-slate-500 hover:text-indigo-600 transition-all border border-slate-200/50 dark:border-slate-700/50 shadow-2xs"
+          id="toggle-recent-activity"
+        >
+          <span>{isCollapsed ? "Expand" : "Collapse"}</span>
+          {isCollapsed ? <ChevronDown className="w-3.5 h-3.5" /> : <ChevronUp className="w-3.5 h-3.5" />}
+        </button>
       </div>
 
-      {activities.length === 0 ? (
-        <div className="text-center py-6 text-xs text-slate-400">
-          No recent activities recorded yet.
-        </div>
-      ) : (
-        <div className="space-y-4">
-          {activities.map((item) => {
-            const config = getIconConfig(item.type);
-            const Icon = config.icon;
-            return (
-              <div 
-                key={item.id} 
-                className="flex items-start gap-3 group transition-colors hover:bg-slate-50/50 p-1.5 -m-1.5 rounded-lg"
-                id={`activity-${item.id}`}
-              >
-                <div className={`p-1.5 rounded-lg border flex-shrink-0 ${config.bg}`} id={`activity-icon-${item.id}`}>
-                  <Icon className="w-3.5 h-3.5" />
-                </div>
-                <div className="flex-1 min-w-0">
-                  <div className="text-xs font-semibold text-slate-700 truncate" id={`activity-title-${item.id}`}>
-                    {item.title}
+      {!isCollapsed && (
+        <>
+          {activities.length === 0 ? (
+            <div className="text-center py-6 text-xs text-slate-400">
+              No recent activities recorded yet.
+            </div>
+          ) : (
+            <div className="space-y-4 animate-fade-in">
+              {activities.map((item) => {
+                const config = getIconConfig(item.type);
+                const Icon = config.icon;
+                return (
+                  <div 
+                    key={item.id} 
+                    className="flex items-start gap-3 group transition-colors hover:bg-slate-50/50 p-1.5 -m-1.5 rounded-lg"
+                    id={`activity-${item.id}`}
+                  >
+                    <div className={`p-1.5 rounded-lg border flex-shrink-0 ${config.bg}`} id={`activity-icon-${item.id}`}>
+                      <Icon className="w-3.5 h-3.5" />
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <div className="text-xs font-semibold text-slate-700 truncate" id={`activity-title-${item.id}`}>
+                        {item.title}
+                      </div>
+                      <div className="text-[11px] text-slate-400 mt-0.5 truncate" id={`activity-sub-${item.id}`}>
+                        {item.subtitle}
+                      </div>
+                    </div>
+                    <div className="text-[10px] font-medium text-slate-400 flex-shrink-0 text-right self-center" id={`activity-time-${item.id}`}>
+                      {formatRelativeTime(item)}
+                    </div>
                   </div>
-                  <div className="text-[11px] text-slate-400 mt-0.5 truncate" id={`activity-sub-${item.id}`}>
-                    {item.subtitle}
-                  </div>
-                </div>
-                <div className="text-[10px] font-medium text-slate-400 flex-shrink-0 text-right self-center" id={`activity-time-${item.id}`}>
-                  {formatRelativeTime(item)}
-                </div>
-              </div>
-            );
-          })}
-        </div>
+                );
+              })}
+            </div>
+          )}
+        </>
       )}
     </div>
   );
