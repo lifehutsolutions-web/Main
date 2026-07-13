@@ -415,7 +415,7 @@ button,input,textarea,select{font-family:var(--font)}
         <div class="pl-stats" style="margin-bottom:20px" id="statsRow"></div>
         <div class="product-table">
           <div class="pt-head">
-            <div>Product</div><div>Category</div><div>Price</div><div>Badge</div><div>Actions</div>
+            <div>Product</div><div>Status</div><div>Price</div><div>Badge</div><div>Actions</div>
           </div>
           <div id="productTableBody"></div>
         </div>
@@ -467,7 +467,7 @@ button,input,textarea,select{font-family:var(--font)}
               <div class="field" style="pointer-events:none;opacity:.7">
                 <label>Generated Customize URL</label>
                 <input type="text" id="f-genurl" readonly placeholder="Enter Template ID above to generate URL" style="background:var(--bg);font-size:12px;color:var(--text2)">
-                <div class="field-hint">https://builder.lifehutsolutions.com/?industry=SLUG&template=TEMPLATE_ID&freeze=true</div>
+                <div class="field-hint">https://studio.lifehutsolutions.com/?industry=SLUG&template=TEMPLATE_ID&freeze=true</div>
               </div>
             </div>
 
@@ -770,115 +770,99 @@ let uploadedImages = [];
 let uploadedThumb  = '';
 
 /* =====================================================
-   GIST CONFIG
+   CLOUD DATA LAYER — GitHub Gist as single source of truth
+   products = all products (draft + live)
+   Each product has status: 'draft' | 'live'
+   Gist stores ALL products; index.html only renders status:'live'
    ===================================================== */
 const GIST_CFG_KEY = 'ls-gist-config';
-const LIVE_KEY     = 'ls-live-products';
+const CACHE_KEY    = 'ls-products-cache'; // local cache only, never source of truth
+
+function uid() { return 'p' + Date.now() + Math.random().toString(36).slice(2,6); }
 
 function getGistConfig() {
   try { return JSON.parse(localStorage.getItem(GIST_CFG_KEY) || 'null'); }
   catch { return null; }
 }
+
+/* ── Gist API helper ── */
+async function gistRequest(method, body) {
+  const cfg = getGistConfig();
+  if (!cfg) throw new Error('NO_CONFIG');
+  const opts = {
+    method: method || 'GET',
+    headers: {
+      'Authorization': 'token ' + cfg.token,
+      'Accept': 'application/vnd.github.v3+json',
+      'Content-Type': 'application/json'
+    }
+  };
+  if (body) opts.body = JSON.stringify(body);
+  const r = await fetch('https://api.github.com/gists/' + cfg.gistId, opts);
+  if (!r.ok) {
+    const err = await r.json().catch(() => ({}));
+    throw new Error(r.status + ': ' + (err.message || 'API error'));
+  }
+  return r.json();
+}
+
+/* ── Read all products from Gist (source of truth) ── */
+async function loadFromCloud() {
+  const data = await gistRequest('GET');
+  const file = data.files && data.files['products.json'];
+  if (!file) throw new Error('products.json not found in Gist');
+  const remote = JSON.parse(file.content || '[]');
+  products = Array.isArray(remote) ? remote : [];
+  localStorage.setItem(CACHE_KEY, JSON.stringify(products)); // update cache
+  return products;
+}
+
+/* ── Write all products to Gist ── */
+async function saveToCloud() {
+  await gistRequest('PATCH', {
+    files: { 'products.json': { content: JSON.stringify(products, null, 2) } }
+  });
+  localStorage.setItem(CACHE_KEY, JSON.stringify(products)); // update cache
+}
+
+/* ── Load from local cache (offline fallback only) ── */
+function loadFromCache() {
+  try { products = JSON.parse(localStorage.getItem(CACHE_KEY) || '[]'); }
+  catch { products = []; }
+}
+
+/* ── Settings UI ── */
 function saveGistConfig() {
   const token  = document.getElementById('gistToken').value.trim();
   const gistId = document.getElementById('gistId').value.trim();
-  if (!token || !gistId) { setGistStatus('warn','Please enter both Token and Gist ID'); return; }
+  if (!token || !gistId) { setGistStatus('warn', 'Please enter both Token and Gist ID'); return; }
   localStorage.setItem(GIST_CFG_KEY, JSON.stringify({ token, gistId }));
-  setGistStatus('ok','✓ Config saved — click Test connection to verify');
+  setGistStatus('ok', '✓ Config saved — click Test connection to verify');
   showToast('✅ Gist config saved');
 }
+
 function setGistStatus(type, msg) {
   const el = document.getElementById('gistStatusBar');
   if (!el) return;
   const icons = { ok:'ti-check', err:'ti-alert-circle', loading:'ti-loader-2', warn:'ti-alert-triangle' };
   el.innerHTML = `<div class="gist-status ${type}"><i class="ti ${icons[type]||'ti-info-circle'}"></i>${msg}</div>`;
 }
+
 async function testGistConnection() {
   const cfg = getGistConfig();
-  if (!cfg) { setGistStatus('warn','Save your Token and Gist ID first'); return; }
-  setGistStatus('loading','Testing connection...');
+  if (!cfg) { setGistStatus('warn', 'Save your Token and Gist ID first'); return; }
+  setGistStatus('loading', 'Testing connection...');
   try {
-    const r = await fetch(`https://api.github.com/gists/${cfg.gistId}`, {
-      headers: { 'Authorization': `token ${cfg.token}`, 'Accept': 'application/vnd.github.v3+json' }
-    });
-    if (r.ok) {
-      const data = await r.json();
-      const hasFile = !!data.files['products.json'];
-      setGistStatus('ok', hasFile
-        ? '✓ Connected! products.json found in your Gist'
-        : '⚠ Connected but products.json not found — create a file named products.json in your Gist');
-    } else {
-      setGistStatus('err', `Connection failed (${r.status}) — check your Token and Gist ID`);
-    }
+    const data = await gistRequest('GET');
+    const hasFile = !!(data.files && data.files['products.json']);
+    setGistStatus('ok', hasFile
+      ? '✓ Connected! products.json found — all good'
+      : '⚠ Connected but products.json not found — create it with content []');
   } catch(e) {
-    setGistStatus('err', 'Network error — check your internet connection');
-  }
-}
-async function pushToGist(silent) {
-  const cfg = getGistConfig();
-  if (!cfg) { if(!silent) showToast('⚠️ Set up GitHub Gist in Settings first'); return false; }
-  if (!silent) setGistStatus('loading','Pushing to GitHub Gist...');
-  try {
-    const r = await fetch(`https://api.github.com/gists/${cfg.gistId}`, {
-      method: 'PATCH',
-      headers: {
-        'Authorization': `token ${cfg.token}`,
-        'Accept': 'application/vnd.github.v3+json',
-        'Content-Type': 'application/json'
-      },
-      body: JSON.stringify({ files: { 'products.json': { content: JSON.stringify(products, null, 2) } } })
-    });
-    if (r.ok) {
-      if (!silent) { setGistStatus('ok','✓ Products pushed to GitHub Gist'); showToast('☁️ Synced to GitHub Gist'); }
-      return true;
-    } else {
-      if (!silent) { setGistStatus('err',`Push failed (${r.status})`); showToast('❌ Gist push failed'); }
-      return false;
-    }
-  } catch(e) {
-    if (!silent) { setGistStatus('err','Network error during push'); showToast('❌ Network error'); }
-    return false;
-  }
-}
-async function pullFromGist() {
-  const cfg = getGistConfig();
-  if (!cfg) { showToast('⚠️ Set up GitHub Gist in Settings first'); return; }
-  setGistStatus('loading','Pulling from GitHub Gist...');
-  try {
-    const r = await fetch(`https://api.github.com/gists/${cfg.gistId}`, {
-      headers: { 'Authorization': `token ${cfg.token}`, 'Accept': 'application/vnd.github.v3+json' }
-    });
-    if (r.ok) {
-      const data = await r.json();
-      const file = data.files['products.json'];
-      if (file) {
-        products = JSON.parse(file.content || '[]');
-        save();
-        renderList();
-        setGistStatus('ok',`✓ Pulled ${products.length} product(s) from GitHub Gist`);
-        showToast(`✅ Pulled ${products.length} product(s) from Gist`);
-      } else {
-        setGistStatus('err','products.json not found in your Gist');
-      }
-    } else {
-      setGistStatus('err',`Pull failed (${r.status})`);
-    }
-  } catch(e) {
-    setGistStatus('err','Network error during pull');
+    setGistStatus('err', 'Connection failed: ' + e.message);
   }
 }
 
-/* =====================================================
-   LOCAL STORAGE (fallback + cache)
-   ===================================================== */
-function save()  { localStorage.setItem('ls-products', JSON.stringify(products)); }
-function load()  {
-  try { products = JSON.parse(localStorage.getItem('ls-products') || '[]'); }
-  catch(e) { products = []; }
-}
-function uid()   { return 'p' + Date.now() + Math.random().toString(36).slice(2,6); }
-
-/* Pre-fill settings fields if config already saved */
 function loadGistConfigUI() {
   const cfg = getGistConfig();
   if (!cfg) return;
@@ -886,7 +870,67 @@ function loadGistConfigUI() {
   const g = document.getElementById('gistId');
   if (t) t.value = cfg.token || '';
   if (g) g.value = cfg.gistId || '';
-  setGistStatus('ok','✓ Gist config loaded — ready to sync');
+  setGistStatus('ok', '✓ Gist config loaded');
+}
+
+/* Manual pull button in Settings */
+async function pullFromGist() {
+  setGistStatus('loading', 'Pulling from Gist...');
+  try {
+    await loadFromCloud();
+    renderList();
+    updateLiveIndicator();
+    setGistStatus('ok', '✓ Pulled ' + products.length + ' product(s) from Gist');
+    showToast('✅ ' + products.length + ' product(s) loaded from Gist');
+  } catch(e) {
+    setGistStatus('err', 'Pull failed: ' + e.message);
+    showToast('❌ Pull failed: ' + e.message);
+  }
+}
+
+/* Manual push button in Settings */
+async function pushToGist() {
+  setGistStatus('loading', 'Pushing to Gist...');
+  try {
+    await saveToCloud();
+    setGistStatus('ok', '✓ Pushed ' + products.length + ' product(s) to Gist');
+    showToast('✅ Pushed to Gist');
+  } catch(e) {
+    setGistStatus('err', 'Push failed: ' + e.message);
+    showToast('❌ Push failed: ' + e.message);
+  }
+}
+
+/* =====================================================
+   SAVE PRODUCT — saves as DRAFT to cloud
+   ===================================================== */
+async function saveProductToCloud(p) {
+  const idx = products.findIndex(x => x.id === p.id);
+  if (idx > -1) products[idx] = p;
+  else products.push(p);
+  try {
+    await saveToCloud();
+    return true;
+  } catch(e) {
+    // Fallback: save to cache so it's not lost
+    localStorage.setItem(CACHE_KEY, JSON.stringify(products));
+    showToast('⚠️ Saved locally — cloud sync failed: ' + e.message);
+    return false;
+  }
+}
+
+/* =====================================================
+   DELETE PRODUCT — removes from cloud
+   ===================================================== */
+async function deleteProductFromCloud(id) {
+  products = products.filter(x => x.id !== id);
+  try {
+    await saveToCloud();
+    return true;
+  } catch(e) {
+    localStorage.setItem(CACHE_KEY, JSON.stringify(products));
+    return false;
+  }
 }
 
 /* =====================================================
@@ -926,36 +970,43 @@ function renderList() {
   const free  = products.filter(p => !p.price || p.price==='0').length;
   const paid  = products.length - free;
   document.getElementById('statsRow').innerHTML = `
-    <div class="stat-pill"><div class="stat-pill-icon sp-blue"><i class="ti ti-layout-grid"></i></div><div><div class="stat-num">${products.length}</div><div class="stat-lbl">Total themes</div></div></div>
-    <div class="stat-pill"><div class="stat-pill-icon sp-green"><i class="ti ti-currency-rupee"></i></div><div><div class="stat-num">${paid}</div><div class="stat-lbl">Paid</div></div></div>
-    <div class="stat-pill"><div class="stat-pill-icon sp-amber"><i class="ti ti-gift"></i></div><div><div class="stat-num">${free}</div><div class="stat-lbl">Free</div></div></div>`;
+    <div class="stat-pill"><div class="stat-pill-icon sp-blue"><i class="ti ti-layout-grid"></i></div><div><div class="stat-num">${products.length}</div><div class="stat-lbl">Total</div></div></div>
+    <div class="stat-pill"><div class="stat-pill-icon sp-green"><i class="ti ti-rocket"></i></div><div><div class="stat-num">${liveCount}</div><div class="stat-lbl">Live</div></div></div>
+    <div class="stat-pill"><div class="stat-pill-icon sp-amber"><i class="ti ti-pencil"></i></div><div><div class="stat-num">${draftCount}</div><div class="stat-lbl">Draft</div></div></div>`;
 
   if (products.length === 0) {
     body.innerHTML = `<div class="empty-state"><i class="ti ti-box-off"></i><p>No products yet. Add your first theme!</p><button class="btn-primary" style="margin:0 auto" onclick="startAdd()"><i class="ti ti-plus"></i> Add product</button></div>`;
     return;
   }
 
+  // Stats
+  const liveCount  = products.filter(p => p.status === 'live').length;
+  const draftCount = products.length - liveCount;
+
   body.innerHTML = products.map(p => {
-    const badgeCls = p.badge ? 'badge-'+p.badge.toLowerCase() : 'badge-none';
-    const priceStr = p.price ? '₹' + Number(p.price).toLocaleString('en-IN') : 'Free';
-    const oldStr   = p.oldprice ? '₹' + Number(p.oldprice).toLocaleString('en-IN') : '';
-    const catKey   = (p.cat||'').split('/')[0].trim().toLowerCase().replace(/\s+/g,'');
-    const catColors = {saas:'#eff6ff',portfolio:'#faf5ff',agency:'#f0fdf4',business:'#fff7ed',ecommerce:'#fff1f2',restaurant:'#fef9c3',personalbrand:'#fdf4ff',education:'#f0f9ff'};
-    const catIconColors = {saas:'#1a56db',portfolio:'#7c3aed',agency:'#059669',business:'#ea580c',ecommerce:'#e11d48',restaurant:'#a16207',personalbrand:'#9333ea',education:'#0284c7'};
-    const thumbBg = catColors[catKey] || '#f1f5f9';
-    const thumbFg = catIconColors[catKey] || '#4a5568';
+    const badgeCls  = p.badge ? 'badge-'+p.badge.toLowerCase() : 'badge-none';
+    const priceStr  = p.price ? '₹' + Number(p.price).toLocaleString('en-IN') : 'Free';
+    const oldStr    = p.oldprice ? '₹' + Number(p.oldprice).toLocaleString('en-IN') : '';
+    const isLive    = p.status === 'live';
+    const statusBadge = isLive
+      ? `<span style="background:#dcfce7;color:#166534;padding:3px 9px;border-radius:5px;font-size:11px;font-weight:600;display:inline-flex;align-items:center;gap:4px"><span style="width:5px;height:5px;border-radius:50%;background:#16a34a;display:inline-block"></span> Live</span>`
+      : `<span style="background:#f1f5f9;color:#64748b;padding:3px 9px;border-radius:5px;font-size:11px;font-weight:600">Draft</span>`;
+    const publishBtn = isLive
+      ? `<button class="act-btn" onclick="unpublishProduct('${p.id}')" title="Move to draft" style="color:#64748b"><i class="ti ti-eye-off"></i> Unpublish</button>`
+      : `<button class="act-btn" onclick="publishOne('${p.id}')" title="Publish to store" style="color:#059669;border-color:#86efac"><i class="ti ti-rocket"></i> Publish</button>`;
 
     return `<div class="pt-row">
       <div class="pt-name-wrap">
-        <div class="pt-thumb" style="background:${thumbBg};color:${thumbFg}" aria-hidden="true"><i class="ti ti-layout-grid"></i></div>
+        <div class="pt-thumb" style="background:#eff6ff;color:#1a56db" aria-hidden="true"><i class="ti ti-layout-grid"></i></div>
         <div><div class="pt-name">${esc(p.name)}</div><div class="pt-cat">${esc(p.cat)}</div></div>
       </div>
-      <div style="font-size:12px;color:var(--text2)">${esc(p.cat)}</div>
+      <div>${statusBadge}</div>
       <div><div class="pt-price">${priceStr}</div>${oldStr?`<div class="pt-old">${oldStr}</div>`:''}</div>
       <div><span class="pt-badge ${badgeCls}">${p.badge || 'None'}</span></div>
       <div class="pt-actions">
-        <button class="act-btn" onclick="editProduct('${p.id}')" title="Edit product"><i class="ti ti-pencil" aria-hidden="true"></i> Edit</button>
-        <button class="act-btn del" onclick="confirmDelete('${p.id}')" title="Delete product"><i class="ti ti-trash" aria-hidden="true"></i></button>
+        ${publishBtn}
+        <button class="act-btn" onclick="editProduct('${p.id}')" title="Edit"><i class="ti ti-pencil"></i></button>
+        <button class="act-btn del" onclick="confirmDelete('${p.id}')" title="Delete"><i class="ti ti-trash"></i></button>
       </div>
     </div>`;
   }).join('');
@@ -981,7 +1032,6 @@ function startAdd() {
 }
 
 function editProduct(id) {
-  alert("EDIT PRODUCT RUNNING");
   const p = products.find(x => x.id === id);
   if (!p) return;
 
@@ -1012,8 +1062,6 @@ function editProduct(id) {
   document.getElementById('f-cat').value       = p.cat  || 'SaaS / Startup';
   document.getElementById('f-desc').value      = p.desc || '';
   document.getElementById('f-template').value  = p.template || '';
-  updateBuilderUrl();
-  console.log("Generated URL:", document.getElementById('f-genurl').value);
   document.getElementById('f-price').value     = p.price || '';
   document.getElementById('f-oldprice').value  = p.oldprice || '';
   document.getElementById('f-mediatype').value = p.mediatype || 'carousel';
@@ -1043,7 +1091,7 @@ function editProduct(id) {
   livePreview();
 }
 
-function saveProduct() {
+async function saveProduct() {
   const name = document.getElementById('f-name').value.trim();
   const cat  = document.getElementById('f-cat').value;
   const desc = document.getElementById('f-desc').value.trim();
@@ -1074,25 +1122,21 @@ function saveProduct() {
     updatedAt: new Date().toISOString()
   };
 
-  if (editingId) {
-    const idx = products.findIndex(x => x.id === editingId);
-    if (idx > -1) products[idx] = p;
-  } else {
-    products.push(p);
-  }
-  save();
-  copyCode(true);
-  // Show inline "Saved!" toast, then navigate away after it's visible
+  p.status = p.status || 'draft'; // new products start as draft
+
   const st = document.getElementById('saveToast');
+  // Show saving indicator
+  if (st) { st.textContent = '⏳ Saving...'; st.classList.add('show'); }
+
+  const ok = await saveProductToCloud(p);
+
   if (st) {
-    st.classList.add('show');
-    setTimeout(() => {
-      st.classList.remove('show');
-      cancelForm();
-    }, 1800);
+    st.innerHTML = ok ? '<i class="ti ti-check"></i> Saved!' : '⚠️ Saved locally';
+    setTimeout(() => { st.classList.remove('show'); cancelForm(); }, 1800);
   } else {
     cancelForm();
   }
+  copyCode(true);
 }
 
 function cancelForm() {
@@ -1120,26 +1164,7 @@ function resetForm() {
   renderFeatures();
   renderSlides();
 }
-function updateBuilderUrl() {
-  const BUILDER_BASE = 'https://builder.lifehutsolutions.com';
 
-  const cat = document.getElementById('f-cat').value;
-  const template = (document.getElementById('f-template').value || '').trim();
-
-  const industry = INDUSTRY_MAP[cat] || "construction";
-
-  const genUrlEl = document.getElementById('f-genurl');
-
-  if (!genUrlEl) return;
-
-  if (template) {
-    genUrlEl.value =
-      `${BUILDER_BASE}/?industry=${industry}&template=${template}&freeze=true`;
-  } else {
-    genUrlEl.value = '';
-    genUrlEl.placeholder = 'Enter Template ID above to generate URL';
-  }
-}
 /* =====================================================
    BADGE / COLOR / TAG / SLIDE PICKERS
    ===================================================== */
@@ -1265,17 +1290,6 @@ function catToSlug(cat) {
   const key = (cat||'').toLowerCase().trim();
   return CAT_SLUG[key] || key.replace(/[^a-z0-9]/g,'-').replace(/-+/g,'-').replace(/^-|-$/g,'');
 }
-  const INDUSTRY_MAP = {
-  "Construction": "construction",
-  "Restaurant": "restaurant",
-  "Beauty Salon": "beauty-salon",
-  "Real Estate": "real-estate",
-  "Healthcare": "healthcare",
-  "Education": "education",
-  "Photography": "photography",
-  "Gym & Fitness": "gym-fitness",
-  "SaaS / Startup": "saas-tech"
-};
 
 function livePreview() {
   const name     = document.getElementById('f-name').value || 'Theme name';
@@ -1285,9 +1299,9 @@ function livePreview() {
   const oldprice = document.getElementById('f-oldprice').value;
 
   // Auto-generate builder URL — base is fixed
-  const BUILDER_BASE = 'https://builder.lifehutsolutions.com';
+  const BUILDER_BASE = 'https://studio.lifehutsolutions.com';
   const template = (document.getElementById('f-template').value || '').trim();
-  const industry = INDUSTRY_MAP[cat] || "construction";
+  const industry = catToSlug(cat);
   const genUrlEl = document.getElementById('f-genurl');
   if (genUrlEl) {
     if (template) {
@@ -1376,11 +1390,7 @@ function generateCode() {
   const name      = document.getElementById('f-name').value || 'Theme name';
   const cat       = document.getElementById('f-cat').value;
   const desc      = document.getElementById('f-desc').value || '';
-  const template = document.getElementById('f-template').value.trim();
-  const industry = INDUSTRY_MAP[cat] || "construction";
-
-const url =
-`https://builder.lifehutsolutions.com/?industry=${industry}&template=${template}&freeze=true`;
+  const url       = document.getElementById('f-genurl').value || '#';
   const price     = document.getElementById('f-price').value;
   const oldprice  = document.getElementById('f-oldprice').value;
   const mediatype = document.getElementById('f-mediatype').value;
@@ -1502,13 +1512,14 @@ function confirmDelete(id) {
   deleteTarget = id;
   document.getElementById('confirmSub').textContent = `"${p.name}" will be removed from the manager. Remember to also remove its HTML card from index.html.`;
   document.getElementById('confirmBg').classList.add('open');
-  document.getElementById('confirmDelBtn').onclick = () => {
-    products = products.filter(x => x.id !== id);
-    save();
+  document.getElementById('confirmDelBtn').onclick = async () => {
     closeConfirm();
+    showToast('⏳ Deleting...');
+    await deleteProductFromCloud(id);
     showToast('🗑️ Product deleted');
-    if (document.getElementById('panel-list').classList.contains('active')) renderList();
-    else cancelForm();
+    renderList();
+    updateLiveIndicator();
+    if (!document.getElementById('panel-list').classList.contains('active')) cancelForm();
   };
 }
 function closeConfirm() { document.getElementById('confirmBg').classList.remove('open'); deleteTarget = null; }
@@ -1725,102 +1736,102 @@ function togglePassVis() {
    ===================================================== */
 
 async function goLive() {
+  const drafts = products.filter(p => p.status !== 'live');
+  const live   = products.filter(p => p.status === 'live');
   if (products.length === 0) { showToast('⚠️ Add at least one product first'); return; }
+  if (drafts.length === 0)   { showToast('ℹ️ All products are already live'); return; }
 
-  // 1. Always save to localStorage
-  localStorage.setItem(LIVE_KEY, JSON.stringify(products));
-  updateLiveIndicator();
+  showToast('🔄 Publishing ' + drafts.length + ' product(s)...');
 
-  // 2. Push to Gist — always show result (never silent)
-  const cfg = getGistConfig();
-  if (!cfg || !cfg.token || !cfg.gistId) {
-    showToast('⚠️ No Gist config found — go to Settings and save your Token + Gist ID');
-    return;
-  }
+  // Mark all drafts as live
+  products = products.map(p => ({ ...p, status: 'live' }));
 
-  showToast('🔄 Pushing to GitHub Gist...');
   try {
-    const r = await fetch(`https://api.github.com/gists/${cfg.gistId}`, {
-      method: 'PATCH',
-      headers: {
-        'Authorization': `token ${cfg.token}`,
-        'Accept': 'application/vnd.github.v3+json',
-        'Content-Type': 'application/json'
-      },
-      body: JSON.stringify({
-        files: { 'products.json': { content: JSON.stringify(products, null, 2) } }
-      })
-    });
-
-    if (r.ok) {
-      const badge = document.getElementById('goLiveBadge');
-      if (badge) { badge.classList.add('show'); setTimeout(() => badge.classList.remove('show'), 3000); }
-      showToast('🚀 ' + products.length + ' product(s) live! Synced to GitHub ✓');
-    } else {
-      const err = await r.json().catch(() => ({}));
-      showToast('❌ Gist push failed (' + r.status + '): ' + (err.message || 'Check your Token and Gist ID in Settings'));
-    }
+    await saveToCloud();
+    updateLiveIndicator();
+    renderList();
+    const badge = document.getElementById('goLiveBadge');
+    if (badge) { badge.classList.add('show'); setTimeout(() => badge.classList.remove('show'), 3000); }
+    showToast('🚀 ' + products.filter(p=>p.status==='live').length + ' product(s) now live on your store!');
   } catch(e) {
-    showToast('❌ Network error — check your internet connection');
+    // Rollback status change on failure
+    products = products.map(p => drafts.find(d=>d.id===p.id) ? {...p,status:'draft'} : p);
+    showToast('❌ Publish failed: ' + e.message + ' — check Settings');
+  }
+}
+
+async function unpublishProduct(id) {
+  const p = products.find(x => x.id === id);
+  if (!p) return;
+  p.status = 'draft';
+  showToast('⏳ Unpublishing...');
+  try {
+    await saveToCloud();
+    renderList();
+    updateLiveIndicator();
+    showToast('✓ Product moved back to draft');
+  } catch(e) {
+    p.status = 'live'; // rollback
+    showToast('❌ Unpublish failed: ' + e.message);
+  }
+}
+
+async function publishOne(id) {
+  const p = products.find(x => x.id === id);
+  if (!p) return;
+  p.status = 'live';
+  showToast('⏳ Publishing...');
+  try {
+    await saveToCloud();
+    renderList();
+    updateLiveIndicator();
+    showToast('🚀 Product is now live!');
+  } catch(e) {
+    p.status = 'draft'; // rollback
+    showToast('❌ Publish failed: ' + e.message);
   }
 }
 
 function updateLiveIndicator() {
-  try {
-    const live = JSON.parse(localStorage.getItem(LIVE_KEY) || '[]');
-    const ind  = document.getElementById('liveIndicator');
-    const txt  = document.getElementById('liveIndicatorText');
-    if (live.length > 0) {
-      txt.textContent = live.length + ' product' + (live.length > 1 ? 's' : '') + ' live on store';
-      ind.classList.add('show');
-    } else {
-      ind.classList.remove('show');
-    }
-  } catch {}
+  const liveCount = products.filter(p => p.status === 'live').length;
+  const ind  = document.getElementById('liveIndicator');
+  const txt  = document.getElementById('liveIndicatorText');
+  if (liveCount > 0) {
+    if (txt) txt.textContent = liveCount + ' product' + (liveCount > 1 ? 's' : '') + ' live on store';
+    if (ind) ind.classList.add('show');
+  } else {
+    if (ind) ind.classList.remove('show');
+  }
 }
 
 /* =====================================================
    APP INIT — called after successful login
    ===================================================== */
 async function initApp() {
-  load();           // load from localStorage first (instant)
+  // 1. Show cached data instantly while cloud loads
+  loadFromCache();
   renderList();
   renderSlides();
   renderFeatures();
   livePreview();
   updateLiveIndicator();
-  loadGistConfigUI(); // pre-fill settings fields
-  // Auto-pull from Gist if configured (gives cross-device sync on login)
-  const cfg = getGistConfig();
-  if (cfg) {
-    await pullFromGistSilent();
-  }
-}
+  loadGistConfigUI();
 
-async function pullFromGistSilent() {
+  // 2. Load from cloud — this is the source of truth
   const cfg = getGistConfig();
-  if (!cfg) return;
+  if (!cfg) {
+    showToast('⚠️ No Gist config — go to Settings to set up GitHub sync');
+    return;
+  }
   try {
-    const r = await fetch(`https://api.github.com/gists/${cfg.gistId}`, {
-      headers: { 'Authorization': `token ${cfg.token}`, 'Accept': 'application/vnd.github.v3+json' }
-    });
-    if (r.ok) {
-      const data = await r.json();
-      const file = data.files['products.json'];
-      if (file) {
-        const remote = JSON.parse(file.content || '[]');
-        // ONLY overwrite local if Gist has actual products — never replace with empty
-        if (Array.isArray(remote) && remote.length > 0) {
-          products = remote;
-          save();
-          renderList();
-          updateLiveIndicator();
-          showToast('☁️ ' + remote.length + ' product(s) synced from GitHub Gist');
-        }
-        // If Gist is empty, keep local products as source of truth
-      }
-    }
-  } catch(e) { /* silent fail — keep local cache */ }
+    await loadFromCloud();   // fetches from Gist, updates products + cache
+    renderList();
+    updateLiveIndicator();
+    showToast('☁️ ' + products.length + ' product(s) loaded from cloud');
+  } catch(e) {
+    // Keep showing cached data — don't wipe it
+    showToast('⚠️ Cloud load failed — showing cached data. Check Settings.');
+  }
 }
 
 /* =====================================================
