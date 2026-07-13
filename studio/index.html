@@ -8,7 +8,7 @@
 <meta name="keywords" content="website themes, HTML templates, startup themes, freelancer portfolio, Lifehut Studio, Lifehut Solutions">
 <meta property="og:title" content="Lifehut Studio™ — Premium Website Themes">
 <meta property="og:description" content="Customize, preview, and buy premium website themes. One-time payment, instant download.">
-<meta property="og:url" content="https://builder.lifehutsolutions.com">
+<meta property="og:url" content="https://studio.lifehutsolutions.com">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
@@ -964,7 +964,7 @@ const PRODUCTS = [
   {
     title: 'SaaS Launch Pro', cat: 'SaaS / Startup',
     price: '₹1,499', old: '₹2,999',
-    url: 'https://builder.lifehutsolutions.com/?industry=saas&template=saas-launch-pro&freeze=true',
+    url: 'https://studio.lifehutsolutions.com/?industry=saas&template=saas-launch-pro&freeze=true',
     desc: 'A bold, conversion-focused landing page for SaaS founders. Hero, feature grid, pricing table, testimonials, and FAQ. Figma source file included.',
     features: ['Figma source file','Dark mode toggle','Mobile responsive','Conversion optimised','SEO ready','Fast page load'],
     slides: ['Hero section','Features section','Pricing table','Mobile view'],
@@ -973,7 +973,7 @@ const PRODUCTS = [
   {
     title: 'Freelancer Folio', cat: 'Portfolio',
     price: '₹999', old: '₹1,999',
-    url: 'https://builder.lifehutsolutions.com/?industry=portfolio&template=freelancer-folio&freeze=true',
+    url: 'https://studio.lifehutsolutions.com/?industry=portfolio&template=freelancer-folio&freeze=true',
     desc: 'Minimal, elegant portfolio with smooth page transitions, case study layout, animated scroll effects, and a built-in contact form.',
     features: ['Video walkthrough','Smooth animations','Case study layout','Blog ready','Contact form','CMS friendly'],
     slides: ['Home','Work','About','Contact'],
@@ -982,7 +982,7 @@ const PRODUCTS = [
   {
     title: 'Agency Starter', cat: 'Agency',
     price: 'Free', old: '',
-    url: 'https://builder.lifehutsolutions.com/?industry=agency&template=agency-starter&freeze=true',
+    url: 'https://studio.lifehutsolutions.com/?industry=agency&template=agency-starter&freeze=true',
     desc: 'Free, fully-functional starter for digital agencies. Services section, team page, and portfolio grid. Download and deploy today.',
     features: ['Completely free','SEO optimized','Team page','Portfolio grid','Fast load time','MIT licence'],
     slides: ['Home page','Team page','Portfolio grid'],
@@ -991,7 +991,7 @@ const PRODUCTS = [
   {
     title: 'Business Edge', cat: 'Business',
     price: '₹1,999', old: '₹3,499',
-    url: 'https://builder.lifehutsolutions.com/?industry=business&template=business-edge&freeze=true',
+    url: 'https://studio.lifehutsolutions.com/?industry=business&template=business-edge&freeze=true',
     desc: 'Built for Indian service businesses. WhatsApp CTA, quote request form, Google Maps embed, and mobile-first navigation.',
     features: ['WhatsApp button','Quote request form','Google Maps embed','Multi-page layout','Lead capture','Mobile first'],
     slides: ['Home page','Quote form','Contact page','Mobile view'],
@@ -1000,7 +1000,7 @@ const PRODUCTS = [
   {
     title: 'Analytics Dash', cat: 'SaaS / Startup',
     price: '₹1,799', old: '₹2,999',
-    url: 'https://builder.lifehutsolutions.com/?industry=saas&template=analytics-dash&freeze=true',
+    url: 'https://studio.lifehutsolutions.com/?industry=saas&template=analytics-dash&freeze=true',
     desc: 'Dark-tinted SaaS landing with a live dashboard UI preview section. Ideal for analytics, finance, or productivity tools. Built-in waitlist form.',
     features: ['Video walkthrough','Dark hero section','Dashboard preview','Waitlist form','Feature highlights','Mobile ready'],
     slides: ['Hero dark','Dashboard section','Waitlist','Mobile view'],
@@ -1232,7 +1232,6 @@ async function hardRefresh() {
   if (grid && cs) grid.insertBefore(loader, cs);
   try {
     const remote = await fetchFromGist();
-     console.log("Fetched products:", remote);
     if (remote.length > 0) localStorage.setItem(LIVE_KEY, JSON.stringify(remote));
   } catch(e) {}
   const l = document.getElementById('gridLoader');
@@ -1249,9 +1248,14 @@ buildFilters(); // build category tabs from static cards
 const LIVE_KEY = 'ls-live-products';
 
 function renderLiveProducts() {
-  let live = [];
-  try { live = JSON.parse(localStorage.getItem(LIVE_KEY) || '[]'); } catch {}
-  if (!live.length) return;
+  let all = [];
+  try { all = JSON.parse(localStorage.getItem(LIVE_KEY) || '[]'); } catch {}
+  // Only show products explicitly marked as live
+  const live = all.filter(p => p.status === 'live' || p.status === undefined);
+  // legacy support: if NO product has status field, show all (old format)
+  const hasStatusField = all.some(p => p.status !== undefined);
+  const toRender = hasStatusField ? all.filter(p => p.status === 'live') : all;
+  if (!toRender.length) return;
 
   const grid = document.getElementById('productsGrid');
   if (!grid) return;
@@ -1259,7 +1263,7 @@ function renderLiveProducts() {
   // Remove existing static pcard elements, keep coming-soon-card
   Array.from(grid.querySelectorAll('.pcard')).forEach(c => c.remove());
 
-  live.forEach((p, idx) => {
+  toRender.forEach((p, idx) => {
     const catKey = (p.cat||'').split('/')[0].trim().toLowerCase().replace(/\s+/g,'');
     const badgeCls = p.badge ? 'badge-' + p.badge.toLowerCase() : '';
     const badgeHtml = p.badge ? `<span class="media-tl ${badgeCls}">${p.badge}</span>` : '';
@@ -1366,7 +1370,7 @@ function renderLiveProducts() {
   });
 
   buildFilters(); // rebuild category tabs after all cards injected
-  updateLiveBanner(live.length);
+  updateLiveBanner(toRender.length);
 }
 
 function updateLiveBanner(count) {
@@ -1384,30 +1388,25 @@ function updateLiveBanner(count) {
 }
 
 // GitHub API — always live, no CDN caching
-const GIST_RAW_URL =
-'https://gist.githubusercontent.com/lifehutsolutions-web/828dd1e72bda69c0f64cbafaa45f3e11/raw/products.json';
+const GIST_API_URL    = 'https://api.github.com/gists/828dd1e72bda69c0f64cbafaa45f3e11';
+const GIST_READ_TOKEN = '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';
 
 async function fetchFromGist() {
-  const r = await fetch(
-  GIST_RAW_URL + '?t=' + Date.now(),
-  {
-    cache: 'no-store'
-  }
-);
-
-  if (!r.ok) {
-    throw new Error('HTTP ' + r.status);
-  }
-
-  const remote = await r.json();
-
-  if (!Array.isArray(remote)) {
-    throw new Error('Invalid JSON');
-  }
-
+  const r = await fetch(GIST_API_URL, {
+    headers: {
+      'Authorization': 'token ' + GIST_READ_TOKEN,
+      'Accept': 'application/vnd.github.v3+json'
+    }
+  });
+  if (!r.ok) throw new Error('API error ' + r.status);
+  const data = await r.json();
+  const file = data.files && data.files['products.json'];
+  if (!file || !file.content) throw new Error('products.json not found');
+  const remote = JSON.parse(file.content);
+  if (!Array.isArray(remote)) throw new Error('Invalid JSON');
   return remote;
 }
-   
+
 (async function loadProducts() {
   // Show loading spinner
   const grid = document.getElementById('productsGrid');
