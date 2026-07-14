@@ -60,6 +60,18 @@ export default function StoreFront({
     }
   }, []);
 
+  // Freeze background scrolling when product detail modal is open
+  useEffect(() => {
+    if (selectedProduct) {
+      document.body.style.overflow = "hidden";
+    } else {
+      document.body.style.overflow = "";
+    }
+    return () => {
+      document.body.style.overflow = "";
+    };
+  }, [selectedProduct]);
+
   const toggleDark = () => {
     const nextDark = !isDark;
     setIsDark(nextDark);
