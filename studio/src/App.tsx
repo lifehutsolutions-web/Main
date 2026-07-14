@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { Product } from "./types";
 import StoreFront from "./components/StoreFront";
 import ProductManager from "./components/ProductManager";
+import { supabase } from "./lib/supabaseClient";
 
 export default function App() {
   const [view, setView] = useState<"store" | "admin">("store");
@@ -37,10 +38,19 @@ export default function App() {
   const fetchProducts = async () => {
     setIsLoading(true);
     try {
-      const res = await fetch("/api/products");
-      if (res.ok) {
-        const data = await res.json();
-        setProducts(data);
+      if (supabase) {
+        const { data, error } = await supabase
+          .from("products")
+          .select("*")
+          .order("updatedAt", { ascending: false });
+        if (error) throw error;
+        setProducts(data || []);
+      } else {
+        const res = await fetch("/api/products");
+        if (res.ok) {
+          const data = await res.json();
+          setProducts(data);
+        }
       }
     } catch (err) {
       console.error("Failed to load products list:", err);

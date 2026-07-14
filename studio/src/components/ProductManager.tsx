@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { Product, ProductBadge, ProductStatus, MediaType } from "../types";
+import { supabase } from "../lib/supabaseClient";
 
 interface ProductManagerProps {
   products: Product[];
@@ -107,27 +108,44 @@ export default function ProductManager({
     }
 
     try {
-      const res = await fetch("/api/auth/login", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email, password }),
-      });
-
-      const data = await res.json();
-      if (res.ok && data.token) {
-        setToken(data.token);
-        localStorage.setItem("ls-admin-token", data.token);
-        showToast("Welcome back, Administrator!");
-        onRefresh();
+      if (supabase) {
+        const { data, error } = await supabase.auth.signInWithPassword({
+          email,
+          password,
+        });
+        if (error) throw error;
+        if (data.session) {
+          setToken(data.session.access_token);
+          localStorage.setItem("ls-admin-token", data.session.access_token);
+          showToast("Welcome back, Administrator!");
+          onRefresh();
+        }
       } else {
-        setLoginError(data.error || "Authentication failed. Try again.");
+        const res = await fetch("/api/auth/login", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ email, password }),
+        });
+
+        const data = await res.json();
+        if (res.ok && data.token) {
+          setToken(data.token);
+          localStorage.setItem("ls-admin-token", data.token);
+          showToast("Welcome back, Administrator!");
+          onRefresh();
+        } else {
+          setLoginError(data.error || "Authentication failed. Try again.");
+        }
       }
-    } catch {
-      setLoginError("Network connection error. Server offline.");
+    } catch (err: any) {
+      setLoginError(err.message || "Authentication failed.");
     }
   };
 
-  const handleLogout = () => {
+  const handleLogout = async () => {
+    if (supabase) {
+      await supabase.auth.signOut();
+    }
     setToken(null);
     localStorage.removeItem("ls-admin-token");
     showToast("Signed out successfully.");
@@ -196,44 +214,64 @@ export default function ProductManager({
 
   const handlePublishStatus = async (p: Product, newStatus: ProductStatus) => {
     try {
-      const res = await fetch(`/api/products/${p.id}/publish`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          "Authorization": `Bearer ${token}`
-        },
-        body: JSON.stringify({ status: newStatus }),
-      });
-
-      if (res.ok) {
+      if (supabase) {
+        const { error } = await supabase
+          .from("products")
+          .update({ status: newStatus, updatedAt: new Date().toISOString() })
+          .eq("id", p.id);
+        if (error) throw error;
         showToast(`Template successfully moved to ${newStatus}`);
         onRefresh();
       } else {
-        const data = await res.json();
-        showToast(data.error || "Failed to update template status.");
+        const res = await fetch(`/api/products/${p.id}/publish`, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            "Authorization": `Bearer ${token}`
+          },
+          body: JSON.stringify({ status: newStatus }),
+        });
+
+        if (res.ok) {
+          showToast(`Template successfully moved to ${newStatus}`);
+          onRefresh();
+        } else {
+          const data = await res.json();
+          showToast(data.error || "Failed to update template status.");
+        }
       }
-    } catch {
-      showToast("Network error occurred.");
+    } catch (err: any) {
+      showToast(err.message || "An error occurred.");
     }
   };
 
   const handleBatchGoLive = async () => {
     try {
-      const res = await fetch("/api/products/go-live", {
-        method: "POST",
-        headers: {
-          "Authorization": `Bearer ${token}`
-        },
-      });
-
-      if (res.ok) {
+      if (supabase) {
+        const { error } = await supabase
+          .from("products")
+          .update({ status: "live", updatedAt: new Date().toISOString() })
+          .neq("id", "");
+        if (error) throw error;
         showToast("Blazing fast! All products are now Live!");
         onRefresh();
       } else {
-        showToast("Batch action failed.");
+        const res = await fetch("/api/products/go-live", {
+          method: "POST",
+          headers: {
+            "Authorization": `Bearer ${token}`
+          },
+        });
+
+        if (res.ok) {
+          showToast("Blazing fast! All products are now Live!");
+          onRefresh();
+        } else {
+          showToast("Batch action failed.");
+        }
       }
-    } catch {
-      showToast("Network error occurred.");
+    } catch (err: any) {
+      showToast(err.message || "An error occurred.");
     }
   };
 
@@ -249,26 +287,42 @@ export default function ProductManager({
     setZipFile(file);
     setZipUploadStatus("uploading");
 
-    const formData = new FormData();
-    formData.append("templateZip", file);
-
     try {
-      const res = await fetch("/api/upload-template", {
-        method: "POST",
-        headers: {
-          "Authorization": `Bearer ${token}`
-        },
-        body: formData,
-      });
+      if (supabase) {
+        const fileExt = file.name.split('.').pop();
+        const filePath = `${Date.now()}_${file.name}`;
+        
+        const { data, error } = await supabase.storage
+          .from("templates")
+          .upload(filePath, file);
 
-      const data = await res.json();
-      if (res.ok && data.success) {
+        if (error) throw error;
+
         setZipUploadStatus("success");
-        setUploadedAssetId(data.githubAssetId);
-        setUploadedAssetName(data.githubAssetName);
-        setFormAlert({ type: "success", msg: "ZIP file template securely packaged to Release storage!" });
+        setUploadedAssetId(filePath);
+        setUploadedAssetName(file.name);
+        setFormAlert({ type: "success", msg: "ZIP file template securely packaged to Supabase Storage!" });
       } else {
-        throw new Error(data.error || "Failed to upload file.");
+        const formData = new FormData();
+        formData.append("templateZip", file);
+
+        const res = await fetch("/api/upload-template", {
+          method: "POST",
+          headers: {
+            "Authorization": `Bearer ${token}`
+          },
+          body: formData,
+        });
+
+        const data = await res.json();
+        if (res.ok && data.success) {
+          setZipUploadStatus("success");
+          setUploadedAssetId(data.githubAssetId);
+          setUploadedAssetName(data.githubAssetName);
+          setFormAlert({ type: "success", msg: "ZIP file template securely packaged to Release storage!" });
+        } else {
+          throw new Error(data.error || "Failed to upload file.");
+        }
       }
     } catch (err: any) {
       setZipUploadStatus("error");
@@ -381,26 +435,38 @@ export default function ProductManager({
     };
 
     try {
-      const res = await fetch("/api/products", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          "Authorization": `Bearer ${token}`
-        },
-        body: JSON.stringify(payload),
-      });
+      if (supabase) {
+        const { error } = await supabase
+          .from("products")
+          .upsert(payload);
+        if (error) throw error;
 
-      if (res.ok) {
         showToast("Product saved successfully!");
         resetFormFields();
         onRefresh();
         setActiveTab("list");
       } else {
-        const errData = await res.json();
-        setFormAlert({ type: "error", msg: errData.error || "Failed to save product catalogue." });
+        const res = await fetch("/api/products", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            "Authorization": `Bearer ${token}`
+          },
+          body: JSON.stringify(payload),
+        });
+
+        if (res.ok) {
+          showToast("Product saved successfully!");
+          resetFormFields();
+          onRefresh();
+          setActiveTab("list");
+        } else {
+          const errData = await res.json();
+          setFormAlert({ type: "error", msg: errData.error || "Failed to save product catalogue." });
+        }
       }
-    } catch {
-      setFormAlert({ type: "error", msg: "Server communication failed." });
+    } catch (err: any) {
+      setFormAlert({ type: "error", msg: err.message || "Server communication failed." });
     }
   };
 
@@ -408,21 +474,32 @@ export default function ProductManager({
     setDeleteId(null);
     showToast("Processing product removal...");
     try {
-      const res = await fetch(`/api/products/${id}`, {
-        method: "DELETE",
-        headers: {
-          "Authorization": `Bearer ${token}`
-        },
-      });
+      if (supabase) {
+        const { error } = await supabase
+          .from("products")
+          .delete()
+          .eq("id", id);
+        if (error) throw error;
 
-      if (res.ok) {
         showToast("Product permanently deleted.");
         onRefresh();
       } else {
-        showToast("Failed to delete product.");
+        const res = await fetch(`/api/products/${id}`, {
+          method: "DELETE",
+          headers: {
+            "Authorization": `Bearer ${token}`
+          },
+        });
+
+        if (res.ok) {
+          showToast("Product permanently deleted.");
+          onRefresh();
+        } else {
+          showToast("Failed to delete product.");
+        }
       }
-    } catch {
-      showToast("Server connection failed.");
+    } catch (err: any) {
+      showToast(err.message || "Server connection failed.");
     }
   };
 

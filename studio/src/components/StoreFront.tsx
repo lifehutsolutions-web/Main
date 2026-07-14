@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "motion/react";
 import { Product, ProductBadge, ProductStatus } from "../types";
+import { supabase } from "../lib/supabaseClient";
 
 interface StoreFrontProps {
   products: Product[];
@@ -138,6 +139,21 @@ export default function StoreFront({
     setErrorMessage(null);
 
     try {
+      if (supabase && product.githubAssetId && typeof product.githubAssetId === "string" && !product.githubAssetId.startsWith("local")) {
+        // Direct download from Supabase Storage
+        const { data } = supabase.storage
+          .from("templates")
+          .getPublicUrl(product.githubAssetId);
+
+        if (data && data.publicUrl) {
+          setPaymentStatus("success");
+          setSecureDownloadUrl(data.publicUrl);
+          window.location.href = data.publicUrl;
+          return;
+        }
+      }
+
+      // Fallback to Express backend
       const res = await fetch("/api/payments/claim-free", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
