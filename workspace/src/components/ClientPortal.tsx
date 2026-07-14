@@ -6,6 +6,8 @@ import RecentActivity from './dashboard/RecentActivity';
 import { doc, getDoc, setDoc, updateDoc, arrayUnion, deleteDoc, onSnapshot, query, where, collection } from 'firebase/firestore';
 import { db as fdb, auth, signInAnon } from '../firebase';
 import { useAuth } from '../context/AuthContext';
+import { ClientNotification } from '../services/notifications/clientNotification';
+import { ContractorNotification } from '../services/notifications/contractorNotification';
 import { 
   Building2, 
   MapPin, 
@@ -41,7 +43,9 @@ import {
   Save,
   RotateCcw,
   X,
-  Menu
+  Menu,
+  Eye,
+  EyeOff
 } from 'lucide-react';
 
 interface ClientPortalProps {
@@ -73,7 +77,12 @@ export default function ClientPortal({
   selectedProjId,
   onSelectProject
 }: ClientPortalProps) {
-  const [clientCode, setClientCode] = useState('');
+  const [rememberClient, setRememberClient] = useState(() => {
+    return localStorage.getItem('metrobuild_remember_client') !== 'false';
+  });
+  const [clientCode, setClientCode] = useState(() => {
+    return localStorage.getItem('metrobuild_remembered_client_code') || '';
+  });
   const [isLoggedIn, setIsLoggedIn] = useState(() => {
     const saved = localStorage.getItem('metrobuild_client_code');
     return !!saved;
@@ -82,8 +91,13 @@ export default function ClientPortal({
   
   // PIN states for client login
   const [loginStep, setLoginStep] = useState<'code' | 'setup-pin' | 'enter-pin'>('code');
-  const [pin, setPin] = useState('');
+  const [pin, setPin] = useState(() => {
+    const isRemembered = localStorage.getItem('metrobuild_remember_client') !== 'false';
+    return isRemembered ? (localStorage.getItem('metrobuild_remembered_pin') || '') : '';
+  });
   const [confirmPin, setConfirmPin] = useState('');
+  const [showPin, setShowPin] = useState(false);
+  const [showResetPin, setShowResetPin] = useState(false);
   const [tempProjectId, setTempProjectId] = useState('');
   const [showResetPinModal, setShowResetPinModal] = useState(false);
   const [newPin, setNewPin] = useState('');
@@ -408,6 +422,15 @@ export default function ClientPortal({
 
         // 3. Complete loginAsClient
         const projectId = await loginAsClient(clientCode);
+        if (rememberClient) {
+          localStorage.setItem('metrobuild_remembered_client_code', clientCode);
+          localStorage.setItem('metrobuild_remembered_pin', pin);
+          localStorage.setItem('metrobuild_remember_client', 'true');
+        } else {
+          localStorage.removeItem('metrobuild_remembered_client_code');
+          localStorage.removeItem('metrobuild_remembered_pin');
+          localStorage.setItem('metrobuild_remember_client', 'false');
+        }
         onSelectProject(projectId);
         setIsLoggedIn(true);
         showToast('PIN configured and authenticated securely!', 'success');
@@ -440,6 +463,15 @@ export default function ClientPortal({
 
         // 3. Pin matches, complete login
         const projectId = await loginAsClient(clientCode);
+        if (rememberClient) {
+          localStorage.setItem('metrobuild_remembered_client_code', clientCode);
+          localStorage.setItem('metrobuild_remembered_pin', pin);
+          localStorage.setItem('metrobuild_remember_client', 'true');
+        } else {
+          localStorage.removeItem('metrobuild_remembered_client_code');
+          localStorage.removeItem('metrobuild_remembered_pin');
+          localStorage.setItem('metrobuild_remember_client', 'false');
+        }
         onSelectProject(projectId);
         setIsLoggedIn(true);
         showToast('Successfully authenticated and connected securely!', 'success');
@@ -553,6 +585,13 @@ export default function ClientPortal({
     const updatedStage = stages.find(s => s.id === stageId);
     showToast(`Payment of ₹${updatedStage?.payableAmount.toLocaleString('en-IN')} simulated successfully!`, 'success');
 
+    // Trigger Payment Approved Notification (Push style)
+    if (activeProject && updatedStage) {
+      ContractorNotification.paymentApproved(activeProject.name, updatedStage.stageName).catch(err => {
+        console.warn('Payment approved notification failed:', err);
+      });
+    }
+
     // Auto update status on lock if Advance stage goes Paid
     if (stageId.includes('advance') || stageId.includes('stg_advance') || (updatedStage && updatedStage.stageName.toLowerCase().includes('advance'))) {
       const updatedProjs = projects.map(p => {
@@ -580,6 +619,13 @@ export default function ClientPortal({
     });
     onUpdateExtraWorks(updated);
     showToast(`Proposal ${status.toLowerCase()}!`, status === 'Approved' ? 'success' : 'info');
+
+    // Trigger Variation Approved Notification (Push style)
+    if (status === 'Approved' && activeProject) {
+      ContractorNotification.variationApproved(activeProject.name).catch(err => {
+        console.warn('Variation approved notification failed:', err);
+      });
+    }
   };
 
   if (!isLoggedIn) {
@@ -598,17 +644,32 @@ export default function ClientPortal({
 
           <form onSubmit={handleCodeLogin} className="space-y-4">
             {loginStep === 'code' && (
-              <div>
-                <label className="lh-label">Project ID (Access Code)</label>
-                <input
-                  type="text"
-                  required
-                  disabled={isLoggingIn}
-                  value={clientCode}
-                  onChange={(e) => setClientCode(e.target.value)}
-                  placeholder="e.g., proj_123456"
-                  className="lh-input text-center font-mono tracking-wide disabled:opacity-50"
-                />
+              <div className="space-y-4">
+                <div>
+                  <label className="lh-label">Project ID (Access Code)</label>
+                  <input
+                    type="text"
+                    required
+                    disabled={isLoggingIn}
+                    value={clientCode}
+                    onChange={(e) => setClientCode(e.target.value)}
+                    placeholder="e.g., proj_123456"
+                    className="lh-input text-center font-mono tracking-wide disabled:opacity-50"
+                  />
+                </div>
+                <div className="flex items-center pb-1">
+                  <label className="flex items-center gap-2 cursor-pointer select-none">
+                    <input
+                      type="checkbox"
+                      checked={rememberClient}
+                      onChange={(e) => setRememberClient(e.target.checked)}
+                      className="rounded border-slate-300 text-sky-600 focus:ring-sky-500 w-3.5 h-3.5"
+                    />
+                    <span className="text-[12.5px]" style={{ color: 'var(--lh-text-secondary)' }}>
+                      Remember Access Code on this device
+                    </span>
+                  </label>
+                </div>
               </div>
             )}
 
@@ -646,32 +707,68 @@ export default function ClientPortal({
 
                 <div>
                   <label className="lh-label">Choose 6-Digit PIN</label>
-                  <input
-                    type="password"
-                    pattern="\d*"
-                    maxLength={6}
-                    required
-                    disabled={isLoggingIn}
-                    value={pin}
-                    onChange={(e) => setPin(e.target.value.replace(/\D/g, ''))}
-                    placeholder="Enter 6 digits"
-                    className="lh-input text-center font-mono tracking-widest disabled:opacity-50"
-                  />
+                  <div className="relative">
+                    <input
+                      type={showPin ? "text" : "password"}
+                      pattern="[0-9]*"
+                      inputMode="numeric"
+                      maxLength={6}
+                      required
+                      disabled={isLoggingIn}
+                      value={pin}
+                      onChange={(e) => setPin(e.target.value.replace(/\D/g, ''))}
+                      placeholder="Enter 6 digits"
+                      className="lh-input text-center font-mono tracking-widest disabled:opacity-50 w-full pr-10"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setShowPin(!showPin)}
+                      className="absolute right-3 top-2.5 text-slate-400 hover:text-slate-600 dark:hover:text-slate-300 focus:outline-none"
+                      aria-label={showPin ? "Hide PIN" : "Show PIN"}
+                    >
+                      {showPin ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                    </button>
+                  </div>
                 </div>
 
                 <div>
                   <label className="lh-label">Confirm 6-Digit PIN</label>
-                  <input
-                    type="password"
-                    pattern="\d*"
-                    maxLength={6}
-                    required
-                    disabled={isLoggingIn}
-                    value={confirmPin}
-                    onChange={(e) => setConfirmPin(e.target.value.replace(/\D/g, ''))}
-                    placeholder="Re-enter 6 digits"
-                    className="lh-input text-center font-mono tracking-widest disabled:opacity-50"
-                  />
+                  <div className="relative">
+                    <input
+                      type={showPin ? "text" : "password"}
+                      pattern="[0-9]*"
+                      inputMode="numeric"
+                      maxLength={6}
+                      required
+                      disabled={isLoggingIn}
+                      value={confirmPin}
+                      onChange={(e) => setConfirmPin(e.target.value.replace(/\D/g, ''))}
+                      placeholder="Re-enter 6 digits"
+                      className="lh-input text-center font-mono tracking-widest disabled:opacity-50 w-full pr-10"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setShowPin(!showPin)}
+                      className="absolute right-3 top-2.5 text-slate-400 hover:text-slate-600 dark:hover:text-slate-300 focus:outline-none"
+                      aria-label={showPin ? "Hide PIN" : "Show PIN"}
+                    >
+                      {showPin ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                    </button>
+                  </div>
+                </div>
+
+                <div className="flex items-center pb-1">
+                  <label className="flex items-center gap-2 cursor-pointer select-none">
+                    <input
+                      type="checkbox"
+                      checked={rememberClient}
+                      onChange={(e) => setRememberClient(e.target.checked)}
+                      className="rounded border-slate-300 text-sky-600 focus:ring-sky-500 w-3.5 h-3.5"
+                    />
+                    <span className="text-[12.5px]" style={{ color: 'var(--lh-text-secondary)' }}>
+                      Remember PIN & credentials on this device
+                    </span>
+                  </label>
                 </div>
               </div>
             )}
@@ -703,17 +800,42 @@ export default function ClientPortal({
 
                 <div>
                   <label className="lh-label">Enter 6-Digit PIN</label>
-                  <input
-                    type="password"
-                    pattern="\d*"
-                    maxLength={6}
-                    required
-                    disabled={isLoggingIn}
-                    value={pin}
-                    onChange={(e) => setPin(e.target.value.replace(/\D/g, ''))}
-                    placeholder="••••••"
-                    className="lh-input text-center font-mono tracking-widest text-lg disabled:opacity-50"
-                  />
+                  <div className="relative">
+                    <input
+                      type={showPin ? "text" : "password"}
+                      pattern="[0-9]*"
+                      inputMode="numeric"
+                      maxLength={6}
+                      required
+                      disabled={isLoggingIn}
+                      value={pin}
+                      onChange={(e) => setPin(e.target.value.replace(/\D/g, ''))}
+                      placeholder="••••••"
+                      className="lh-input text-center font-mono tracking-widest text-lg disabled:opacity-50 w-full pr-10"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setShowPin(!showPin)}
+                      className="absolute right-3 top-2.5 text-slate-400 hover:text-slate-600 dark:hover:text-slate-300 focus:outline-none"
+                      aria-label={showPin ? "Hide PIN" : "Show PIN"}
+                    >
+                      {showPin ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                    </button>
+                  </div>
+                </div>
+
+                <div className="flex items-center pb-1">
+                  <label className="flex items-center gap-2 cursor-pointer select-none">
+                    <input
+                      type="checkbox"
+                      checked={rememberClient}
+                      onChange={(e) => setRememberClient(e.target.checked)}
+                      className="rounded border-slate-300 text-sky-600 focus:ring-sky-500 w-3.5 h-3.5"
+                    />
+                    <span className="text-[12.5px]" style={{ color: 'var(--lh-text-secondary)' }}>
+                      Remember PIN & credentials on this device
+                    </span>
+                  </label>
                 </div>
               </div>
             )}
@@ -1598,6 +1720,7 @@ export default function ClientPortal({
                       <label className="lh-label text-xs">Amount (₹)</label>
                       <input
                         type="number"
+                        inputMode="decimal"
                         placeholder="e.g., 45000"
                         value={otherAmount}
                         onChange={(e) => setOtherAmount(e.target.value)}
@@ -1692,6 +1815,7 @@ export default function ClientPortal({
                       <label className="lh-label text-xs">Amount (₹)</label>
                       <input
                         type="number"
+                        inputMode="decimal"
                         value={editAmount}
                         onChange={(e) => setEditAmount(e.target.value)}
                         className="lh-input w-full text-xs"
@@ -1907,28 +2031,50 @@ export default function ClientPortal({
             <div className="space-y-4 mt-5">
               <div>
                 <label className="lh-label">New 6-Digit PIN</label>
-                <input
-                  type="password"
-                  pattern="\d*"
-                  maxLength={6}
-                  value={newPin}
-                  onChange={(e) => setNewPin(e.target.value.replace(/\D/g, ''))}
-                  placeholder="Enter 6 digits"
-                  className="lh-input text-center font-mono tracking-widest"
-                />
+                <div className="relative">
+                  <input
+                    type={showResetPin ? "text" : "password"}
+                    pattern="[0-9]*"
+                    inputMode="numeric"
+                    maxLength={6}
+                    value={newPin}
+                    onChange={(e) => setNewPin(e.target.value.replace(/\D/g, ''))}
+                    placeholder="Enter 6 digits"
+                    className="lh-input text-center font-mono tracking-widest w-full pr-10"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowResetPin(!showResetPin)}
+                    className="absolute right-3 top-2.5 text-slate-400 hover:text-slate-600 dark:hover:text-slate-300 focus:outline-none"
+                    aria-label={showResetPin ? "Hide PIN" : "Show PIN"}
+                  >
+                    {showResetPin ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                  </button>
+                </div>
               </div>
 
               <div>
                 <label className="lh-label">Confirm New 6-Digit PIN</label>
-                <input
-                  type="password"
-                  pattern="\d*"
-                  maxLength={6}
-                  value={confirmNewPin}
-                  onChange={(e) => setConfirmNewPin(e.target.value.replace(/\D/g, ''))}
-                  placeholder="Re-enter 6 digits"
-                  className="lh-input text-center font-mono tracking-widest"
-                />
+                <div className="relative">
+                  <input
+                    type={showResetPin ? "text" : "password"}
+                    pattern="[0-9]*"
+                    inputMode="numeric"
+                    maxLength={6}
+                    value={confirmNewPin}
+                    onChange={(e) => setConfirmNewPin(e.target.value.replace(/\D/g, ''))}
+                    placeholder="Re-enter 6 digits"
+                    className="lh-input text-center font-mono tracking-widest w-full pr-10"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowResetPin(!showResetPin)}
+                    className="absolute right-3 top-2.5 text-slate-400 hover:text-slate-600 dark:hover:text-slate-300 focus:outline-none"
+                    aria-label={showResetPin ? "Hide PIN" : "Show PIN"}
+                  >
+                    {showResetPin ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                  </button>
+                </div>
               </div>
 
               {resetPinError && (

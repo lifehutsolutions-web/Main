@@ -3161,6 +3161,7 @@ setIsCompressingPhotos(false);
                   <label className="lh-label">Total value (₹)</label>
                   <input
                     type="number" required
+                    inputMode="decimal"
                     value={newProj.contractValue} onChange={(e) => setNewProj({ ...newProj, contractValue: Number(e.target.value) })}
                     className="lh-input"
                   />
@@ -3274,6 +3275,7 @@ setIsCompressingPhotos(false);
                 <label className="lh-label">Total contract value (₹)</label>
                 <input
                   type="number" required
+                  inputMode="decimal"
                   value={editProj.contractValue} onChange={(e) => setEditProj({ ...editProj, contractValue: Number(e.target.value) })}
                   className="lh-input"
                 />
@@ -3473,6 +3475,7 @@ setIsCompressingPhotos(false);
                         <input
                           type="number"
                           required
+                          inputMode="decimal"
                           value={stageItem.payableAmount}
                           onChange={(e) => handleUpdateStageRow(idx, 'payableAmount', Number(e.target.value))}
                           className="lh-input"
@@ -3554,6 +3557,7 @@ setIsCompressingPhotos(false);
                 <label className="lh-label">Requested cost (₹)</label>
                 <input
                   type="number" required value={newExtra.amount}
+                  inputMode="decimal"
                   onChange={(e) => setNewExtra({ ...newExtra, amount: Number(e.target.value) })}
                   className="lh-input"
                 />
@@ -3619,6 +3623,7 @@ setIsCompressingPhotos(false);
                   <label className="lh-label">Bill Amount (₹)</label>
                   <input
                     type="number" required value={newExpense.amount}
+                    inputMode="decimal"
                     onChange={(e) => {
                       const val = Number(e.target.value);
                       setNewExpense(prev => ({
@@ -3652,6 +3657,7 @@ setIsCompressingPhotos(false);
                   <label className="lh-label">Paid Amount (₹)</label>
                   <input
                     type="number" required value={newExpense.paidAmount !== undefined ? newExpense.paidAmount : (newExpense.isPaid ? newExpense.amount : 0)}
+                    inputMode="decimal"
                     onChange={(e) => {
                       const val = Number(e.target.value);
                       setNewExpense(prev => ({
@@ -3895,6 +3901,7 @@ setIsCompressingPhotos(false);
                 <label className="lh-label">Payable Amount (₹)</label>
                 <input
                   type="number"
+                  inputMode="decimal"
                   className="lh-input"
                   value={editingStage.payableAmount}
                   onChange={(e) => setEditingStage({ ...editingStage, payableAmount: Number(e.target.value) || 0 })}
@@ -3957,6 +3964,7 @@ setIsCompressingPhotos(false);
                       <input
                         id="add-log-amount"
                         type="number"
+                        inputMode="decimal"
                         placeholder="Amount"
                         className="lh-input p-1 text-[11px]"
                       />
@@ -4123,6 +4131,7 @@ setIsCompressingPhotos(false);
                   <label className="lh-label">Bill Amount (₹)</label>
                   <input
                     type="number" required value={editExpense.amount}
+                    inputMode="decimal"
                     onChange={(e) => {
                       const val = Number(e.target.value);
                       const isFullyPaid = (editExpense.paidAmount !== undefined ? editExpense.paidAmount : (editExpense.isPaid !== false ? editExpense.amount : 0)) >= editExpense.amount;
@@ -4149,6 +4158,7 @@ setIsCompressingPhotos(false);
                   <label className="lh-label">Paid Amount (₹)</label>
                   <input
                     type="number" required value={editExpense.paidAmount !== undefined ? editExpense.paidAmount : (editExpense.isPaid !== false ? editExpense.amount : 0)}
+                    inputMode="decimal"
                     onChange={(e) => {
                       const val = Number(e.target.value);
                       setEditExpense({
@@ -4249,6 +4259,7 @@ setIsCompressingPhotos(false);
                   <input
                     type="number"
                     required
+                    inputMode="decimal"
                     min={1}
                     max={balance}
                     value={receiptAmount}

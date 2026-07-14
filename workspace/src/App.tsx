@@ -95,8 +95,15 @@ export default function App() {
 
   // Contractor Email Auth sub-states for Capacitor / native mobile support
   const [contractorAuthSubMode, setContractorAuthSubMode] = useState<'selection' | 'email-signin' | 'email-signup'>('selection');
-  const [emailFormEmail, setEmailFormEmail] = useState('');
-  const [emailFormPassword, setEmailFormPassword] = useState('');
+  const [rememberMe, setRememberMe] = useState(() => {
+    return localStorage.getItem('metrobuild_remember_me') !== 'false';
+  });
+  const [emailFormEmail, setEmailFormEmail] = useState(() => {
+    return localStorage.getItem('metrobuild_remembered_email') || '';
+  });
+  const [emailFormPassword, setEmailFormPassword] = useState(() => {
+    return localStorage.getItem('metrobuild_remembered_password') || '';
+  });
   const [emailFormName, setEmailFormName] = useState('');
   const [emailAuthLoading, setEmailAuthLoading] = useState(false);
   const [passwordResetSuccess, setPasswordResetSuccess] = useState<string | null>(null);
@@ -949,6 +956,15 @@ export default function App() {
                   setEmailAuthLoading(true);
                   try {
                     await loginContractorWithEmail(emailFormEmail, emailFormPassword);
+                    if (rememberMe) {
+                      localStorage.setItem('metrobuild_remembered_email', emailFormEmail);
+                      localStorage.setItem('metrobuild_remembered_password', emailFormPassword);
+                      localStorage.setItem('metrobuild_remember_me', 'true');
+                    } else {
+                      localStorage.removeItem('metrobuild_remembered_email');
+                      localStorage.removeItem('metrobuild_remembered_password');
+                      localStorage.setItem('metrobuild_remember_me', 'false');
+                    }
                     handleSelectRole('Contractor');
                   } catch (err: any) {
                     console.error("Email login failed:", err);
@@ -1015,6 +1031,20 @@ export default function App() {
                         {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                       </button>
                     </div>
+                  </div>
+
+                  <div className="flex items-center pb-1">
+                    <label className="flex items-center gap-2 cursor-pointer select-none">
+                      <input
+                        type="checkbox"
+                        checked={rememberMe}
+                        onChange={(e) => setRememberMe(e.target.checked)}
+                        className="rounded border-slate-300 text-sky-600 focus:ring-sky-500 w-3.5 h-3.5"
+                      />
+                      <span className="text-[12.5px]" style={{ color: 'var(--lh-text-secondary)' }}>
+                        Remember me on this device
+                      </span>
+                    </label>
                   </div>
                   <button
                     type="submit" disabled={emailAuthLoading}
@@ -1313,11 +1343,11 @@ export default function App() {
           <span>© {new Date().getFullYear()} Lifehut Workspace. All rights reserved.</span>
           <span className="font-semibold uppercase tracking-wider px-2.5 py-1 rounded-md" style={{ background: 'var(--lh-surface-muted)', color: 'var(--lh-text-secondary)' }}>
               <a href="https://lifehutsolutions.com"
-     target="_blank"
-     rel="noopener noreferrer"
-     class="text-sm text-slate-500 hover:text-sky-600 transition">
-    Powered by <span class="font-semibold">Lifehut Solutions</span>
-  </a>
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-sm text-slate-500 hover:text-sky-600 transition">
+                Powered by <span className="font-semibold">Lifehut Solutions</span>
+              </a>
           </span>
         </div>
       </footer>

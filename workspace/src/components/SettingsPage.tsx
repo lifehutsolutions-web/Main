@@ -230,9 +230,16 @@ export default function SettingsPage() {
   };
 
   const handleResetSandbox = () => {
-    if (confirm('Are you sure you want to reset all data? This deletes any sandbox edits and restores original seed data.')) {
+    const confirmMsg = isDemoMode
+      ? 'Are you sure you want to reset all data? This deletes any sandbox edits and restores original seed data.'
+      : 'Are you sure you want to clear your local offline browser cache? This will refresh your local session with fresh data from the server.';
+
+    if (confirm(confirmMsg)) {
       resetDB();
-      alert('Database reset to original seed data successfully! Reloading...');
+      const successMsg = isDemoMode
+        ? 'Database reset to original seed data successfully! Reloading...'
+        : 'Local offline cache cleared successfully! Reloading...';
+      alert(successMsg);
       window.location.reload();
     }
   };
@@ -725,10 +732,14 @@ export default function SettingsPage() {
                 <button
                   onClick={handleResetSandbox}
                   className="lh-btn lh-btn-primary lh-btn-sm flex items-center gap-1"
-                  style={{ background: '#DC2626', borderColor: '#DC2626', color: '#FFF' }}
+                  style={{ 
+                    background: isDemoMode ? '#DC2626' : '#475569', 
+                    borderColor: isDemoMode ? '#DC2626' : '#475569', 
+                    color: '#FFF' 
+                  }}
                 >
                   <Trash2 className="w-3.5 h-3.5" />
-                  <span>Wipe & Reset Sandbox</span>
+                  <span>{isDemoMode ? 'Wipe & Reset Sandbox' : 'Clear Offline Cache'}</span>
                 </button>
               </div>
 

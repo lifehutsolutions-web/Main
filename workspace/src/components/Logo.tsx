@@ -1,4 +1,5 @@
 import React from 'react';
+// @ts-ignore
 import logo from '../assets/branding/logo.png';
 
 interface LogoProps extends React.ImgHTMLAttributes<HTMLImageElement> {
