@@ -2,6 +2,9 @@ import React, { useRef, useState } from 'react';
 import { PaymentStage, Project } from '../types';
 import { Printer, Check, ArrowLeft } from 'lucide-react';
 import Logo from './Logo';
+import { Capacitor } from '@capacitor/core';
+import { Filesystem, Directory } from '@capacitor/filesystem';
+import { Share } from '@capacitor/share';
 
 interface PaymentStatementSheetProps {
   project: Project;
@@ -39,72 +42,141 @@ export default function PaymentStatementSheet({
   const printAreaRef = useRef<HTMLDivElement>(null);
 
   const handleDownloadPDF = async () => {
-    const element = document.getElementById('statement-preview-target');
-    if (!element) return;
-    
-    setIsGenerating(true);
-    try {
-      // Check if we are on Android, iOS, or a mobile browser/webview
-      const isMobileDevice = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
-      
-      if (isMobileDevice) {
-        // Native print is extremely robust on mobile & Android apps/WebViews.
-        // It opens the system print manager where users can tap "Save as PDF" directly.
-        window.print();
-        setIsGenerating(false);
-        return;
-      }
+  const element = document.getElementById('statement-preview-target');
+  if (!element) return;
 
-      // Dynamic import to handle Vite bundling and ESM interop perfectly
-      const html2pdfModule = await import('html2pdf.js');
-      const html2pdf = html2pdfModule.default || html2pdfModule;
-      const html2pdfFunc = typeof html2pdf === 'function' ? html2pdf : (html2pdf as any).default;
-      
-      if (!html2pdfFunc) {
-        throw new Error('PDF library failed to load properly.');
-      }
+  setIsGenerating(true);
 
-      const opt = {
-        margin:       [10, 10, 10, 10],
-        filename:     `statement_${project.name.toLowerCase().replace(/[^a-z0-9]/g, '_')}.pdf`,
-        image:        { type: 'jpeg', quality: 0.98 },
-        html2canvas:  { 
-          scale: 2, 
-          useCORS: true, 
-          logging: false,
-          onclone: (clonedDoc: Document) => {
-            const styleElements = clonedDoc.getElementsByTagName('style');
-            for (let i = 0; i < styleElements.length; i++) {
-              let css = styleElements[i].innerHTML;
-              if (css.includes('oklch')) {
-                css = css.replace(/oklch\([^)]+\)/g, '#475569');
-                styleElements[i].innerHTML = css;
-              }
+  try {
+
+    const html2pdfModule = await import('html2pdf.js');
+    const html2pdf = html2pdfModule.default || html2pdfModule;
+    const html2pdfFunc =
+      typeof html2pdf === 'function'
+        ? html2pdf
+        : (html2pdf as any).default;
+
+    if (!html2pdfFunc) {
+      throw new Error('PDF library failed to load.');
+    }
+
+    const opt = {
+      margin: [10, 10, 10, 10],
+      filename: `statement_${project.name
+        .toLowerCase()
+        .replace(/[^a-z0-9]/g, '_')}.pdf`,
+      image: {
+        type: 'jpeg',
+        quality: 0.98,
+      },
+      html2canvas: {
+        scale: 2,
+        useCORS: true,
+        logging: false,
+        onclone: (clonedDoc: Document) => {
+          const styles = clonedDoc.getElementsByTagName('style');
+
+          for (let i = 0; i < styles.length; i++) {
+            let css = styles[i].innerHTML;
+
+            if (css.includes('oklch')) {
+              css = css.replace(/oklch\([^)]+\)/g, '#475569');
+              styles[i].innerHTML = css;
             }
           }
         },
-        jsPDF:        { unit: 'mm', format: 'a4', orientation: 'portrait' }
-      };
-      
-      await html2pdfFunc().set(opt).from(element).save();
-    } catch (err) {
-      console.error('Error generating PDF:', err);
-      // Check if we are inside a sandboxed iframe where printing/downloading is restricted
-      const isIframe = window.self !== window.top;
-      if (isIframe) {
-        alert('PDF generation is restricted inside the preview iframe.\n\nPlease open the application in a new browser tab (using the blue "Open in new tab" button at the top-right of your screen) to download the PDF statement directly.');
-      } else {
-        // Fallback to native print in a new window/full tab
-        try {
-          window.print();
-        } catch (printErr) {
-          alert('Failed to print statement. Please verify browser permissions.');
-        }
-      }
-    } finally {
-      setIsGenerating(false);
+      },
+      jsPDF: {
+        unit: 'mm',
+        format: 'a4',
+        orientation: 'portrait',
+      },
+    };
+
+    const platform = Capacitor.getPlatform();
+
+    // -------------------------
+    // WEB
+    // -------------------------
+
+    if (platform === 'web') {
+
+      await html2pdfFunc()
+        .set(opt)
+        .from(element)
+        .save();
+
+      return;
     }
-  };
+
+    // -------------------------
+    // ANDROID + IOS
+    // -------------------------
+
+    const pdfBlob = await html2pdfFunc()
+      .set(opt)
+      .from(element)
+      .outputPdf('blob');
+
+    const reader = new FileReader();
+
+    reader.readAsDataURL(pdfBlob);
+
+    reader.onloadend = async () => {
+
+      const base64 =
+        reader.result!
+          .toString()
+          .split(',')[1];
+
+      const fileName =
+        `statement_${project.name
+          .replace(/[^a-zA-Z0-9]/g, '_')}.pdf`;
+
+      await Filesystem.writeFile({
+
+        path: fileName,
+
+        data: base64,
+
+        directory: Directory.Documents,
+
+        recursive: true,
+
+      });
+
+      const fileUri = await Filesystem.getUri({
+
+        directory: Directory.Documents,
+
+        path: fileName,
+
+      });
+
+      await Share.share({
+
+        title: 'Payment Ledger Statement',
+
+        text: 'Payment Ledger Statement',
+
+        url: fileUri.uri,
+
+      });
+
+    };
+
+  } catch (err) {
+
+    console.error(err);
+
+    alert("Unable to generate PDF.");
+
+  } finally {
+
+    setIsGenerating(false);
+
+  }
+};
 
   // Compute stats
   const totalPayable = stages.reduce((sum, s) => sum + s.payableAmount, 0);
