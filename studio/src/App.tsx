@@ -41,7 +41,7 @@ export default function App() {
     setDbError(null);
     try {
       if (supabase) {
-        const { data, error } = await supabase
+        let { data, error } = await supabase
           .from("products")
           .select("*")
           .order("updatedAt", { ascending: false });
@@ -53,6 +53,37 @@ export default function App() {
           }
           throw error;
         }
+
+        // If Supabase products table is completely empty, automatically perform background clone of Gist database products
+        if (data && data.length === 0) {
+          try {
+            const localRes = await fetch("/api/products");
+            if (localRes.ok) {
+              const localProducts = await localRes.json();
+              if (localProducts && localProducts.length > 0) {
+                console.log("Empty Supabase database detected. Auto-migrating products from Gist:", localProducts);
+                const { error: insertError } = await supabase
+                  .from("products")
+                  .insert(localProducts);
+                
+                if (!insertError) {
+                  const { data: refreshedData } = await supabase
+                    .from("products")
+                    .select("*")
+                    .order("updatedAt", { ascending: false });
+                  if (refreshedData) {
+                    data = refreshedData;
+                  }
+                } else {
+                  console.error("Auto-migration insertion to Supabase failed:", insertError);
+                }
+              }
+            }
+          } catch (migErr) {
+            console.error("Auto-migration to Supabase failed:", migErr);
+          }
+        }
+
         setProducts(data || []);
       } else {
         const res = await fetch("/api/products");

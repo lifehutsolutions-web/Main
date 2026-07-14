@@ -81,6 +81,11 @@ export default function ProductManager({
     msg: "Gist sync not tested."
   });
 
+  const [migrationStatus, setMigrationStatus] = useState<{ type: "idle" | "loading" | "success" | "error"; msg: string }>({
+    type: "idle",
+    msg: ""
+  });
+
   // Load Admin Token on Mount
   useEffect(() => {
     const savedToken = localStorage.getItem("ls-admin-token");
@@ -525,6 +530,39 @@ export default function ProductManager({
     a.download = `lifehut-studio-products-backup-${new Date().toISOString().slice(0, 10)}.json`;
     a.click();
     showToast("Back-up JSON file created successfully!");
+  };
+
+  const migrateGistToSupabase = async () => {
+    if (!supabase) {
+      setMigrationStatus({ type: "error", msg: "Supabase integration keys are missing or not configured." });
+      return;
+    }
+    setMigrationStatus({ type: "loading", msg: "Connecting to Gist and fetching catalogs..." });
+    try {
+      const res = await fetch("/api/products");
+      if (!res.ok) {
+        throw new Error(`Failed to fetch from local server backend (Status: ${res.status})`);
+      }
+      const localProducts = await res.json();
+      if (!localProducts || localProducts.length === 0) {
+        setMigrationStatus({ type: "error", msg: "No existing products found in Gist/local storage." });
+        return;
+      }
+      
+      setMigrationStatus({ type: "loading", msg: `Syncing ${localProducts.length} items to Supabase...` });
+      
+      const { error } = await supabase
+        .from("products")
+        .upsert(localProducts);
+        
+      if (error) throw error;
+      
+      setMigrationStatus({ type: "success", msg: `Successfully imported and synced ${localProducts.length} catalogues into your Supabase database!` });
+      showToast("Gist catalogues successfully copied to Supabase!");
+      onRefresh();
+    } catch (err: any) {
+      setMigrationStatus({ type: "error", msg: err.message || "Migration process failed." });
+    }
   };
 
   const copyGeneratedHtml = () => {
@@ -1476,14 +1514,40 @@ export default function ProductManager({
 
                 <div className="form-card bg-white border border-slate-200 rounded-xl p-5 shadow-sm mt-6">
                   <h3 className="form-card-title text-xs font-bold uppercase tracking-wider text-slate-800 mb-4 pb-2 border-b flex items-center gap-1.5">
-                    <i className="ti ti-refresh text-blue-500"></i> Local Catalogue Controls
+                    <i className="ti ti-refresh text-blue-500"></i> Catalogue Sync & Backup Controls
                   </h3>
                   <button
                     onClick={exportBackupJson}
-                    className="w-full py-3 bg-[#1f2937] hover:bg-[#111827] text-white rounded-xl text-xs font-bold flex items-center justify-center gap-1.5 cursor-pointer"
+                    className="w-full py-3 bg-[#1f2937] hover:bg-[#111827] text-white rounded-xl text-xs font-bold flex items-center justify-center gap-1.5 cursor-pointer mb-3"
                   >
                     <i className="ti ti-download"></i> Download Products database (.json)
                   </button>
+
+                  {supabase && (
+                    <div className="pt-3 border-t border-slate-100 mt-3">
+                      <div className="text-[10px] font-bold uppercase tracking-wider text-slate-400 mb-1.5">Supabase Data Migration</div>
+                      <p className="text-[11px] text-slate-500 mb-3 leading-relaxed">
+                        If your templates exist inside your GitHub Gist database but are not yet imported to Supabase, click below to clone them over instantly.
+                      </p>
+                      <button
+                        onClick={migrateGistToSupabase}
+                        disabled={migrationStatus.type === "loading"}
+                        className="w-full py-2.5 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-xs font-bold flex items-center justify-center gap-1.5 cursor-pointer disabled:opacity-50"
+                      >
+                        <i className="ti ti-database-import"></i> Sync Gist catalogues to Supabase
+                      </button>
+                      
+                      {migrationStatus.type !== "idle" && (
+                        <div className={`mt-2.5 p-2.5 rounded-lg text-[11px] leading-relaxed ${
+                          migrationStatus.type === "success" ? "bg-emerald-50 text-emerald-800 border border-emerald-100" :
+                          migrationStatus.type === "error" ? "bg-rose-50 text-rose-800 border border-rose-100" :
+                          "bg-blue-50 text-blue-800 border border-blue-100 animate-pulse"
+                        }`}>
+                          {migrationStatus.msg}
+                        </div>
+                      )}
+                    </div>
+                  )}
                 </div>
               </div>
             </div>
