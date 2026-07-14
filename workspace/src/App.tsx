@@ -1312,7 +1312,12 @@ export default function App() {
         <div className="max-w-7xl mx-auto px-5 flex flex-col sm:flex-row items-center justify-between gap-3 text-[11px]">
           <span>© {new Date().getFullYear()} Lifehut Workspace. All rights reserved.</span>
           <span className="font-semibold uppercase tracking-wider px-2.5 py-1 rounded-md" style={{ background: 'var(--lh-surface-muted)', color: 'var(--lh-text-secondary)' }}>
-            Powered by Lifehut Solutions
+              <a href="https://lifehutsolutions.com"
+     target="_blank"
+     rel="noopener noreferrer"
+     class="text-sm text-slate-500 hover:text-sky-600 transition">
+    Powered by <span class="font-semibold">Lifehut Solutions</span>
+  </a>
           </span>
         </div>
       </footer>
