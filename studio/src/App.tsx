@@ -8,6 +8,7 @@ export default function App() {
   const [view, setView] = useState<"store" | "admin">("store");
   const [products, setProducts] = useState<Product[]>([]);
   const [isLoading, setIsLoading] = useState<boolean>(true);
+  const [dbError, setDbError] = useState<string | null>(null);
 
   // Sync state with URL query parameters and pathnames for neat routing
   useEffect(() => {
@@ -37,13 +38,21 @@ export default function App() {
 
   const fetchProducts = async () => {
     setIsLoading(true);
+    setDbError(null);
     try {
       if (supabase) {
         const { data, error } = await supabase
           .from("products")
           .select("*")
           .order("updatedAt", { ascending: false });
-        if (error) throw error;
+        if (error) {
+          if (error.code === "42P01") {
+            setDbError("Table 'public.products' does not exist in your Supabase database. Please copy the schema from 'supabase-setup.sql' and execute it in your Supabase SQL Editor.");
+          } else {
+            setDbError(`Supabase Database Error: ${error.message} (Code ${error.code})`);
+          }
+          throw error;
+        }
         setProducts(data || []);
       } else {
         const res = await fetch("/api/products");
@@ -52,8 +61,11 @@ export default function App() {
           setProducts(data);
         }
       }
-    } catch (err) {
+    } catch (err: any) {
       console.error("Failed to load products list:", err);
+      if (!supabase) {
+        setDbError("Unable to load product catalogue. Is the backend server running?");
+      }
     } finally {
       setIsLoading(false);
     }
@@ -74,6 +86,22 @@ export default function App() {
 
   return (
     <>
+      {dbError && (
+        <div className="bg-red-500/10 border-b border-red-500/20 text-red-600 dark:text-red-400 py-3 px-4 text-xs md:text-sm text-center font-sans tracking-wide">
+          <div className="max-w-7xl mx-auto flex flex-col sm:flex-row items-center justify-center gap-2">
+            <span>⚠️ <strong>Configuration Alert:</strong> {dbError}</span>
+            <button 
+              onClick={() => {
+                navigator.clipboard.writeText("supabase-setup.sql");
+                alert("Please see the 'supabase-setup.sql' file in the root directory for the script!");
+              }}
+              className="underline hover:no-underline font-medium ml-1"
+            >
+              Learn how to fix
+            </button>
+          </div>
+        </div>
+      )}
       {view === "store" ? (
         <StoreFront
           products={products}
