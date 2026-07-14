@@ -1,0 +1,6 @@
+{
+  "name": "Lifehut Studio",
+  "description": "Premium website themes store and template catalog manager with secure downloads and Razorpay payments integration.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
