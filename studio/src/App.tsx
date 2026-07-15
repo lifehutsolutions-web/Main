@@ -3,6 +3,7 @@ import { Product } from "./types";
 import StoreFront from "./components/StoreFront";
 import ProductManager from "./components/ProductManager";
 import { supabase } from "./lib/supabaseClient";
+import ErrorBoundary from "./components/ErrorBoundary";
 
 export default function App() {
   const [view, setView] = useState<"store" | "admin">("store");
@@ -84,16 +85,19 @@ export default function App() {
           }
         }
 
-        setProducts(data || []);
+        setProducts(Array.isArray(data) ? data : []);
       } else {
         const res = await fetch("/api/products");
         if (res.ok) {
           const data = await res.json();
-          setProducts(data);
+          setProducts(Array.isArray(data) ? data : []);
+        } else {
+          setProducts([]);
         }
       }
     } catch (err: any) {
       console.error("Failed to load products list:", err);
+      setProducts([]);
       if (!supabase) {
         setDbError("Unable to load product catalogue. Is the backend server running?");
       }
@@ -116,7 +120,7 @@ export default function App() {
   };
 
   return (
-    <>
+    <ErrorBoundary>
       {dbError && (
         <div className="bg-red-500/10 border-b border-red-500/20 text-red-600 dark:text-red-400 py-3 px-4 text-xs md:text-sm text-center font-sans tracking-wide">
           <div className="max-w-7xl mx-auto flex flex-col sm:flex-row items-center justify-center gap-2">
@@ -148,6 +152,6 @@ export default function App() {
           onNavigateToStore={() => handleNavigateToView("store")}
         />
       )}
-    </>
+    </ErrorBoundary>
   );
 }

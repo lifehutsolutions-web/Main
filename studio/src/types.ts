@@ -22,6 +22,7 @@ export interface Product {
   status: ProductStatus;
   githubAssetId?: string | number; // references release asset on GitHub
   githubAssetName?: string; // the filename uploaded
+  genurl?: string; // optional live customization url
   updatedAt: string;
 }
 

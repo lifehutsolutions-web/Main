@@ -28,6 +28,8 @@ export default function ProductManager({
   onRefresh,
   onNavigateToStore
 }: ProductManagerProps) {
+  const safeProducts = Array.isArray(products) ? products : [];
+
   // Auth state
   const [token, setToken] = useState<string | null>(null);
   const [email, setEmail] = useState<string>("");
@@ -520,11 +522,11 @@ export default function ProductManager({
   };
 
   const exportBackupJson = () => {
-    if (products.length === 0) {
+    if (safeProducts.length === 0) {
       showToast("No products in catalogue to backup.");
       return;
     }
-    const blob = new Blob([JSON.stringify(products, null, 2)], { type: "application/json" });
+    const blob = new Blob([JSON.stringify(safeProducts, null, 2)], { type: "application/json" });
     const a = document.createElement("a");
     a.href = URL.createObjectURL(blob);
     a.download = `lifehut-studio-products-backup-${new Date().toISOString().slice(0, 10)}.json`;
@@ -697,7 +699,7 @@ export default function ProductManager({
             }`}
           >
             <i className="ti ti-layout-grid"></i> All Templates
-            <span className="sb-count ml-auto text-[9px] bg-white/10 px-2 py-0.5 rounded-full text-white/60">{products.length}</span>
+            <span className="sb-count ml-auto text-[9px] bg-white/10 px-2 py-0.5 rounded-full text-white/60">{safeProducts.length}</span>
           </button>
           <button
             onClick={startAddProduct}
@@ -732,7 +734,7 @@ export default function ProductManager({
         <div className="p-6 border-t border-white/5">
           <div className="live-indicator flex items-center gap-1.5 text-[10px] text-white/50 mb-4 font-semibold">
             <span className="live-dot h-1.5 w-1.5 rounded-full bg-emerald-400"></span>
-            {(products || []).filter(p => p && p.status === "live").length} templates live
+            {safeProducts.filter(p => p && p.status === "live").length} templates live
           </div>
           <button
             onClick={handleBatchGoLive}
@@ -808,7 +810,7 @@ export default function ProductManager({
                   <div className="animate-spin text-3xl text-blue-600 mb-3"><i className="ti ti-loader-2"></i></div>
                   <div className="text-xs text-slate-500 font-medium">Reading secure products database...</div>
                 </div>
-              ) : products.length === 0 ? (
+              ) : safeProducts.length === 0 ? (
                 <div className="rounded-2xl border border-dashed border-slate-300 p-16 text-center text-slate-500 bg-white">
                   <i className="ti ti-box-off text-4xl mb-4 opacity-40 block"></i>
                   <div className="text-sm font-semibold">No active templates found</div>
@@ -833,7 +835,7 @@ export default function ProductManager({
 
                   {/* Body rows */}
                   <div className="divide-y divide-slate-100">
-                    {products.map(p => (
+                    {safeProducts.map(p => (
                       <div key={p.id} className="pt-row grid grid-cols-12 gap-2 px-6 py-4 items-center hover:bg-slate-50/50 transition-all text-xs">
                         <div className="col-span-4 flex items-center gap-3">
                           <div className="h-8 w-11 rounded bg-slate-100 border flex items-center justify-center text-blue-600 text-sm font-semibold">

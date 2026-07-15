@@ -54,7 +54,18 @@ export default function StoreFront({
   // Load wishlist and dark theme
   useEffect(() => {
     const savedWish = localStorage.getItem("ls-wishlist");
-    if (savedWish) setWishlist(JSON.parse(savedWish));
+    if (savedWish) {
+      try {
+        const parsed = JSON.parse(savedWish);
+        if (Array.isArray(parsed)) {
+          setWishlist(parsed);
+        } else {
+          setWishlist([]);
+        }
+      } catch (err) {
+        setWishlist([]);
+      }
+    }
 
     const savedDark = localStorage.getItem("ls-dark");
     if (savedDark === "1") {
@@ -192,7 +203,7 @@ export default function StoreFront({
 
   // Extracted list of unique categories from currently live products
   const liveProducts = (products || []).filter(p => p && p.status === "live");
-  const categories = ["all", ...new Set(liveProducts.map(p => p ? catToSlug(p.cat) : ""))].filter(Boolean);
+  const categories = ["all", ...new Set(liveProducts.map(p => (p && p.cat) ? catToSlug(p.cat) : ""))].filter(Boolean);
 
   // Filter & sort application
   const filteredProducts = liveProducts
