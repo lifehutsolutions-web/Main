@@ -30,7 +30,7 @@ const CAT_LABELS: Record<string, string> = {
 };
 
 export default function StoreFront({
-  products,
+  products = [],
   isLoading,
   onRefresh,
   onNavigateToManager
@@ -191,18 +191,19 @@ export default function StoreFront({
   };
 
   // Extracted list of unique categories from currently live products
-  const liveProducts = products.filter(p => p.status === "live");
-  const categories = ["all", ...new Set(liveProducts.map(p => catToSlug(p.cat)))];
+  const liveProducts = (products || []).filter(p => p && p.status === "live");
+  const categories = ["all", ...new Set(liveProducts.map(p => p ? catToSlug(p.cat) : ""))].filter(Boolean);
 
   // Filter & sort application
   const filteredProducts = liveProducts
     .filter(p => {
+      if (!p) return false;
       const catSlug = catToSlug(p.cat);
       const catOk = activeCat === "all" || catSlug === activeCat;
       const badgeOk = activeBadge === "all" || (p.badge && p.badge.toLowerCase() === activeBadge);
       const matchesSearch = !searchQuery.trim() ||
-        p.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        p.desc.toLowerCase().includes(searchQuery.toLowerCase());
+        (p.name || "").toLowerCase().includes(searchQuery.toLowerCase()) ||
+        (p.desc || "").toLowerCase().includes(searchQuery.toLowerCase());
       return catOk && badgeOk && matchesSearch;
     })
     .sort((a, b) => {

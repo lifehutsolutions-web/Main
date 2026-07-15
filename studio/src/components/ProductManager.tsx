@@ -23,7 +23,7 @@ const COLOR_GRADIENTS = [
 ];
 
 export default function ProductManager({
-  products,
+  products = [],
   isLoading,
   onRefresh,
   onNavigateToStore
@@ -732,7 +732,7 @@ export default function ProductManager({
         <div className="p-6 border-t border-white/5">
           <div className="live-indicator flex items-center gap-1.5 text-[10px] text-white/50 mb-4 font-semibold">
             <span className="live-dot h-1.5 w-1.5 rounded-full bg-emerald-400"></span>
-            {products.filter(p => p.status === "live").length} templates live
+            {(products || []).filter(p => p && p.status === "live").length} templates live
           </div>
           <button
             onClick={handleBatchGoLive}
