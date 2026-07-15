@@ -944,251 +944,261 @@ export default function StoreFront({
               initial={{ opacity: 0, scale: 0.95 }}
               animate={{ opacity: 1, scale: 1 }}
               exit={{ opacity: 0, scale: 0.95 }}
-              className="relative w-full max-w-2xl bg-[var(--card)] rounded-2xl overflow-hidden shadow-2xl border border-[var(--border)] max-h-[90vh] flex flex-col"
+              className="relative w-full max-w-5xl bg-[var(--card)] rounded-2xl overflow-hidden shadow-2xl border border-[var(--border)] max-h-[90vh] h-[85vh] flex flex-col md:flex-row text-[var(--text)]"
             >
-              {/* Top media block */}
-              <div className="relative h-60 bg-[var(--bg3)] flex-shrink-0 overflow-hidden">
-                {selectedProduct.mediatype === "video" ? (
-                  /* Video Render */
-                  <div className="w-full h-full relative">
-                    {selectedProduct.videourl ? (
-                      selectedProduct.videourl.includes("youtube.com") || selectedProduct.videourl.includes("youtu.be") ? (
-                        <iframe
-                          src={selectedProduct.videourl}
-                          className="w-full h-full absolute inset-0"
-                          allowFullScreen
-                        ></iframe>
+              {/* Close Button top right of whole modal */}
+              <button
+                onClick={closeProductModal}
+                className="absolute top-4 right-4 z-50 flex h-9 w-9 items-center justify-center rounded-full bg-white/95 text-slate-800 shadow-md hover:scale-105 cursor-pointer text-base transition-all"
+                aria-label="Close Dialog"
+              >
+                <i className="ti ti-x"></i>
+              </button>
+
+              {/* LEFT SIDE: Product Media and Details */}
+              <div className="w-full md:w-1/2 border-b md:border-b-0 md:border-r border-[var(--border)] flex flex-col h-[50vh] md:h-full overflow-hidden">
+                {/* Media block */}
+                <div className="relative h-48 md:h-64 bg-[var(--bg3)] flex-shrink-0 overflow-hidden">
+                  {selectedProduct.mediatype === "video" ? (
+                    /* Video Render */
+                    <div className="w-full h-full relative">
+                      {selectedProduct.videourl ? (
+                        selectedProduct.videourl.includes("youtube.com") || selectedProduct.videourl.includes("youtu.be") ? (
+                          <iframe
+                            src={selectedProduct.videourl}
+                            className="w-full h-full absolute inset-0"
+                            allowFullScreen
+                          ></iframe>
+                        ) : (
+                          <video
+                            src={selectedProduct.videourl}
+                            className="w-full h-full object-cover"
+                            controls
+                            playsInline
+                          ></video>
+                        )
                       ) : (
-                        <video
-                          src={selectedProduct.videourl}
-                          className="w-full h-full object-cover"
-                          controls
-                          playsInline
-                        ></video>
-                      )
-                    ) : (
-                      <div className="w-full h-full flex flex-col items-center justify-center bg-[var(--hero-grad)] text-white">
-                        <i className="ti ti-video text-4xl opacity-50 mb-2 animate-pulse"></i>
-                        <span className="text-xs">No video URL added</span>
-                      </div>
-                    )}
-                  </div>
-                ) : (
-                  /* Images Carousel Render */
-                  <div className="w-full h-full relative">
-                    {selectedProduct.images && selectedProduct.images[modalSlideIdx] ? (
-                      <img
-                        src={selectedProduct.images[modalSlideIdx]}
-                        alt={(selectedProduct.slides && selectedProduct.slides[modalSlideIdx]) || ""}
-                        className="w-full h-full object-cover"
-                        referrerPolicy="no-referrer"
-                      />
-                    ) : (
-                      <div
-                        style={{ background: selectedProduct.color || "linear-gradient(135deg, #0f172a, #1e3a8a)" }}
-                        className="w-full h-full flex flex-col items-center justify-center text-white/80 p-6"
-                      >
-                        <i className="ti ti-photo text-4xl opacity-50 mb-2"></i>
-                        <span className="text-sm font-semibold tracking-wide">
-                          {(selectedProduct.slides && selectedProduct.slides[modalSlideIdx]) || "Mock Slide Preview"}
-                        </span>
-                      </div>
-                    )}
-
-                    {/* Carousel Left/Right arrows */}
-                    {selectedProduct.slides && selectedProduct.slides.length > 1 && (
-                      <>
-                        <button
-                          onClick={() => {
-                            const len = (selectedProduct.slides || []).length;
-                            if (len > 0) {
-                              setModalSlideIdx(prev => (prev - 1 + len) % len);
-                            }
-                          }}
-                          className="absolute left-3 top-1/2 -translate-y-1/2 flex h-8 w-8 items-center justify-center rounded-full bg-white/90 text-[var(--blue)] shadow-md hover:scale-105 cursor-pointer"
-                          aria-label="Previous Slide"
-                        >
-                          <i className="ti ti-chevron-left text-lg"></i>
-                        </button>
-                        <button
-                          onClick={() => {
-                            const len = (selectedProduct.slides || []).length;
-                            if (len > 0) {
-                              setModalSlideIdx(prev => (prev + 1) % len);
-                            }
-                          }}
-                          className="absolute right-3 top-1/2 -translate-y-1/2 flex h-8 w-8 items-center justify-center rounded-full bg-white/90 text-[var(--blue)] shadow-md hover:scale-105 cursor-pointer"
-                          aria-label="Next Slide"
-                        >
-                          <i className="ti ti-chevron-right text-lg"></i>
-                        </button>
-                      </>
-                    )}
-
-                    {/* Navigation Dots */}
-                    <div className="absolute bottom-3 left-1/2 -translate-x-1/2 flex gap-1.5">
-                      {(selectedProduct.slides || []).map((_, i) => (
-                        <button
-                          key={i}
-                          onClick={() => setModalSlideIdx(i)}
-                          className={`h-2 rounded-full transition-all cursor-pointer ${
-                            modalSlideIdx === i ? "bg-white w-5" : "bg-white/40 w-2"
-                          }`}
-                        ></button>
-                      ))}
+                        <div className="w-full h-full flex flex-col items-center justify-center bg-[var(--hero-grad)] text-white">
+                          <i className="ti ti-video text-4xl opacity-50 mb-2 animate-pulse"></i>
+                          <span className="text-xs">No video URL added</span>
+                        </div>
+                      )}
                     </div>
-                  </div>
-                )}
-
-                {/* Close Button top right */}
-                <button
-                  onClick={closeProductModal}
-                  className="absolute top-4 right-4 z-10 flex h-9 w-9 items-center justify-center rounded-full bg-white/95 text-slate-800 shadow-md hover:scale-105 cursor-pointer text-base"
-                  aria-label="Close Dialog"
-                >
-                  <i className="ti ti-x"></i>
-                </button>
-              </div>
-
-              {/* Scrollable details area */}
-              <div className="p-6 md:p-8 overflow-y-auto flex-1">
-                <div className="modal-cat text-[10px] font-bold tracking-wider text-[var(--text3)] mb-1">
-                  {formatCategoryLabel(catToSlug(selectedProduct.cat))}
-                </div>
-                <h3 className="modal-title text-xl md:text-2xl font-bold mb-3">{selectedProduct.name}</h3>
-                <p className="modal-desc text-xs md:text-sm text-[var(--text2)] leading-relaxed mb-6">
-                  {selectedProduct.desc}
-                </p>
-
-                {/* Checklist Features */}
-                <h4 className="text-xs font-bold uppercase tracking-wider text-[var(--text)] mb-3">
-                  Checklist & Features included
-                </h4>
-                <div className="modal-features grid grid-cols-1 sm:grid-cols-2 gap-2 mb-6">
-                  {selectedProduct.features && selectedProduct.features.length > 0 ? (
-                    selectedProduct.features.map(feat => (
-                      <div key={feat} className="mfeat flex items-center gap-2 text-xs text-[var(--text2)]">
-                        <i className="ti ti-circle-check text-base text-[var(--blue)]"></i>
-                        {feat}
-                      </div>
-                    ))
                   ) : (
-                    <div className="text-xs text-[var(--text3)] italic">Standard file components included.</div>
+                    /* Images Carousel Render */
+                    <div className="w-full h-full relative">
+                      {selectedProduct.images && selectedProduct.images[modalSlideIdx] ? (
+                        <img
+                          src={selectedProduct.images[modalSlideIdx]}
+                          alt={(selectedProduct.slides && selectedProduct.slides[modalSlideIdx]) || ""}
+                          className="w-full h-full object-cover"
+                          referrerPolicy="no-referrer"
+                        />
+                      ) : (
+                        <div
+                          style={{ background: selectedProduct.color || "linear-gradient(135deg, #0f172a, #1e3a8a)" }}
+                          className="w-full h-full flex flex-col items-center justify-center text-white/80 p-6"
+                        >
+                          <i className="ti ti-photo text-4xl opacity-50 mb-2"></i>
+                          <span className="text-sm font-semibold tracking-wide">
+                            {(selectedProduct.slides && selectedProduct.slides[modalSlideIdx]) || "Mock Slide Preview"}
+                          </span>
+                        </div>
+                      )}
+
+                      {/* Carousel Left/Right arrows */}
+                      {selectedProduct.slides && selectedProduct.slides.length > 1 && (
+                        <>
+                          <button
+                            onClick={() => {
+                              const len = (selectedProduct.slides || []).length;
+                              if (len > 0) {
+                                setModalSlideIdx(prev => (prev - 1 + len) % len);
+                              }
+                            }}
+                            className="absolute left-3 top-1/2 -translate-y-1/2 flex h-8 w-8 items-center justify-center rounded-full bg-white/90 text-[var(--blue)] shadow-md hover:scale-105 cursor-pointer"
+                            aria-label="Previous Slide"
+                          >
+                            <i className="ti ti-chevron-left text-lg"></i>
+                          </button>
+                          <button
+                            onClick={() => {
+                              const len = (selectedProduct.slides || []).length;
+                              if (len > 0) {
+                                setModalSlideIdx(prev => (prev + 1) % len);
+                              }
+                            }}
+                            className="absolute right-3 top-1/2 -translate-y-1/2 flex h-8 w-8 items-center justify-center rounded-full bg-white/90 text-[var(--blue)] shadow-md hover:scale-105 cursor-pointer"
+                            aria-label="Next Slide"
+                          >
+                            <i className="ti ti-chevron-right text-lg"></i>
+                          </button>
+                        </>
+                      )}
+
+                      {/* Navigation Dots */}
+                      <div className="absolute bottom-3 left-1/2 -translate-x-1/2 flex gap-1.5">
+                        {(selectedProduct.slides || []).map((_, i) => (
+                          <button
+                            key={i}
+                            onClick={() => setModalSlideIdx(i)}
+                            className={`h-2 rounded-full transition-all cursor-pointer ${
+                              modalSlideIdx === i ? "bg-white w-5" : "bg-white/40 w-2"
+                            }`}
+                          ></button>
+                        ))}
+                      </div>
+                    </div>
                   )}
                 </div>
 
-                {/* Amazon-style Reviews & Q&A Discussion section */}
-                <ProductComments productId={selectedProduct.id} productName={selectedProduct.name} />
-
-                {/* Payment status, alert box & download controls */}
-                {paymentStatus !== "idle" && (
-                  <div className={`p-4 rounded-xl mb-6 text-xs flex flex-col gap-2 ${
-                    paymentStatus === "processing" ? "bg-blue-50 dark:bg-blue-950/20 text-blue-800 dark:text-blue-300 border border-blue-200" :
-                    paymentStatus === "success" ? "bg-emerald-50 dark:bg-emerald-950/20 text-emerald-800 dark:text-emerald-300 border border-emerald-200" :
-                    "bg-rose-50 dark:bg-rose-950/20 text-rose-800 dark:text-rose-300 border border-rose-200"
-                  }`}>
-                    <div className="flex items-center gap-2 font-semibold">
-                      <i className={`ti ${
-                        paymentStatus === "processing" ? "ti-loader-2 animate-spin" :
-                        paymentStatus === "success" ? "ti-circle-check" :
-                        "ti-alert-circle"
-                      } text-base`}></i>
-                      {paymentStatus === "processing" ? "Verifying secured files..." :
-                       paymentStatus === "success" ? "Payment successfully verified!" :
-                       "Verification / Transaction failed"}
-                    </div>
-                    {paymentStatus === "processing" && (
-                      <p>Connecting to secure storage. Do not refresh or exit checkout.</p>
-                    )}
-                    {paymentStatus === "success" && (
-                      <div>
-                        <p className="mb-2">Your secure, token-protected download URL has been created.</p>
-                        <a
-                          href={secureDownloadUrl || "#"}
-                          className="inline-flex items-center gap-1.5 rounded bg-emerald-600 px-3 py-1.5 font-bold text-white hover:bg-emerald-700"
-                        >
-                          <i className="ti ti-download"></i> Download Template Folder
-                        </a>
-                      </div>
-                    )}
-                    {paymentStatus === "error" && (
-                      <p>{errorMessage || "Failed to finalize payment check."}</p>
-                    )}
-                  </div>
-                )}
-
-                {/* Footer action keys */}
-                <div className="modal-footer flex flex-col sm:flex-row items-center justify-between gap-4 border-t border-[var(--border)] pt-5">
+                {/* Scrollable Left content */}
+                <div className="p-5 md:p-6 overflow-y-auto flex-1 flex flex-col justify-between">
                   <div>
-                    {selectedProduct.price && parseFloat(selectedProduct.price) > 0 ? (
-                      <div className="flex flex-col">
-                        <span className="text-[10px] text-[var(--text3)] uppercase font-semibold">Single payment</span>
-                        <div className="flex items-baseline gap-2">
-                          <span className="modal-price text-2xl font-bold">
-                            ₹{Number(selectedProduct.price).toLocaleString("en-IN")}
-                          </span>
-                          {selectedProduct.oldprice && (
-                            <span className="modal-price-old text-xs text-[var(--text3)] line-through">
-                              ₹{Number(selectedProduct.oldprice).toLocaleString("en-IN")}
+                    <div className="modal-cat text-[10px] font-bold tracking-wider text-[var(--text3)] mb-1">
+                      {formatCategoryLabel(catToSlug(selectedProduct.cat))}
+                    </div>
+                    <h3 className="modal-title text-lg md:text-xl font-bold mb-2">{selectedProduct.name}</h3>
+                    <p className="modal-desc text-xs text-[var(--text2)] leading-relaxed mb-4">
+                      {selectedProduct.desc}
+                    </p>
+
+                    {/* Checklist Features */}
+                    <h4 className="text-[10px] font-bold uppercase tracking-wider text-[var(--text)] mb-2">
+                      Checklist & Features included
+                    </h4>
+                    <div className="modal-features grid grid-cols-1 sm:grid-cols-2 gap-2 mb-4">
+                      {selectedProduct.features && selectedProduct.features.length > 0 ? (
+                        selectedProduct.features.map(feat => (
+                          <div key={feat} className="mfeat flex items-center gap-2 text-xs text-[var(--text2)]">
+                            <i className="ti ti-circle-check text-base text-[var(--blue)]"></i>
+                            {feat}
+                          </div>
+                        ))
+                      ) : (
+                        <div className="text-xs text-[var(--text3)] italic">Standard file components included.</div>
+                      )}
+                    </div>
+                  </div>
+
+                  <div>
+                    {/* Payment status, alert box & download controls */}
+                    {paymentStatus !== "idle" && (
+                      <div className={`p-4 rounded-xl mb-4 text-xs flex flex-col gap-2 ${
+                        paymentStatus === "processing" ? "bg-blue-50 dark:bg-blue-950/20 text-blue-800 dark:text-blue-300 border border-blue-200" :
+                        paymentStatus === "success" ? "bg-emerald-50 dark:bg-emerald-950/20 text-emerald-800 dark:text-emerald-300 border border-emerald-200" :
+                        "bg-rose-50 dark:bg-rose-950/20 text-rose-800 dark:text-rose-300 border border-rose-200"
+                      }`}>
+                        <div className="flex items-center gap-2 font-semibold">
+                          <i className={`ti ${
+                            paymentStatus === "processing" ? "ti-loader-2 animate-spin" :
+                            paymentStatus === "success" ? "ti-circle-check" :
+                            "ti-alert-circle"
+                          } text-base`}></i>
+                          {paymentStatus === "processing" ? "Verifying secured files..." :
+                           paymentStatus === "success" ? "Payment successfully verified!" :
+                           "Verification / Transaction failed"}
+                        </div>
+                        {paymentStatus === "processing" && (
+                          <p>Connecting to secure storage. Do not refresh or exit checkout.</p>
+                        )}
+                        {paymentStatus === "success" && (
+                          <div>
+                            <p className="mb-2">Your secure, token-protected download URL has been created.</p>
+                            <a
+                              href={secureDownloadUrl || "#"}
+                              className="inline-flex items-center gap-1.5 rounded bg-emerald-600 px-3 py-1.5 font-bold text-white hover:bg-emerald-700"
+                            >
+                              <i className="ti ti-download"></i> Download Template Folder
+                            </a>
+                          </div>
+                        )}
+                        {paymentStatus === "error" && (
+                          <p>{errorMessage || "Failed to finalize payment check."}</p>
+                        )}
+                      </div>
+                    )}
+
+                    {/* Footer pricing & buttons */}
+                    <div className="modal-footer flex flex-col sm:flex-row items-center justify-between gap-4 border-t border-[var(--border)] pt-4 mt-2">
+                      <div>
+                        {selectedProduct.price && parseFloat(selectedProduct.price) > 0 ? (
+                          <div className="flex flex-col">
+                            <span className="text-[10px] text-[var(--text3)] uppercase font-semibold">Single payment</span>
+                            <div className="flex items-baseline gap-2">
+                              <span className="modal-price text-xl font-bold">
+                                ₹{Number(selectedProduct.price).toLocaleString("en-IN")}
+                              </span>
+                              {selectedProduct.oldprice && (
+                                <span className="modal-price-old text-[10px] text-[var(--text3)] line-through">
+                                  ₹{Number(selectedProduct.oldprice).toLocaleString("en-IN")}
+                                </span>
+                              )}
+                            </div>
+                          </div>
+                        ) : (
+                          <div className="flex flex-col">
+                            <span className="text-[10px] text-[var(--text3)] uppercase font-semibold font-mono">Free item</span>
+                            <span className="modal-price text-xl font-bold text-emerald-600 dark:text-emerald-400">
+                              Free Claim
                             </span>
-                          )}
-                        </div>
+                          </div>
+                        )}
                       </div>
-                    ) : (
-                      <div className="flex flex-col">
-                        <span className="text-[10px] text-[var(--text3)] uppercase font-semibold font-mono">Free item</span>
-                        <span className="modal-price text-2xl font-bold text-emerald-600 dark:text-emerald-400">
-                          Free Claim
-                        </span>
-                      </div>
-                    )}
-                  </div>
 
-                  <div className="flex gap-2 w-full sm:w-auto">
-                    {/* Claims and payment trigger */}
-                    {selectedProduct.price && parseFloat(selectedProduct.price) > 0 ? (
-                      <button
-                        onClick={() => handleRazorpayPayment(selectedProduct)}
-                        disabled={paymentStatus === "processing"}
-                        className="btn-modal-p flex-1 sm:flex-none justify-center rounded-xl bg-[var(--blue)] hover:bg-[var(--blue-dark)] text-white font-semibold text-sm px-6 py-3 flex items-center gap-2 transition-all cursor-pointer disabled:opacity-50"
-                      >
-                        <i className="ti ti-brand-up"></i> Buy & Download Now
-                      </button>
-                    ) : (
-                      /* Free claim input and trigger */
-                      <div className="flex flex-col gap-2 w-full sm:w-auto">
-                        <div className="flex gap-1">
-                          <input
-                            type="email"
-                            placeholder="Enter your email"
-                            value={claimEmail}
-                            onChange={e => setClaimEmail(e.target.value)}
-                            disabled={paymentStatus === "processing" || paymentStatus === "success"}
-                            className="rounded-lg border border-[var(--border)] px-3 py-2 text-xs text-[var(--text)] outline-none min-w-[160px] bg-[var(--bg)]"
-                          />
+                      <div className="flex gap-2 w-full sm:w-auto">
+                        {/* Claims and payment trigger */}
+                        {selectedProduct.price && parseFloat(selectedProduct.price) > 0 ? (
                           <button
-                            onClick={() => handleFreeClaim(selectedProduct)}
-                            disabled={paymentStatus === "processing" || paymentStatus === "success" || !claimEmail}
-                            className="btn-modal-p rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white font-semibold text-xs px-4 py-2 flex items-center gap-1.5 transition-all cursor-pointer disabled:opacity-50"
+                            onClick={() => handleRazorpayPayment(selectedProduct)}
+                            disabled={paymentStatus === "processing"}
+                            className="btn-modal-p flex-1 sm:flex-none justify-center rounded-xl bg-[var(--blue)] hover:bg-[var(--blue-dark)] text-white font-semibold text-xs px-4 py-2.5 flex items-center gap-1.5 transition-all cursor-pointer disabled:opacity-50"
                           >
-                            <i className="ti ti-download"></i> Claim Free
+                            <i className="ti ti-brand-up"></i> Buy & Download
                           </button>
-                        </div>
-                        <div className="text-[9px] text-[var(--text3)]">Download zip directly from private releases.</div>
-                      </div>
-                    )}
+                        ) : (
+                          /* Free claim input and trigger */
+                          <div className="flex flex-col gap-2 w-full sm:w-auto">
+                            <div className="flex gap-1">
+                              <input
+                                type="email"
+                                placeholder="Enter your email"
+                                value={claimEmail}
+                                onChange={e => setClaimEmail(e.target.value)}
+                                disabled={paymentStatus === "processing" || paymentStatus === "success"}
+                                className="rounded-lg border border-[var(--border)] px-3 py-1.5 text-xs text-[var(--text)] outline-none min-w-[140px] bg-[var(--bg)]"
+                              />
+                              <button
+                                onClick={() => handleFreeClaim(selectedProduct)}
+                                disabled={paymentStatus === "processing" || paymentStatus === "success" || !claimEmail}
+                                className="btn-modal-p rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white font-semibold text-xs px-3 py-1.5 flex items-center gap-1 transition-all cursor-pointer disabled:opacity-50"
+                              >
+                                <i className="ti ti-download"></i> Claim
+                              </button>
+                            </div>
+                          </div>
+                        )}
 
-                    {selectedProduct.genurl && (
-                      <a
-                        href={selectedProduct.genurl}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="btn-modal-s justify-center rounded-xl border border-[var(--border)] hover:bg-[var(--bg2)] text-[var(--text)] px-4 py-3 text-sm flex items-center gap-1.5 transition-all"
-                      >
-                        <i className="ti ti-eye"></i> Live Customize
-                      </a>
-                    )}
+                        {selectedProduct.genurl && (
+                          <a
+                            href={selectedProduct.genurl}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="btn-modal-s justify-center rounded-xl border border-[var(--border)] hover:bg-[var(--bg2)] text-[var(--text)] px-3 py-2 text-xs flex items-center gap-1 transition-all"
+                          >
+                            <i className="ti ti-eye"></i> Customize
+                          </a>
+                        )}
+                      </div>
+                    </div>
                   </div>
+                </div>
+              </div>
+
+              {/* RIGHT SIDE: Customer Reviews */}
+              <div className="w-full md:w-1/2 flex flex-col h-[35vh] md:h-full overflow-hidden bg-[var(--bg2)]/20">
+                <div className="p-5 md:p-6 overflow-y-auto flex-1">
+                  <ProductComments productId={selectedProduct.id} productName={selectedProduct.name} />
                 </div>
               </div>
             </motion.div>

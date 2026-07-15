@@ -206,10 +206,10 @@ export default function ProductManager({
     setFColor(p.color);
     setFMediaType(p.mediatype);
     setFVideoUrl(p.videourl || "");
-    setFTags([...p.tags]);
-    setFFeatures([...p.features]);
-    setFSlides([...p.slides]);
-    setFImages([...p.images]);
+    setFTags(Array.isArray(p.tags) ? [...p.tags] : []);
+    setFFeatures(Array.isArray(p.features) ? [...p.features] : []);
+    setFSlides(Array.isArray(p.slides) ? [...p.slides] : []);
+    setFImages(Array.isArray(p.images) ? [...p.images] : []);
     setFThumb(p.thumb || "");
     setZipFile(null);
     setZipUploadStatus(p.githubAssetId ? "success" : "idle");
@@ -355,7 +355,7 @@ export default function ProductManager({
   };
 
   const removeScreenshot = (idx: number) => {
-    setFImages(prev => prev.filter((_, i) => i !== idx));
+    setFImages(prev => (prev || []).filter((_, i) => i !== idx));
   };
 
   const handleVideoThumbUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -400,8 +400,8 @@ export default function ProductManager({
   };
 
   const handleRemoveSlideLabel = (idx: number) => {
-    if (fSlides.length <= 1) return;
-    setFSlides(prev => prev.filter((_, i) => i !== idx));
+    if ((fSlides || []).length <= 1) return;
+    setFSlides(prev => (prev || []).filter((_, i) => i !== idx));
   };
 
   const handleSaveProduct = async () => {
@@ -1268,7 +1268,7 @@ export default function ProductManager({
                         {fTags.map((t, idx) => (
                           <span key={t} className="bg-blue-50 text-blue-800 font-semibold px-2 py-1 rounded text-[11px] flex items-center gap-1">
                             {t}
-                            <button onClick={() => setFTags(prev => prev.filter((_, i) => i !== idx))} className="text-blue-500 font-bold hover:text-blue-800">×</button>
+                            <button onClick={() => setFTags(prev => (prev || []).filter((_, i) => i !== idx))} className="text-blue-500 font-bold hover:text-blue-800">×</button>
                           </span>
                         ))}
                         <input
@@ -1288,7 +1288,7 @@ export default function ProductManager({
                         {fFeatures.map((f, idx) => (
                           <span key={f} className="bg-emerald-50 text-emerald-800 font-semibold px-2 py-1 rounded text-[11px] flex items-center gap-1">
                             {f}
-                            <button onClick={() => setFFeatures(prev => prev.filter((_, i) => i !== idx))} className="text-emerald-500 font-bold hover:text-emerald-800">×</button>
+                            <button onClick={() => setFFeatures(prev => (prev || []).filter((_, i) => i !== idx))} className="text-emerald-500 font-bold hover:text-emerald-800">×</button>
                           </span>
                         ))}
                         <input
