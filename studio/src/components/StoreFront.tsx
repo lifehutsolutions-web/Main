@@ -93,7 +93,7 @@ export default function StoreFront({
 
       const targetId = productQueryId || productIdFromPath;
       if (targetId) {
-        const found = products.find(p => p.id.toLowerCase() === targetId.toLowerCase());
+        const found = products.find(p => p && p.id && String(p.id).toLowerCase() === targetId.toLowerCase());
         if (found) {
           setSelectedProduct(found);
           setModalSlideIdx(0);
@@ -125,7 +125,7 @@ export default function StoreFront({
 
       const targetId = productQueryId || productIdFromPath;
       if (targetId && products && products.length > 0) {
-        const found = products.find(p => p.id.toLowerCase() === targetId.toLowerCase());
+        const found = products.find(p => p && p.id && String(p.id).toLowerCase() === targetId.toLowerCase());
         if (found) {
           setSelectedProduct(found);
           setModalSlideIdx(0);
@@ -688,7 +688,7 @@ export default function StoreFront({
                         >
                           <i className={`ti ${p.mediatype === "video" ? "ti-video" : "ti-photo"} text-3xl opacity-50 mb-2`}></i>
                           <span className="text-[11px] font-semibold tracking-wider uppercase text-center">
-                            {p.mediatype === "video" ? "Video Walkthrough" : p.slides[0] || "Theme Preview"}
+                            {p.mediatype === "video" ? "Video Walkthrough" : (p.slides && p.slides[0]) || "Theme Preview"}
                           </span>
                         </div>
                       )}
@@ -716,7 +716,7 @@ export default function StoreFront({
                       {/* Bottom Right detail pill */}
                       <div className="media-pill absolute bottom-3 right-3 rounded-md bg-black/60 px-2.5 py-1 text-[10px] font-semibold text-white flex items-center gap-1.5">
                         <i className={`ti ${p.mediatype === "video" ? "ti-video" : "ti-photo"}`}></i>
-                        {p.mediatype === "video" ? "Walkthrough" : `${p.slides.length} Screens`}
+                        {p.mediatype === "video" ? "Walkthrough" : `${(p.slides || []).length} Screens`}
                       </div>
                     </div>
 
@@ -748,7 +748,7 @@ export default function StoreFront({
 
                         {/* tags */}
                         <div className="card-tags flex flex-wrap gap-1 mb-4">
-                          {p.tags.slice(0, 3).map(tag => (
+                          {(p.tags || []).slice(0, 3).map(tag => (
                             <span key={tag} className="card-tag rounded bg-[var(--bg3)] text-[var(--text2)] text-[10px] px-2 py-0.5">
                               {tag}
                             </span>
@@ -967,7 +967,7 @@ export default function StoreFront({
                     {selectedProduct.images && selectedProduct.images[modalSlideIdx] ? (
                       <img
                         src={selectedProduct.images[modalSlideIdx]}
-                        alt={selectedProduct.slides[modalSlideIdx]}
+                        alt={(selectedProduct.slides && selectedProduct.slides[modalSlideIdx]) || ""}
                         className="w-full h-full object-cover"
                         referrerPolicy="no-referrer"
                       />
@@ -978,23 +978,33 @@ export default function StoreFront({
                       >
                         <i className="ti ti-photo text-4xl opacity-50 mb-2"></i>
                         <span className="text-sm font-semibold tracking-wide">
-                          {selectedProduct.slides[modalSlideIdx] || "Mock Slide Preview"}
+                          {(selectedProduct.slides && selectedProduct.slides[modalSlideIdx]) || "Mock Slide Preview"}
                         </span>
                       </div>
                     )}
 
                     {/* Carousel Left/Right arrows */}
-                    {selectedProduct.slides.length > 1 && (
+                    {selectedProduct.slides && selectedProduct.slides.length > 1 && (
                       <>
                         <button
-                          onClick={() => setModalSlideIdx(prev => (prev - 1 + selectedProduct.slides.length) % selectedProduct.slides.length)}
+                          onClick={() => {
+                            const len = (selectedProduct.slides || []).length;
+                            if (len > 0) {
+                              setModalSlideIdx(prev => (prev - 1 + len) % len);
+                            }
+                          }}
                           className="absolute left-3 top-1/2 -translate-y-1/2 flex h-8 w-8 items-center justify-center rounded-full bg-white/90 text-[var(--blue)] shadow-md hover:scale-105 cursor-pointer"
                           aria-label="Previous Slide"
                         >
                           <i className="ti ti-chevron-left text-lg"></i>
                         </button>
                         <button
-                          onClick={() => setModalSlideIdx(prev => (prev + 1) % selectedProduct.slides.length)}
+                          onClick={() => {
+                            const len = (selectedProduct.slides || []).length;
+                            if (len > 0) {
+                              setModalSlideIdx(prev => (prev + 1) % len);
+                            }
+                          }}
                           className="absolute right-3 top-1/2 -translate-y-1/2 flex h-8 w-8 items-center justify-center rounded-full bg-white/90 text-[var(--blue)] shadow-md hover:scale-105 cursor-pointer"
                           aria-label="Next Slide"
                         >
@@ -1005,7 +1015,7 @@ export default function StoreFront({
 
                     {/* Navigation Dots */}
                     <div className="absolute bottom-3 left-1/2 -translate-x-1/2 flex gap-1.5">
-                      {selectedProduct.slides.map((_, i) => (
+                      {(selectedProduct.slides || []).map((_, i) => (
                         <button
                           key={i}
                           onClick={() => setModalSlideIdx(i)}
