@@ -24,8 +24,179 @@ if (!fs.existsSync(TEMPLATES_DIR)) fs.mkdirSync(TEMPLATES_DIR);
 if (!fs.existsSync(IMAGES_DIR)) fs.mkdirSync(IMAGES_DIR);
 
 const PRODUCTS_FILE = path.join(DATA_DIR, "products.json");
-if (!fs.existsSync(PRODUCTS_FILE)) {
-  fs.writeFileSync(PRODUCTS_FILE, JSON.stringify([], null, 2));
+if (!fs.existsSync(PRODUCTS_FILE) || fs.readFileSync(PRODUCTS_FILE, "utf-8").trim() === "[]" || fs.readFileSync(PRODUCTS_FILE, "utf-8").trim() === "") {
+  const seedProducts = [
+    {
+      id: "p_portfolio_prime",
+      name: "Portfolio Prime - Developer Layout",
+      cat: "Portfolio",
+      desc: "A premium, responsive, developer portfolio template designed with elegant dark mode, a sleek masonry gallery showcase, and highly polished micro-interactions.",
+      price: "1499",
+      oldprice: "2999",
+      template: "portfolio-prime",
+      badge: "Hot",
+      color: "linear-gradient(135deg, #0f172a, #1e3a8a)",
+      mediatype: "carousel",
+      tags: ["React", "Tailwind", "Vite", "Motion"],
+      features: ["Elegant Dark Mode", "Responsive Layout", "Contact Form Integration", "Interactive Skill Canvas", "Smooth Page Transitions"],
+      slides: ["Home View", "About Me Section", "Interactive Work Showcase", "Contact Form Panel"],
+      images: [],
+      status: "live",
+      updatedAt: "2026-07-15T05:00:00.000Z"
+    },
+    {
+      id: "p_saas_spark",
+      name: "SaaS Spark - Startup Landing Page",
+      cat: "SaaS / Startup",
+      desc: "High-converting, sleek landing page built for SaaS applications and startups. Includes bento-grid features, interactive pricing model calculator, and testimonial layouts.",
+      price: "2499",
+      oldprice: "4999",
+      template: "saas-spark",
+      badge: "New",
+      color: "linear-gradient(135deg, #020617, #3b82f6)",
+      mediatype: "carousel",
+      tags: ["SaaS", "Bento Grid", "Analytics", "Vite"],
+      features: ["Bento Grid Feature Section", "Interactive Pricing Cards", "Fully Responsive Layout", "Custom SVG Icons", "SEO Optimized Build"],
+      slides: ["Hero View", "Analytics Grid", "Interactive Pricing Calculator", "Testimonials Showcase"],
+      images: [],
+      status: "live",
+      updatedAt: "2026-07-15T05:00:00.000Z"
+    },
+    {
+      id: "p_bistro_bites",
+      name: "Bistro Bites - Restaurant Template",
+      cat: "Restaurant",
+      desc: "Charming, elegant culinary template designed for upscale bistros and cafes. Showcases interactive food categories, online reservation flow, and dynamic customer stories.",
+      price: "0",
+      oldprice: "999",
+      template: "bistro-bites",
+      badge: "Free",
+      color: "linear-gradient(135deg, #1c1917, #78350f)",
+      mediatype: "carousel",
+      tags: ["Culinary", "Menu", "Reservation", "Tailwind"],
+      features: ["Charming Stone-themed UI", "Interactive Food Menu", "Table Reservation Form", "Dynamic Food Gallery", "Google Maps Grounding"],
+      slides: ["Restaurant Hero", "Interactive Culinary Menu", "Customer Story Carousel", "Online Booking Sheet"],
+      images: [],
+      status: "live",
+      updatedAt: "2026-07-15T05:00:00.000Z"
+    }
+  ];
+  fs.writeFileSync(PRODUCTS_FILE, JSON.stringify(seedProducts, null, 2));
+}
+
+const QNA_FILE = path.join(DATA_DIR, "qna.json");
+if (!fs.existsSync(QNA_FILE)) {
+  const seedQna = [
+    {
+      id: "q_1",
+      question: "Are the source files included with the portfolio template? Is it easy to customize?",
+      author: "Arjun Mehta",
+      timestamp: new Date(Date.now() - 2 * 24 * 3600 * 1000).toISOString(),
+      category: "code",
+      upvotes: 14,
+      answers: [
+        {
+          id: "a_1_1",
+          author: "Lifehut Team (Developer)",
+          text: "Yes! All purchases include full, un-minified React components, TypeScript files, Tailwind config, and Vite layouts. It is fully ready for one-click Vercel or Netlify deployments.",
+          timestamp: new Date(Date.now() - 1.8 * 24 * 3600 * 1000).toISOString(),
+          isAdmin: true
+        }
+      ]
+    },
+    {
+      id: "q_2",
+      question: "Do you support Stripe or PayPal payment gateways for international customers?",
+      author: "Sarah Jenkins",
+      timestamp: new Date(Date.now() - 1 * 24 * 3600 * 1000).toISOString(),
+      category: "pricing",
+      upvotes: 9,
+      answers: [
+        {
+          id: "a_2_1",
+          author: "Lifehut Team (Support)",
+          text: "Currently, our primary gateway is Razorpay (which supports international credit cards as well!). We are actively building a dedicated native Stripe elements integration which will launch in our v1.4.0 update.",
+          timestamp: new Date(Date.now() - 0.9 * 24 * 3600 * 1000).toISOString(),
+          isAdmin: true
+        }
+      ]
+    },
+    {
+      id: "q_3",
+      question: "Can I use these templates to build and deploy commercial projects for clients?",
+      author: "Vikram Dev",
+      timestamp: new Date(Date.now() - 0.5 * 24 * 3600 * 1000).toISOString(),
+      category: "licensing",
+      upvotes: 18,
+      answers: [
+        {
+          id: "a_3_1",
+          author: "Lifehut Team (Admin)",
+          text: "Absolutely! Under our commercial license guidelines, you can use our templates to build custom client projects, host them anywhere, and charge clients. There are no recurring fees or royalty charges.",
+          timestamp: new Date(Date.now() - 0.4 * 24 * 3600 * 1000).toISOString(),
+          isAdmin: true
+        }
+      ]
+    }
+  ];
+  fs.writeFileSync(QNA_FILE, JSON.stringify(seedQna, null, 2));
+}
+
+const ROADMAP_FILE = path.join(DATA_DIR, "roadmap.json");
+if (!fs.existsSync(ROADMAP_FILE)) {
+  const seedRoadmap = [
+    {
+      id: "rm_1",
+      title: "Stripe Multicurrency Gateway",
+      desc: "Enabling global payments with Stripe Elements, support for local credit cards, Apple Pay, and Google Pay worldwide.",
+      status: "In Progress",
+      category: "payment",
+      votes: 42,
+      version: "v1.4.0",
+      date: "Coming Aug 2026"
+    },
+    {
+      id: "rm_2",
+      title: "Next.js 15 App Router Layouts",
+      desc: "Providing compiled Next.js SSR-friendly layouts for our existing React Single Page Application templates.",
+      status: "Planned",
+      category: "framework",
+      votes: 28,
+      version: "v2.0.0",
+      date: "Planned Q3 2026"
+    },
+    {
+      id: "rm_3",
+      title: "Interactive Live Customizer Tool",
+      desc: "Build headers, modify color tokens, and preview templates in real-time in your browser before exporting the ZIP.",
+      status: "In Progress",
+      category: "customizer",
+      votes: 56,
+      version: "v1.5.0",
+      date: "Coming Sep 2026"
+    },
+    {
+      id: "rm_4",
+      title: "Razorpay Secure India Live Gateway",
+      desc: "Instant automated ZIP releases secured with high-speed Razorpay checkout supporting UPI, NetBanking, and Card transactions.",
+      status: "Shipped",
+      category: "payment",
+      votes: 98,
+      version: "v1.2.0",
+      date: "Shipped July 2026"
+    }
+  ];
+  fs.writeFileSync(ROADMAP_FILE, JSON.stringify(seedRoadmap, null, 2));
+}
+
+const SUBS_FILE = path.join(DATA_DIR, "subscriptions.json");
+if (!fs.existsSync(SUBS_FILE)) {
+  fs.writeFileSync(SUBS_FILE, JSON.stringify([], null, 2));
+}
+
+const COMMENTS_FILE = path.join(DATA_DIR, "comments.json");
+if (!fs.existsSync(COMMENTS_FILE)) {
+  fs.writeFileSync(COMMENTS_FILE, JSON.stringify([], null, 2));
 }
 
 // Set up body parsing and file upload middleware
@@ -586,6 +757,240 @@ app.get("/api/download", async (req, res) => {
 });
 
 /* =================================================================
+   PUBLIC INTERACTIVE VISITOR HUB ENDPOINTS
+   ================================================================= */
+
+// Fetch all Q&As
+app.get("/api/qna", (req, res) => {
+  try {
+    const qnas = JSON.parse(fs.readFileSync(QNA_FILE, "utf-8"));
+    res.json(qnas);
+  } catch (error: any) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// Post a new question
+app.post("/api/qna", (req, res) => {
+  try {
+    const { question, author, category } = req.body;
+    if (!question || !author) {
+      return res.status(400).json({ error: "Question and nickname are required." });
+    }
+    const qnas = JSON.parse(fs.readFileSync(QNA_FILE, "utf-8"));
+    const newQuestion = {
+      id: `q_${Date.now()}_${Math.random().toString(36).substring(2, 6)}`,
+      question,
+      author,
+      timestamp: new Date().toISOString(),
+      category: category || "general",
+      upvotes: 0,
+      answers: []
+    };
+    qnas.unshift(newQuestion);
+    fs.writeFileSync(QNA_FILE, JSON.stringify(qnas, null, 2));
+    res.json(newQuestion);
+  } catch (error: any) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// Post an answer to a question
+app.post("/api/qna/:id/answer", (req, res) => {
+  try {
+    const { id } = req.params;
+    const { text, author, isAdmin } = req.body;
+    if (!text || !author) {
+      return res.status(400).json({ error: "Answer text and author are required." });
+    }
+    const qnas = JSON.parse(fs.readFileSync(QNA_FILE, "utf-8"));
+    const questionIndex = qnas.findIndex((q: any) => q.id === id);
+    if (questionIndex === -1) {
+      return res.status(404).json({ error: "Question not found." });
+    }
+    const newAnswer = {
+      id: `a_${Date.now()}_${Math.random().toString(36).substring(2, 6)}`,
+      author: isAdmin ? "Lifehut Team (Developer)" : author,
+      text,
+      timestamp: new Date().toISOString(),
+      isAdmin: !!isAdmin
+    };
+    qnas[questionIndex].answers.push(newAnswer);
+    fs.writeFileSync(QNA_FILE, JSON.stringify(qnas, null, 2));
+    res.json(newAnswer);
+  } catch (error: any) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// Upvote a question
+app.post("/api/qna/:id/vote", (req, res) => {
+  try {
+    const { id } = req.params;
+    const qnas = JSON.parse(fs.readFileSync(QNA_FILE, "utf-8"));
+    const question = qnas.find((q: any) => q.id === id);
+    if (!question) {
+      return res.status(404).json({ error: "Question not found." });
+    }
+    question.upvotes = (question.upvotes || 0) + 1;
+    fs.writeFileSync(QNA_FILE, JSON.stringify(qnas, null, 2));
+    res.json({ success: true, upvotes: question.upvotes });
+  } catch (error: any) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// Fetch roadmap
+app.get("/api/roadmap", (req, res) => {
+  try {
+    const roadmap = JSON.parse(fs.readFileSync(ROADMAP_FILE, "utf-8"));
+    res.json(roadmap);
+  } catch (error: any) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// Upvote a roadmap item
+app.post("/api/roadmap/:id/vote", (req, res) => {
+  try {
+    const { id } = req.params;
+    const roadmap = JSON.parse(fs.readFileSync(ROADMAP_FILE, "utf-8"));
+    const item = roadmap.find((r: any) => r.id === id);
+    if (!item) {
+      return res.status(404).json({ error: "Feature not found." });
+    }
+    item.votes = (item.votes || 0) + 1;
+    fs.writeFileSync(ROADMAP_FILE, JSON.stringify(roadmap, null, 2));
+    res.json({ success: true, votes: item.votes });
+  } catch (error: any) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// Subscribe to newsletter / updates
+app.post("/api/subscriptions", (req, res) => {
+  try {
+    const { email, topics } = req.body;
+    if (!email) {
+      return res.status(400).json({ error: "Email is required." });
+    }
+    const subs = JSON.parse(fs.readFileSync(SUBS_FILE, "utf-8"));
+    const exists = subs.find((s: any) => s.email.toLowerCase() === email.toLowerCase());
+    
+    const token = `LH-${Math.floor(100000 + Math.random() * 900000)}`;
+    if (exists) {
+      exists.topics = topics || exists.topics;
+      exists.updatedAt = new Date().toISOString();
+      fs.writeFileSync(SUBS_FILE, JSON.stringify(subs, null, 2));
+      return res.json({ success: true, alreadyExists: true, token: exists.token || token });
+    }
+
+    const newSub = {
+      id: `sub_${Date.now()}`,
+      email,
+      topics: topics || [],
+      token,
+      timestamp: new Date().toISOString()
+    };
+    subs.push(newSub);
+    fs.writeFileSync(SUBS_FILE, JSON.stringify(subs, null, 2));
+    res.json({ success: true, token });
+  } catch (error: any) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+/* =================================================================
+   PRODUCT REVIEWS & COMMENTS ENDPOINTS
+   ================================================================= */
+
+// Fetch product comments
+app.get("/api/comments/:productId", (req, res) => {
+  try {
+    const { productId } = req.params;
+    const comments = JSON.parse(fs.readFileSync(COMMENTS_FILE, "utf-8"));
+    const productComments = comments.filter((c: any) => c.productId === productId);
+    res.json(productComments);
+  } catch (error: any) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// Post a new product comment
+app.post("/api/comments/:productId", (req, res) => {
+  try {
+    const { productId } = req.params;
+    const { author, rating, comment, tag } = req.body;
+    if (!author || !rating || !comment) {
+      return res.status(400).json({ error: "Author, rating, and comment content are required." });
+    }
+    const comments = JSON.parse(fs.readFileSync(COMMENTS_FILE, "utf-8"));
+    const newComment = {
+      id: `c_${Date.now()}_${Math.random().toString(36).substring(2, 6)}`,
+      productId,
+      author,
+      rating: Number(rating),
+      comment,
+      tag: tag || "Visitor",
+      timestamp: new Date().toISOString(),
+      helpfulVotes: 0,
+      replies: []
+    };
+    comments.unshift(newComment);
+    fs.writeFileSync(COMMENTS_FILE, JSON.stringify(comments, null, 2));
+    res.json(newComment);
+  } catch (error: any) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// Upvote comment helpful status
+app.post("/api/comments/:productId/:commentId/vote", (req, res) => {
+  try {
+    const { commentId } = req.params;
+    const comments = JSON.parse(fs.readFileSync(COMMENTS_FILE, "utf-8"));
+    const comment = comments.find((c: any) => c.id === commentId);
+    if (!comment) {
+      return res.status(404).json({ error: "Comment not found." });
+    }
+    comment.helpfulVotes = (comment.helpfulVotes || 0) + 1;
+    fs.writeFileSync(COMMENTS_FILE, JSON.stringify(comments, null, 2));
+    res.json({ success: true, helpfulVotes: comment.helpfulVotes });
+  } catch (error: any) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// Post a reply to a comment
+app.post("/api/comments/:productId/:commentId/reply", (req, res) => {
+  try {
+    const { commentId } = req.params;
+    const { text, author, isAdmin } = req.body;
+    if (!text || !author) {
+      return res.status(400).json({ error: "Reply text and author are required." });
+    }
+    const comments = JSON.parse(fs.readFileSync(COMMENTS_FILE, "utf-8"));
+    const commentIndex = comments.findIndex((c: any) => c.id === commentId);
+    if (commentIndex === -1) {
+      return res.status(404).json({ error: "Comment not found." });
+    }
+    const newReply = {
+      id: `r_${Date.now()}_${Math.random().toString(36).substring(2, 6)}`,
+      author: isAdmin ? "Lifehut Team (Developer)" : author,
+      text,
+      timestamp: new Date().toISOString(),
+      isAdmin: !!isAdmin
+    };
+    comments[commentIndex].replies = comments[commentIndex].replies || [];
+    comments[commentIndex].replies.push(newReply);
+    fs.writeFileSync(COMMENTS_FILE, JSON.stringify(comments, null, 2));
+    res.json(newReply);
+  } catch (error: any) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+/* =================================================================
    VITE DEV SERVER & PRODUCTION BUNDLING MIDDLEWARES
    ================================================================= */
 async function startServer() {
@@ -595,6 +1000,24 @@ async function startServer() {
       appType: "spa",
     });
     app.use(vite.middlewares);
+
+    // Catch-all wildcard route to serve and transform index.html in development mode
+    app.get("*", async (req, res, next) => {
+      const url = req.originalUrl;
+      try {
+        const indexPath = path.join(process.cwd(), "index.html");
+        if (fs.existsSync(indexPath)) {
+          let html = fs.readFileSync(indexPath, "utf-8");
+          html = await vite.transformIndexHtml(url, html);
+          res.status(200).set({ "Content-Type": "text/html" }).end(html);
+        } else {
+          next();
+        }
+      } catch (e) {
+        vite.ssrFixStacktrace(e as Error);
+        next(e);
+      }
+    });
   } else {
     const distPath = path.join(process.cwd(), "dist");
     app.use(express.static(distPath));
