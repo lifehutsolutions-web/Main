@@ -118,9 +118,7 @@ body {
   position: relative; overflow: hidden;
 }
 .hero::before {
-  content: ''; position: absolute; top: -80px; right: -80px;
-  width: 380px; height: 380px; border-radius: 50%;
-  background: rgba(26,86,219,.15); pointer-events: none;
+  display: none;
 }
 .hero::after {
   content: ''; position: absolute; bottom: -100px; left: -60px;

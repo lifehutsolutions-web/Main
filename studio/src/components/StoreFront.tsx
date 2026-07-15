@@ -333,6 +333,20 @@ export default function StoreFront({
 
       {/* HERO SECTION */}
       <section className="hero relative overflow-hidden bg-[var(--hero-grad)] px-4 py-20 text-center text-white md:px-8">
+        {/* Animated Background Circle Decorator */}
+        <motion.div
+          className="absolute w-[380px] h-[380px] rounded-full bg-[#1a56db]/15 pointer-events-none"
+          animate={{
+            left: ["75%", "45%", "15%", "-5%", "15%", "45%", "75%", "85%", "75%"],
+            top: ["-10%", "-15%", "-10%", "20%", "50%", "55%", "50%", "20%", "-10%"],
+            scale: [1, 1.05, 0.95, 1.02, 0.98, 1.05, 1, 0.98, 1],
+          }}
+          transition={{
+            duration: 30,
+            repeat: Infinity,
+            ease: "linear",
+          }}
+        />
         <div className="relative z-10 mx-auto max-w-4xl">
           <div className="hero-eyebrow inline-flex items-center gap-2 rounded-full border border-white/20 bg-white/10 px-4 py-1.5 text-xs text-white/90">
             <span className="pulse h-2 w-2 rounded-full bg-emerald-400"></span>
@@ -653,14 +667,20 @@ export default function StoreFront({
             </p>
           </div>
 
-          <div className="platforms-grid grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4" role="list">
+          <div className="platforms-grid grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4" role="list">
             {[
               { name: "Vercel", desc: "Drag & drop launch", icon: "ti-triangle" },
               { name: "Netlify", desc: "One-click deployment", icon: "ti-bolt" },
               { name: "GitHub Pages", desc: "Free static host", icon: "ti-brand-github" },
+              { name: "Cloudflare Pages", desc: "Global edge network", icon: "ti-cloud" },
+              { name: "AWS Amplify", desc: "Amazon web cloud", icon: "ti-brand-aws" },
+              { name: "Firebase Hosting", desc: "Google cloud CDN", icon: "ti-brand-firebase" },
               { name: "Hostinger", desc: "FTP file uploads", icon: "ti-server-2" },
               { name: "GoDaddy", desc: "Shared public host", icon: "ti-world" },
-              { name: "Cloudflare Pages", desc: "Global edge network", icon: "ti-cloud" },
+              { name: "DigitalOcean", desc: "App cloud platform", icon: "ti-server" },
+              { name: "Fly.io", desc: "Close to users", icon: "ti-rocket" },
+              { name: "GitLab Pages", desc: "Automated CI/CD host", icon: "ti-brand-gitlab" },
+              { name: "Surge.sh", desc: "Instant CLI publishing", icon: "ti-terminal" },
               { name: "Render", desc: "Free web hosting", icon: "ti-terminal-2" },
               { name: "Custom Host", desc: "Standard ZIP folder", icon: "ti-folder" }
             ].map(p => (
@@ -696,13 +716,15 @@ export default function StoreFront({
             </p>
           </div>
 
-          <div className="features-grid grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6" role="list">
+          <div className="features-grid grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6" role="list">
             {[
               { title: "Walkthrough Previews", desc: "Preview full images or watch videos inside the explore dialog before committing.", icon: "ti-movie" },
-              { title: "Secured Releases Stream", desc: "Zips are hosted directly on GitHub Releases, accessed securely via signed backend relays.", icon: "ti-lock-square" },
+              { title: "Secured Downloads", desc: "Zips are hosted directly on secure, high-speed cloud servers, accessed via signed backend relays.", icon: "ti-lock-square" },
               { title: "One-Time Payment", desc: "No subscriptions, lock-ins, or credits. Clear pricing with UPI support.", icon: "ti-currency-rupee" },
               { title: "Pure Static Bundle", desc: "Templates deploy anywhere, load at blazing speeds, and are easy to customize.", icon: "ti-file-zip" },
-              { title: "Figma File Included", desc: "SaaS and premium startup packages bundle complete original Figma files.", icon: "ti-brand-figma" },
+              { title: "Design Assets Included", desc: "SaaS and premium startup packages bundle complete original vector design assets.", icon: "ti-vector" },
+              { title: "Affordable Premium Quality", desc: "Get industry-grade designs and hand-crafted layouts at an accessible, transparent flat rate.", icon: "ti-tag" },
+              { title: "Easy & Seamless Editing", desc: "Clean, well-documented code allows you to customize components and content effortlessly.", icon: "ti-edit" },
               { title: "Indian Support Desk", desc: "Immediate assistance from the Lifehut core developer team — no generic bots.", icon: "ti-headset" }
             ].map(f => (
               <div key={f.title} className="feature-card bg-[var(--card)] border border-[var(--border)] rounded-xl p-5 hover:border-[var(--blue)] transition-all" role="listitem">
@@ -740,15 +762,26 @@ export default function StoreFront({
               <button onClick={() => document.getElementById("hosting-section")?.scrollIntoView({ behavior: "smooth" })} className="block text-xs hover:text-white mb-2.5 cursor-pointer">Hosting Guides</button>
             </div>
             <div>
-              <h4 className="text-xs font-bold text-white uppercase tracking-wider mb-4">Company</h4>
-              <a href="https://www.lifehutsolutions.com" target="_blank" rel="noopener noreferrer" className="block text-xs hover:text-white mb-2.5">Lifehut Solutions</a>
+              <h4 className="text-xs font-bold text-white uppercase tracking-wider mb-4">Other Products</h4>
               <a href="https://www.lifehutsolutions.com" target="_blank" rel="noopener noreferrer" className="block text-xs hover:text-white mb-2.5">About Us</a>
-              <a href="https://www.lifehutsolutions.com" target="_blank" rel="noopener noreferrer" className="block text-xs hover:text-white mb-2.5">Inquire Quote</a>
+              <a href="https://www.workspace.lifehutsolutions.com" target="_blank" rel="noopener noreferrer" className="block text-xs hover:text-white mb-2.5">Lifehut Workspace</a>
+              <a href="https://www.lifehutsolutions.com/smart-quote" target="_blank" rel="noopener noreferrer" className="block text-xs hover:text-white mb-2.5">Lifehut Smart Quote</a>
             </div>
           </div>
 
           <div className="footer-bottom border-t border-slate-800 mt-10 pt-6 flex flex-wrap items-center justify-between gap-4 text-xs">
-            <span>&copy; {new Date().getFullYear()} Lifehut Solutions. All rights reserved.</span>
+  <span>
+  &copy; {new Date().getFullYear()}{" "}
+  <a
+    href="https://lifehutsolutions.com"
+    target="_blank"
+    rel="noopener noreferrer"
+    className="hover:text-white hover:underline"
+  >
+    Lifehut Solutions
+  </a>
+  . All rights reserved.
+</span>
             <div className="flex gap-4">
               <a href="#" className="hover:text-white">Privacy Policy</a>
               <a href="#" className="hover:text-white">Terms of Use</a>
@@ -761,7 +794,7 @@ export default function StoreFront({
       {/* DETAIL EXPLORE & CHECKOUT MODAL */}
       <AnimatePresence>
         {selectedProduct && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm overflow-y-auto">
+          <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm overflow-y-auto">
             <motion.div
               initial={{ opacity: 0, scale: 0.95 }}
               animate={{ opacity: 1, scale: 1 }}
