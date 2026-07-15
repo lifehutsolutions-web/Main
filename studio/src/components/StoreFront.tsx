@@ -75,6 +75,76 @@ export default function StoreFront({
     };
   }, [selectedProduct]);
 
+  // Handle URL deep-linking on initial load or products list updates
+  useEffect(() => {
+    if (products && products.length > 0) {
+      const params = new URLSearchParams(window.location.search);
+      const productQueryId = params.get("product") || params.get("id") || params.get("template");
+
+      let productIdFromPath = "";
+      const path = window.location.pathname.toLowerCase();
+      const pathParts = path.split("/").filter(Boolean);
+      if (
+        (pathParts[0] === "product" || pathParts[0] === "products" || pathParts[0] === "template" || pathParts[0] === "templates") &&
+        pathParts[1]
+      ) {
+        productIdFromPath = pathParts[1];
+      }
+
+      const targetId = productQueryId || productIdFromPath;
+      if (targetId) {
+        const found = products.find(p => p.id.toLowerCase() === targetId.toLowerCase());
+        if (found) {
+          setSelectedProduct(found);
+          setModalSlideIdx(0);
+          setPaymentStatus("idle");
+          setSecureDownloadUrl(null);
+          setErrorMessage(null);
+          setClaimEmail("");
+        }
+      }
+    }
+  }, [products]);
+
+  // Sync back/forward button events with open/close product modal
+  useEffect(() => {
+    const handlePopState = () => {
+      const path = window.location.pathname.toLowerCase();
+      const pathParts = path.split("/").filter(Boolean);
+      
+      const params = new URLSearchParams(window.location.search);
+      const productQueryId = params.get("product") || params.get("id") || params.get("template");
+
+      let productIdFromPath = "";
+      if (
+        (pathParts[0] === "product" || pathParts[0] === "products" || pathParts[0] === "template" || pathParts[0] === "templates") &&
+        pathParts[1]
+      ) {
+        productIdFromPath = pathParts[1];
+      }
+
+      const targetId = productQueryId || productIdFromPath;
+      if (targetId && products && products.length > 0) {
+        const found = products.find(p => p.id.toLowerCase() === targetId.toLowerCase());
+        if (found) {
+          setSelectedProduct(found);
+          setModalSlideIdx(0);
+          setPaymentStatus("idle");
+          setSecureDownloadUrl(null);
+          setErrorMessage(null);
+          setClaimEmail("");
+          return;
+        }
+      }
+      setSelectedProduct(null);
+    };
+
+    window.addEventListener("popstate", handlePopState);
+    return () => {
+      window.removeEventListener("popstate", handlePopState);
+    };
+  }, [products]);
+
   const toggleDark = () => {
     const nextDark = !isDark;
     setIsDark(nextDark);
@@ -295,6 +365,24 @@ export default function StoreFront({
     setSecureDownloadUrl(null);
     setErrorMessage(null);
     setClaimEmail("");
+
+    // Use robust query parameter state to enable deep linking and back navigation on all hosting setups (including subfolders & static hosts)
+    const params = new URLSearchParams(window.location.search);
+    params.set("product", product.id);
+    const newUrl = `${window.location.pathname}?${params.toString()}`;
+    window.history.pushState({ productId: product.id }, "", newUrl);
+  };
+
+  const closeProductModal = () => {
+    setSelectedProduct(null);
+
+    // Revert query params
+    const params = new URLSearchParams(window.location.search);
+    params.delete("product");
+    params.delete("id");
+    params.delete("template");
+    const newUrl = `${window.location.pathname}${params.toString() ? "?" + params.toString() : ""}`;
+    window.history.pushState({}, "", newUrl);
   };
 
   return (
@@ -932,7 +1020,7 @@ export default function StoreFront({
 
                 {/* Close Button top right */}
                 <button
-                  onClick={() => setSelectedProduct(null)}
+                  onClick={closeProductModal}
                   className="absolute top-4 right-4 z-10 flex h-9 w-9 items-center justify-center rounded-full bg-white/95 text-slate-800 shadow-md hover:scale-105 cursor-pointer text-base"
                   aria-label="Close Dialog"
                 >
