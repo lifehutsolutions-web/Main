@@ -122,14 +122,14 @@ export default function VisitorHub() {
     {
       id: "stack",
       title: "Custom Tech Stack",
-      subtitle: "Request Next.js/Svelte templates",
-      text: "Hi Lifehut Support, I'm interested in getting a custom template built with Next.js & Svelte. Can you share the pricing and timeline?"
+      subtitle: "Request Custom templates",
+      text: "Hi Lifehut Support, I'm interested in getting a custom template built with my own requirements. Can you share the pricing and timeline?"
     },
     {
       id: "deploy",
       title: "Deployment Help",
       subtitle: "Vercel / Cloudflare Page setup",
-      text: "Hello! I purchased a template and would like professional assistance in deploying it to my custom domain on Cloudflare Pages."
+      text: "Hello! I purchased a template and would like professional assistance in deploying it to my custom domain"
     },
     {
       id: "payment",
@@ -148,7 +148,7 @@ export default function VisitorHub() {
     const finalMsg = waMessage || "Hi Lifehut Solutions, I'm visiting your templates marketplace and would love to ask a quick question!";
     const encoded = encodeURIComponent(finalMsg);
     // Open WhatsApp URL
-    window.open(`https://wa.me/919488344773?text=${encoded}`, "_blank");
+    window.open(`https://wa.me/919150998912?text=${encoded}`, "_blank");
   };
 
 
