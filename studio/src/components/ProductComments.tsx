@@ -49,83 +49,13 @@ export default function ProductComments({ productId, productName }: ProductComme
   // Upvoted reviews tracking (saved locally in session)
   const [votedIds, setVotedIds] = useState<string[]>([]);
 
-  // Seed default comments if database has none
+  // Fetch product comments
   const fetchComments = async () => {
     setLoading(true);
     try {
       const res = await fetch(`/api/comments/${productId}`);
       if (res.ok) {
-        let data = await res.json();
-        
-        // If empty, let's provide some premium, beautiful Amazon-style seeds for realistic look
-        if (data.length === 0) {
-          const seeds = [
-            {
-              id: `c_seed_1_${productId}`,
-              productId,
-              author: "Rohan Deshmukh",
-              rating: 5,
-              comment: `Absolutely brilliant template! The code quality for ${productName} is spectacular. Extremely clean Tailwind structure, easy to customize colors with standard tokens, and the Vite configuration works perfectly out-of-the-box. Highly recommended for any Indian developers or SaaS founders!`,
-              tag: "Verified Purchase",
-              timestamp: new Date(Date.now() - 3 * 24 * 3600 * 1000).toISOString(),
-              helpfulVotes: 12,
-              replies: [
-                {
-                  id: "r_seed_1_1",
-                  author: "Lifehut Team (Developer)",
-                  text: "Thank you so much Rohan! We worked hard on structuring the utility tokens to make edits seamless. Let us know on WhatsApp if you require help setting up the webhook gateways!",
-                  timestamp: new Date(Date.now() - 2.8 * 24 * 3600 * 1000).toISOString(),
-                  isAdmin: true
-                }
-              ]
-            },
-            {
-              id: `c_seed_2_${productId}`,
-              productId,
-              author: "Sneha Sen",
-              rating: 4,
-              comment: `Perfect for my portfolio launch. Layout is modern and responsive. I love the interactive elements and page transitions. Just one suggestion: please add Svelte versions of the components in the future roadmap!`,
-              tag: "Verified Purchase",
-              timestamp: new Date(Date.now() - 7 * 24 * 3600 * 1000).toISOString(),
-              helpfulVotes: 5,
-              replies: []
-            },
-            {
-              id: `c_seed_3_${productId}`,
-              productId,
-              author: "Vikram Malhotra",
-              rating: 5,
-              comment: `Is the UPI/Razorpay payment workflow integrated directly in the source code or do we need external routing? Asking because I need a self-hosted checkout page.`,
-              tag: "Pre-Sale Question",
-              timestamp: new Date(Date.now() - 12 * 24 * 3600 * 1000).toISOString(),
-              helpfulVotes: 2,
-              replies: [
-                {
-                  id: "r_seed_3_1",
-                  author: "Lifehut Team (Developer)",
-                  text: "Hi Vikram! The ZIP folder includes the fully-configured client checkout module and clear instructions on how to bind your custom Razorpay API credentials. It is 100% self-hosted and independent.",
-                  timestamp: new Date(Date.now() - 11.5 * 24 * 3600 * 1000).toISOString(),
-                  isAdmin: true
-                }
-              ]
-            }
-          ];
-
-          // Save seeds to database by posting them
-          for (const seed of seeds) {
-            await fetch(`/api/comments/${productId}`, {
-              method: "POST",
-              headers: { "Content-Type": "application/json" },
-              body: JSON.stringify(seed)
-            });
-          }
-
-          // Fetch again to sync
-          const reFetch = await fetch(`/api/comments/${productId}`);
-          if (reFetch.ok) {
-            data = await reFetch.json();
-          }
-        }
+        const data = await res.json();
         setComments(Array.isArray(data) ? data : []);
       }
     } catch (err) {

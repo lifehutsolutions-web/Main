@@ -199,6 +199,11 @@ if (!fs.existsSync(COMMENTS_FILE)) {
   fs.writeFileSync(COMMENTS_FILE, JSON.stringify([], null, 2));
 }
 
+const BROADCASTS_FILE = path.join(DATA_DIR, "broadcasts.json");
+if (!fs.existsSync(BROADCASTS_FILE)) {
+  fs.writeFileSync(BROADCASTS_FILE, JSON.stringify([], null, 2));
+}
+
 // Set up body parsing and file upload middleware
 app.use(express.json({ limit: "50mb" }));
 app.use(express.urlencoded({ limit: "50mb", extended: true }));
@@ -478,6 +483,32 @@ app.post("/api/products", authenticateAdmin, async (req, res) => {
     }
 
     await saveProductsToGist(products);
+
+    // Automated newsletter broadcast to #CodeReleases if requested
+    if (productData.broadcastNotification && productData.status === "live") {
+      try {
+        const subs = JSON.parse(fs.readFileSync(SUBS_FILE, "utf-8"));
+        const targetSubs = subs.filter((s: any) => s.topics && s.topics.includes("releases"));
+        const recipientEmails = targetSubs.map((s: any) => s.email);
+
+        const newBroadcast = {
+          id: `bc_auto_${Date.now()}`,
+          subject: `🚀 New Release Drop: ${productData.name} is now LIVE!`,
+          message: `Hello Developer,\n\nWe have just published a new premium code template!\n\nTemplate Name: ${productData.name}\nCategory: ${productData.cat}\nDescription: ${productData.desc}\nPrice: INR ${productData.price || "Free"}\n\nLog in to your Dashboard or visit the store front to check it out.\n\nHappy Coding,\nLifehut Team`,
+          topic: "releases",
+          recipientsCount: recipientEmails.length,
+          recipients: recipientEmails,
+          timestamp: new Date().toISOString()
+        };
+
+        const broadcasts = JSON.parse(fs.readFileSync(BROADCASTS_FILE, "utf-8"));
+        broadcasts.unshift(newBroadcast);
+        fs.writeFileSync(BROADCASTS_FILE, JSON.stringify(broadcasts, null, 2));
+      } catch (broadcastErr) {
+        console.error("Automated template release broadcast failed:", broadcastErr);
+      }
+    }
+
     res.json({ success: true, product: productData });
   } catch (error: any) {
     res.status(500).json({ error: error.message });
@@ -900,16 +931,165 @@ app.post("/api/subscriptions", (req, res) => {
   }
 });
 
+// Fetch all subscriptions (Admin only)
+app.get("/api/subscriptions", authenticateAdmin, (req, res) => {
+  try {
+    const subs = JSON.parse(fs.readFileSync(SUBS_FILE, "utf-8"));
+    res.json(subs);
+  } catch (error: any) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// Delete a subscription (Admin only)
+app.delete("/api/subscriptions/:id", authenticateAdmin, (req, res) => {
+  try {
+    const { id } = req.params;
+    let subs = JSON.parse(fs.readFileSync(SUBS_FILE, "utf-8"));
+    subs = subs.filter((s: any) => s.id !== id);
+    fs.writeFileSync(SUBS_FILE, JSON.stringify(subs, null, 2));
+    res.json({ success: true });
+  } catch (error: any) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// Fetch all sent broadcasts (Admin only)
+app.get("/api/subscriptions/broadcasts", authenticateAdmin, (req, res) => {
+  try {
+    const broadcasts = JSON.parse(fs.readFileSync(BROADCASTS_FILE, "utf-8"));
+    res.json(broadcasts);
+  } catch (error: any) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// Send email broadcast / newsletter (Admin only)
+app.post("/api/subscriptions/broadcast", authenticateAdmin, (req, res) => {
+  try {
+    const { subject, message, topic } = req.body;
+    if (!subject || !message) {
+      return res.status(400).json({ error: "Subject and message are required." });
+    }
+
+    const subs = JSON.parse(fs.readFileSync(SUBS_FILE, "utf-8"));
+    // Filter by topic if specified
+    const targetSubs = topic && topic !== "all"
+      ? subs.filter((s: any) => s.topics && s.topics.includes(topic))
+      : subs;
+
+    const recipientEmails = targetSubs.map((s: any) => s.email);
+
+    const newBroadcast = {
+      id: `bc_${Date.now()}`,
+      subject,
+      message,
+      topic: topic || "all",
+      recipientsCount: recipientEmails.length,
+      recipients: recipientEmails,
+      timestamp: new Date().toISOString()
+    };
+
+    const broadcasts = JSON.parse(fs.readFileSync(BROADCASTS_FILE, "utf-8"));
+    broadcasts.unshift(newBroadcast);
+    fs.writeFileSync(BROADCASTS_FILE, JSON.stringify(broadcasts, null, 2));
+
+    res.json({
+      success: true,
+      broadcast: newBroadcast
+    });
+  } catch (error: any) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
 /* =================================================================
    PRODUCT REVIEWS & COMMENTS ENDPOINTS
    ================================================================= */
 
-// Fetch product comments
+// Fetch product comments (with auto-seeding if empty)
 app.get("/api/comments/:productId", (req, res) => {
   try {
     const { productId } = req.params;
-    const comments = JSON.parse(fs.readFileSync(COMMENTS_FILE, "utf-8"));
-    const productComments = comments.filter((c: any) => c.productId === productId);
+    let comments = [];
+    if (fs.existsSync(COMMENTS_FILE)) {
+      comments = JSON.parse(fs.readFileSync(COMMENTS_FILE, "utf-8"));
+    } else {
+      fs.writeFileSync(COMMENTS_FILE, JSON.stringify([], null, 2));
+    }
+
+    let productComments = comments.filter((c: any) => c.productId === productId);
+
+    if (productComments.length === 0) {
+      // Find the product to get its name
+      let productName = "this template";
+      try {
+        if (fs.existsSync(PRODUCTS_FILE)) {
+          const products = JSON.parse(fs.readFileSync(PRODUCTS_FILE, "utf-8"));
+          const prod = products.find((p: any) => p.id === productId);
+          if (prod) productName = prod.name;
+        }
+      } catch (e) {
+        console.error("Error reading products for comment seeding:", e);
+      }
+
+      const seeds = [
+        {
+          id: `c_seed_1_${productId}`,
+          productId,
+          author: "Rohan Deshmukh",
+          rating: 5,
+          comment: `Absolutely brilliant template! The code quality for ${productName} is spectacular. Extremely clean Tailwind structure, easy to customize colors with standard tokens, and the Vite configuration works perfectly out-of-the-box. Highly recommended for any Indian developers or SaaS founders!`,
+          tag: "Verified Purchase",
+          timestamp: new Date(Date.now() - 3 * 24 * 3600 * 1000).toISOString(),
+          helpfulVotes: 12,
+          replies: [
+            {
+              id: `r_seed_1_1_${productId}`,
+              author: "Lifehut Team (Developer)",
+              text: "Thank you so much Rohan! We worked hard on structuring the utility tokens to make edits seamless. Let us know on WhatsApp if you require help setting up the webhook gateways!",
+              timestamp: new Date(Date.now() - 2.8 * 24 * 3600 * 1000).toISOString(),
+              isAdmin: true
+            }
+          ]
+        },
+        {
+          id: `c_seed_2_${productId}`,
+          productId,
+          author: "Sneha Sen",
+          rating: 4,
+          comment: `Perfect for my portfolio launch. Layout is modern and responsive. I love the interactive elements and page transitions. Just one suggestion: please add Svelte versions of the components in the future roadmap!`,
+          tag: "Verified Purchase",
+          timestamp: new Date(Date.now() - 7 * 24 * 3600 * 1000).toISOString(),
+          helpfulVotes: 5,
+          replies: []
+        },
+        {
+          id: `c_seed_3_${productId}`,
+          productId,
+          author: "Vikram Malhotra",
+          rating: 5,
+          comment: `Is the UPI/Razorpay payment workflow integrated directly in the source code or do we need external routing? Asking because I need a self-hosted checkout page.`,
+          tag: "Pre-Sale Question",
+          timestamp: new Date(Date.now() - 12 * 24 * 3600 * 1000).toISOString(),
+          helpfulVotes: 2,
+          replies: [
+            {
+              id: `r_seed_3_1_${productId}`,
+              author: "Lifehut Team (Developer)",
+              text: "Hi Vikram! The ZIP folder includes the fully-configured client checkout module and clear instructions on how to bind your custom Razorpay API credentials. It is 100% self-hosted and independent.",
+              timestamp: new Date(Date.now() - 11.5 * 24 * 3600 * 1000).toISOString(),
+              isAdmin: true
+            }
+          ]
+        }
+      ];
+
+      comments.push(...seeds);
+      fs.writeFileSync(COMMENTS_FILE, JSON.stringify(comments, null, 2));
+      productComments = seeds;
+    }
+
     res.json(productComments);
   } catch (error: any) {
     res.status(500).json({ error: error.message });

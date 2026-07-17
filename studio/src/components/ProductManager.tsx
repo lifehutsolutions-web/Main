@@ -39,8 +39,19 @@ export default function ProductManager({
   const [showPassword, setShowPassword] = useState<boolean>(false);
 
   // Layout View State
-  const [activeTab, setActiveTab] = useState<"list" | "form" | "settings" | "help">("list");
+  const [activeTab, setActiveTab] = useState<"list" | "form" | "settings" | "help" | "newsletter">("list");
   const [editingProduct, setEditingProduct] = useState<Product | null>(null);
+
+  // Newsletter Subscribers & Broadcast States
+  const [broadcastNotification, setBroadcastNotification] = useState<boolean>(false);
+  const [subscriptions, setSubscriptions] = useState<any[]>([]);
+  const [broadcasts, setBroadcasts] = useState<any[]>([]);
+  const [broadcastSubject, setBroadcastSubject] = useState<string>("");
+  const [broadcastMessage, setBroadcastMessage] = useState<string>("");
+  const [broadcastTopic, setBroadcastTopic] = useState<string>("releases");
+  const [fetchingSubs, setFetchingSubs] = useState<boolean>(false);
+  const [sendingBroadcast, setSendingBroadcast] = useState<boolean>(false);
+  const [newsletterAlert, setNewsletterAlert] = useState<{ type: "success" | "error"; msg: string } | null>(null);
 
   // Form Fields State
   const [fName, setFName] = useState<string>("");
@@ -186,6 +197,7 @@ export default function ProductManager({
     setZipUploadStatus("idle");
     setUploadedAssetId("");
     setUploadedAssetName("");
+    setBroadcastNotification(false);
     setFormAlert(null);
   };
 
@@ -215,6 +227,7 @@ export default function ProductManager({
     setZipUploadStatus(p.githubAssetId ? "success" : "idle");
     setUploadedAssetId(p.githubAssetId || "");
     setUploadedAssetName(p.githubAssetName || "");
+    setBroadcastNotification(false);
     setFormAlert(null);
     setActiveTab("form");
   };
@@ -438,6 +451,7 @@ export default function ProductManager({
       status: editingProduct?.status || "draft",
       githubAssetId: uploadedAssetId,
       githubAssetName: uploadedAssetName,
+      broadcastNotification: broadcastNotification,
       updatedAt: new Date().toISOString()
     };
 
