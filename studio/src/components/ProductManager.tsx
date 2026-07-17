@@ -485,7 +485,7 @@ const ratingCount = {
       status: editingProduct?.status || "draft",
       githubAssetId: uploadedAssetId,
       githubAssetName: uploadedAssetName,
-      broadcastNotification: broadcastNotification,
+      //broadcastNotification: broadcastNotification,  - //Need to change this line 
       updatedAt: new Date().toISOString()
     };
 

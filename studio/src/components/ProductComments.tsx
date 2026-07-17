@@ -420,7 +420,7 @@ useEffect(() => {
         {formSuccess && (
           <div className="p-4 bg-emerald-100 text-emerald-800 rounded-xl mb-4 text-xs font-bold flex items-center gap-2">
             <CheckCircle2 className="w-4 h-4 text-emerald-600" />
-            <span>Thank you! Your premium review has been synchronized on our server database.</span>
+            <span>Thank you! Your review has been submitted successfully and is now awaiting moderation before it is published..</span>
           </div>
         )}
 
@@ -514,7 +514,7 @@ useEffect(() => {
             ) : (
               <>
                 <CheckCircle2 className="w-4 h-4" />
-                <span>SUBMIT VERIFIED CUSTOMER REVIEW</span>
+                <span>SUBMIT REVIEW</span>
               </>
             )}
           </button>
