@@ -276,7 +276,11 @@ useEffect(() => {
                         </span>
                       </div>
                       <div className="text-[9px] text-[var(--text3)]">
-                        Reviewed on {new Date(rev.timestamp).toLocaleDateString("en-IN", { day: 'numeric', month: 'short', year: 'numeric' })}
+                        Reviewed on {new Date(comment.created_at).toLocaleDateString("en-IN", {
+  day: "numeric",
+  month: "short",
+  year: "numeric"
+})}
                       </div>
                     </div>
                   </div>
@@ -334,7 +338,11 @@ useEffect(() => {
                             </span>
                           )}
                           <span className="text-[9px] text-[var(--text3)]">
-                            {new Date(reply.timestamp).toLocaleDateString()}
+                            {new Date(reply.created_at).toLocaleDateString("en-IN", {
+  day: "numeric",
+  month: "short",
+  year: "numeric"
+})}
                           </span>
                         </div>
                         <p className="text-[var(--text2)] leading-relaxed">{reply.text}</p>

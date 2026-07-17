@@ -30,6 +30,8 @@ export default function ProductManager({
 }: ProductManagerProps) {
   const safeProducts = Array.isArray(products) ? products : [];
 
+  
+
   // Auth state
   const [token, setToken] = useState<string | null>(null);
   const [email, setEmail] = useState<string>("");
@@ -58,6 +60,32 @@ const [reviews, setReviews] = useState<any[]>([]);
 const [loadingReviews, setLoadingReviews] = useState(false);
 const [selectedReview, setSelectedReview] = useState<any | null>(null);
 const [developerReply, setDeveloperReply] = useState("");
+
+const totalReviews = reviews.length;
+
+const pendingReviews = reviews.filter(
+  r => r.status === "pending"
+).length;
+
+const approvedReviews = reviews.filter(
+  r => r.status === "approved"
+);
+
+const averageRating =
+  approvedReviews.length === 0
+    ? 0
+    : (
+        approvedReviews.reduce((sum, r) => sum + r.rating, 0) /
+        approvedReviews.length
+      ).toFixed(1);
+
+const ratingCount = {
+  5: approvedReviews.filter(r => r.rating === 5).length,
+  4: approvedReviews.filter(r => r.rating === 4).length,
+  3: approvedReviews.filter(r => r.rating === 3).length,
+  2: approvedReviews.filter(r => r.rating === 2).length,
+  1: approvedReviews.filter(r => r.rating === 1).length,
+};
 
   // Form Fields State
   const [fName, setFName] = useState<string>("");
@@ -706,20 +734,29 @@ const replyReview = async (reviewId: string) => {
 };
 
 const updateReply = async (replyId: string) => {
+  console.log("Updating reply:", replyId);
+
   if (!editingReplyText.trim()) return;
 
-  const { error } = await supabase
+  const { data, error } = await supabase
     .from("review_replies")
     .update({
       text: editingReplyText
     })
-    .eq("id", replyId);
+    .eq("id", replyId)
+    .select();
 
-  if (!error) {
-    setEditingReplyId(null);
-    setEditingReplyText("");
-    loadReviews();
+  console.log("Result:", data);
+  console.log("Error:", error);
+
+  if (error) {
+    alert(error.message);
+    return;
   }
+
+  setEditingReplyId(null);
+  setEditingReplyText("");
+  await loadReviews();
 };
 
   // Custom visual list for datalist option helper
@@ -1100,6 +1137,86 @@ Loading Reviews...
 </div>
 
 ) : (
+  <>
+
+<div className="grid grid-cols-4 gap-4 mb-6">
+
+  <div className="bg-white rounded-xl border p-5">
+    <div className="text-xs text-slate-500">Total Reviews</div>
+    <div className="text-3xl font-bold mt-2">
+      {totalReviews}
+    </div>
+  </div>
+
+  <div className="bg-white rounded-xl border p-5">
+    <div className="text-xs text-slate-500">Pending Reviews</div>
+    <div className="text-3xl font-bold text-amber-600 mt-2">
+      {pendingReviews}
+    </div>
+  </div>
+
+  <div className="bg-white rounded-xl border p-5">
+    <div className="text-xs text-slate-500">Average Rating</div>
+    <div className="text-3xl font-bold text-blue-600 mt-2">
+      ⭐ {averageRating}
+    </div>
+  </div>
+
+  <div className="bg-white rounded-xl border p-5">
+    <div className="text-xs text-slate-500">Approved Reviews</div>
+    <div className="text-3xl font-bold text-green-600 mt-2">
+      {approvedReviews.length}
+    </div>
+  </div>
+
+</div>
+
+<div className="bg-white rounded-xl border p-5 mb-6">
+
+  <h3 className="font-bold text-base mb-5">
+    Rating Distribution
+  </h3>
+
+  {[5,4,3,2,1].map((star)=>{
+
+    const count = ratingCount[star as keyof typeof ratingCount];
+
+    const percent =
+      approvedReviews.length === 0
+        ? 0
+        : Math.round((count/approvedReviews.length)*100);
+
+    return(
+
+      <div
+        key={star}
+        className="flex items-center gap-4 mb-4"
+      >
+
+        <div className="w-10 text-sm font-semibold">
+          {star} ★
+        </div>
+
+        <div className="flex-1 h-3 bg-slate-200 rounded-full overflow-hidden">
+
+          <div
+            className="h-full bg-yellow-400"
+            style={{ width: `${percent}%` }}
+          />
+
+        </div>
+
+        <div className="w-10 text-right text-sm">
+          {count}
+        </div>
+
+      </div>
+
+    );
+
+  })}
+
+</div>
 
 <table className="w-full text-sm">
 
@@ -1217,7 +1334,10 @@ className="border-t"
 
 <td className="p-3">
 
-{review.product_id}
+{
+products.find(p => p.id === review.product_id)?.name
+?? review.product_id
+}
 
 </td>
 
@@ -1235,35 +1355,39 @@ className="border-t"
 
 <td className="p-3">
 
-{review.status}
+<span
+  className={`px-3 py-1 rounded-full text-xs font-semibold ${
+    review.status === "approved"
+      ? "bg-green-100 text-green-700"
+      : review.status === "pending"
+      ? "bg-yellow-100 text-yellow-700"
+      : "bg-red-100 text-red-700"
+  }`}
+>
+  {review.status.charAt(0).toUpperCase() + review.status.slice(1)}
+</span>
 
 </td>
 
 <td className="p-3 text-right space-x-2">
 
-<button
+{review.status !== "approved" && (
+  <button
+    onClick={() => approveReview(review.id)}
+    className="px-3 py-1 rounded bg-green-600 text-white text-xs"
+  >
+    Approve
+  </button>
+)}
 
-onClick={()=>approveReview(review.id)}
-
-className="px-3 py-1 rounded bg-green-600 text-white text-xs"
-
->
-
-Approve
-
-</button>
-
-<button
-
-onClick={()=>rejectReview(review.id)}
-
-className="px-3 py-1 rounded bg-red-600 text-white text-xs"
-
->
-
-Reject
-
-</button>
+{review.status !== "rejected" && (
+  <button
+    onClick={() => rejectReview(review.id)}
+    className="px-3 py-1 rounded bg-red-600 text-white text-xs"
+  >
+    Reject
+  </button>
+)}
 
 <button
   onClick={() => setReplyReviewId(review.id)}
@@ -1319,6 +1443,8 @@ Reject
 </tbody>
 
 </table>
+
+</>
 
 )}
 
