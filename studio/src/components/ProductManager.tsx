@@ -39,7 +39,7 @@ export default function ProductManager({
   const [showPassword, setShowPassword] = useState<boolean>(false);
 
   // Layout View State
-  const [activeTab, setActiveTab] = useState<"list" | "form" | "settings" | "help" | "newsletter">("list");
+  const [activeTab, setActiveTab] = useState<"list" | "form" | "reviews" | "settings" | "help" | "newsletter">("list");
   const [editingProduct, setEditingProduct] = useState<Product | null>(null);
 
   // Newsletter Subscribers & Broadcast States
@@ -52,6 +52,12 @@ export default function ProductManager({
   const [fetchingSubs, setFetchingSubs] = useState<boolean>(false);
   const [sendingBroadcast, setSendingBroadcast] = useState<boolean>(false);
   const [newsletterAlert, setNewsletterAlert] = useState<{ type: "success" | "error"; msg: string } | null>(null);
+
+  // Reviews State
+const [reviews, setReviews] = useState<any[]>([]);
+const [loadingReviews, setLoadingReviews] = useState(false);
+const [selectedReview, setSelectedReview] = useState<any | null>(null);
+const [developerReply, setDeveloperReply] = useState("");
 
   // Form Fields State
   const [fName, setFName] = useState<string>("");
@@ -607,6 +613,64 @@ export default function ProductManager({
     });
   };
 
+  //Reviews Handling
+
+  useEffect(() => {
+  if (token && activeTab === "reviews") {
+    loadReviews();
+  }
+}, [token, activeTab]);
+
+  const loadReviews = async () => {
+  setLoadingReviews(true);
+
+  const { data } = await supabase
+    .from("product_reviews")
+    .select("*")
+    .order("created_at", { ascending: false });
+
+  setReviews(data || []);
+  setLoadingReviews(false);
+};
+
+const approveReview = async (id: string) => {
+  await supabase
+    .from("product_reviews")
+    .update({
+      status: "approved"
+    })
+    .eq("id", id);
+
+  loadReviews();
+};
+
+const rejectReview = async (id: string) => {
+  await supabase
+    .from("product_reviews")
+    .update({
+      status: "rejected"
+    })
+    .eq("id", id);
+
+  loadReviews();
+};
+
+const replyReview = async () => {
+  if (!selectedReview || !developerReply.trim()) return;
+
+  await supabase
+    .from("review_replies")
+    .insert({
+      review_id: selectedReview.id,
+      author: "Lifehut Team",
+      text: developerReply,
+      is_admin: true
+    });
+
+  setDeveloperReply("");
+  loadReviews();
+};
+
   // Custom visual list for datalist option helper
   const [fFCatOption, setFFCatOption] = useState<string>("");
 
@@ -724,6 +788,22 @@ export default function ProductManager({
             <i className="ti ti-plus"></i> Add New Template
           </button>
 
+          {/* ===== Reviews ===== */}
+
+<button
+  onClick={() => setActiveTab("reviews")}
+  className={`sb-link flex items-center gap-2 px-6 py-3 w-full text-xs font-medium border-0 transition-all cursor-pointer ${
+    activeTab === "reviews"
+      ? "bg-blue-600/35 text-white"
+      : "text-white/60 hover:bg-white/5 hover:text-white"
+  }`}
+>
+  <i className="ti ti-message-star"></i>
+  Reviews
+</button>
+
+{/* ===== Reviews Ends===== */}
+
           <hr className="sb-divider border-white/5 my-4" />
           <div className="sb-section px-6 text-[9px] uppercase font-bold tracking-widest text-white/30">Settings</div>
           <button
@@ -778,7 +858,17 @@ export default function ProductManager({
         <header className="topbar h-16 bg-white border-b border-slate-200 px-6 flex items-center justify-between">
           <div className="tb-title font-semibold text-slate-800 text-sm md:text-base capitalize flex items-center gap-2">
             <i className="ti ti-layout"></i>
-            {activeTab === "list" ? "Active Catalogue" : activeTab === "form" ? (editingProduct ? "Edit Template Configuration" : "Add New Template") : activeTab === "settings" ? "GitHub Storage Sync" : "Manager Instructions"}
+            {
+activeTab === "list"
+? "Active Catalogue"
+: activeTab === "form"
+? (editingProduct ? "Edit Template Configuration" : "Add New Template")
+: activeTab === "reviews"
+? "Customer Reviews"
+: activeTab === "settings"
+? "GitHub Storage Sync"
+: "Manager Instructions"
+}
           </div>
           <div className="tb-right flex items-center gap-3">
             <button
@@ -921,6 +1011,160 @@ export default function ProductManager({
               )}
             </div>
           )}
+
+          {/* REVIEWS PANEL */}
+
+{activeTab === "reviews" && (
+
+<div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
+
+<div className="border-b border-slate-200 px-6 py-4 flex items-center justify-between">
+
+<h2 className="font-semibold text-slate-800">
+
+Customer Reviews
+
+</h2>
+
+<button
+
+onClick={loadReviews}
+
+className="px-4 py-2 rounded-lg bg-blue-600 text-white text-xs font-semibold"
+
+>
+
+Refresh
+
+</button>
+
+</div>
+
+{loadingReviews ? (
+
+<div className="p-12 text-center">
+
+Loading Reviews...
+
+</div>
+
+) : (
+
+<table className="w-full text-sm">
+
+<thead className="bg-slate-50">
+
+<tr>
+
+<th className="p-3 text-left">Customer</th>
+
+<th className="p-3 text-left">Product</th>
+
+<th className="p-3 text-left">Rating</th>
+
+<th className="p-3 text-left">Tag</th>
+
+<th className="p-3 text-left">Status</th>
+
+<th className="p-3 text-right">Action</th>
+
+</tr>
+
+</thead>
+
+<tbody>
+
+{reviews.map((review)=>(
+
+<tr
+
+key={review.id}
+
+className="border-t"
+
+>
+
+<td className="p-3">
+
+<div className="font-semibold">
+
+{review.author}
+
+</div>
+
+<div className="text-xs text-slate-500">
+
+{review.comment}
+
+</div>
+
+</td>
+
+<td className="p-3">
+
+{review.product_id}
+
+</td>
+
+<td className="p-3">
+
+{"⭐".repeat(review.rating)}
+
+</td>
+
+<td className="p-3">
+
+{review.tag}
+
+</td>
+
+<td className="p-3">
+
+{review.status}
+
+</td>
+
+<td className="p-3 text-right space-x-2">
+
+<button
+
+onClick={()=>approveReview(review.id)}
+
+className="px-3 py-1 rounded bg-green-600 text-white text-xs"
+
+>
+
+Approve
+
+</button>
+
+<button
+
+onClick={()=>rejectReview(review.id)}
+
+className="px-3 py-1 rounded bg-red-600 text-white text-xs"
+
+>
+
+Reject
+
+</button>
+
+</td>
+
+</tr>
+
+))}
+
+</tbody>
+
+</table>
+
+)}
+
+</div>
+
+)}
 
           {/* ADD / EDIT CREATION FORM PANEL */}
           {activeTab === "form" && (

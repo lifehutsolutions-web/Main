@@ -1,6 +1,12 @@
 import React, { useState, useEffect } from "react";
 import { Star, ThumbsUp, MessageSquare, CheckCircle2, User, Loader2 } from "lucide-react";
 import { motion, AnimatePresence } from "motion/react";
+import {
+    getComments,
+    submitComment,
+    voteHelpful,
+    submitReply
+} from "../lib/comments";
 
 interface Reply {
   id: string;
@@ -18,7 +24,7 @@ interface CommentReview {
   comment: string;
   tag: string;
   timestamp: string;
-  helpfulVotes: number;
+  helpful_Votes: number;
   replies: Reply[];
 }
 
@@ -50,121 +56,117 @@ export default function ProductComments({ productId, productName }: ProductComme
   const [votedIds, setVotedIds] = useState<string[]>([]);
 
   // Fetch product comments
-  const fetchComments = async () => {
-    setLoading(true);
-    try {
-      const res = await fetch(`/api/comments/${productId}`);
-      if (res.ok) {
-        const data = await res.json();
-        setComments(Array.isArray(data) ? data : []);
-      }
-    } catch (err) {
-      console.error("Error fetching product comments:", err);
-    } finally {
-      setLoading(false);
-    }
-  };
+  const loadComments = async () => {
+    const data = await getComments(productId);
+    setComments(data);
+};
 
-  useEffect(() => {
-    fetchComments();
-  }, [productId]);
+useEffect(() => {
+    loadComments();
+}, [productId]);
 
   // Handle vote helpful
   const handleVoteHelpful = async (commentId: string) => {
-    if (votedIds.includes(commentId)) return;
-    
-    // Optimistic UI update
-    setComments(prev => prev.map(c => {
-      if (c.id === commentId) {
-        return { ...c, helpfulVotes: (c.helpfulVotes || 0) + 1 };
-      }
-      return c;
-    }));
-    setVotedIds([...votedIds, commentId]);
+  if (votedIds.includes(commentId)) return;
 
-    try {
-      await fetch(`/api/comments/${productId}/${commentId}/vote`, {
-        method: "POST"
-      });
-    } catch (err) {
-      console.error(err);
-    }
-  };
+  // Find the comment
+  const comment = comments.find(c => c.id === commentId);
+  if (!comment) return;
+
+  // Optimistic UI update
+  setComments(prev =>
+    prev.map(c =>
+      c.id === commentId
+        ? { ...c, helpful_votes: (c.helpful_votes || 0) + 1 }
+        : c
+    )
+  );
+
+  setVotedIds(prev => [...prev, commentId]);
+
+  try {
+    await voteHelpful(commentId, comment.helpful_votes || 0);
+    await loadComments();
+  } catch (err) {
+    console.error(err);
+  }
+};
 
   // Submit main comment
   const handleSubmitReview = async (e: React.FormEvent) => {
     e.preventDefault();
+
     if (!author.trim() || !commentText.trim()) return;
 
     setSubmitting(true);
-    try {
-      const res = await fetch(`/api/comments/${productId}`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          author,
-          rating,
-          comment: commentText,
-          tag
-        })
-      });
 
-      if (res.ok) {
-        const newComment = await res.json();
-        setComments(prev => [newComment, ...prev]);
-        setAuthor("");
-        setCommentText("");
-        setRating(5);
-        setFormSuccess(true);
-        setTimeout(() => setFormSuccess(false), 4000);
-      }
-    } catch (err) {
-      console.error(err);
+    try {
+    await submitComment({
+        product_id: productId,
+        author,
+        rating,
+        comment: commentText,
+        tag
+    });
+
+    setAuthor("");
+    setCommentText("");
+    setRating(5);
+
+    setFormSuccess(true);
+
+    setTimeout(() => {
+        setFormSuccess(false);
+    }, 5000);
+
+} catch (err) {
+        console.error(err);
+        alert("Unable to submit review.");
     } finally {
-      setSubmitting(false);
+        setSubmitting(false);
     }
-  };
+};
 
   // Submit reply
   const handleSubmitReply = async (commentId: string) => {
-    if (!replyText.trim() || !replyAuthor.trim()) return;
+  if (!replyText.trim() || !replyAuthor.trim()) return;
 
-    setSubmittingReply(true);
-    try {
-      // If author is "admin" or similar, we can set admin flag
-      const isAdmin = replyAuthor.toLowerCase().includes("team") || replyAuthor.toLowerCase().includes("developer") || replyAuthor.toLowerCase().includes("lifehut");
-      
-      const res = await fetch(`/api/comments/${productId}/${commentId}/reply`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          text: replyText,
-          author: replyAuthor,
-          isAdmin
-        })
-      });
+  setSubmittingReply(true);
 
-      if (res.ok) {
-        const addedReply = await res.json();
-        setComments(prev => prev.map(c => {
-          if (c.id === commentId) {
-            return {
+  try {
+    const isAdmin =
+      replyAuthor.toLowerCase().includes("team") ||
+      replyAuthor.toLowerCase().includes("developer") ||
+      replyAuthor.toLowerCase().includes("lifehut");
+
+    const newReply = await submitReply({
+      review_id: commentId,
+      author: replyAuthor,
+      text: replyText,
+      is_admin: isAdmin
+    });
+
+    setComments(prev =>
+      prev.map(c =>
+        c.id === commentId
+          ? {
               ...c,
-              replies: [...(c.replies || []), addedReply]
-            };
-          }
-          return c;
-        }));
-        setReplyText("");
-        setReplyAuthor("");
-        setActiveReplyId(null);
-      }
-    } catch (err) {
-      console.error(err);
-    } finally {
-      setSubmittingReply(false);
-    }
-  };
+              replies: [...(c.replies || []), newReply]
+            }
+          : c
+      )
+    );
+
+    setReplyText("");
+    setReplyAuthor("");
+    setActiveReplyId(null);
+
+  } catch (err) {
+    console.error(err);
+  } finally {
+    setSubmittingReply(false);
+  }
+};
 
   // Calculate Average Rating stats (Amazon style)
   const totalReviewsCount = comments.length;
@@ -305,7 +307,7 @@ export default function ProductComments({ productId, productName }: ProductComme
                     }`}
                   >
                     <ThumbsUp className="w-3.5 h-3.5" />
-                    <span>{rev.helpfulVotes > 0 ? `Helpful (${rev.helpfulVotes})` : "Helpful"}</span>
+                    <span>{rev.helpful_Votes > 0 ? `Helpful (${rev.helpful_Votes})` : "Helpful"}</span>
                   </button>
 
                   <button
