@@ -276,7 +276,7 @@ useEffect(() => {
                         </span>
                       </div>
                       <div className="text-[9px] text-[var(--text3)]">
-                        Reviewed on {new Date(comment.created_at).toLocaleDateString("en-IN", {
+                        Reviewed on {new Date(rev.created_at).toLocaleDateString("en-IN", {
   day: "numeric",
   month: "short",
   year: "numeric"
