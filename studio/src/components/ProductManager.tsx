@@ -621,54 +621,86 @@ const [developerReply, setDeveloperReply] = useState("");
   }
 }, [token, activeTab]);
 
-  const loadReviews = async () => {
+const loadReviews = async () => {
   setLoadingReviews(true);
 
-  const { data } = await supabase
+  // Reviews
+  const { data: reviews } = await supabase
     .from("product_reviews")
     .select("*")
     .order("created_at", { ascending: false });
 
-  setReviews(data || []);
+  if (!reviews) {
+    setReviews([]);
+    setLoadingReviews(false);
+    return;
+  }
+
+  // Replies
+  const reviewIds = reviews.map(r => r.id);
+
+  const { data: replies } = await supabase
+    .from("review_replies")
+    .select("*")
+    .in("review_id", reviewIds);
+
+  const merged = reviews.map(review => ({
+    ...review,
+    replies: (replies || []).filter(r => r.review_id === review.id)
+  }));
+
+  setReviews(merged);
   setLoadingReviews(false);
 };
 
 const approveReview = async (id: string) => {
-  await supabase
+  const { error } = await supabase
     .from("product_reviews")
-    .update({
-      status: "approved"
-    })
+    .update({ status: "approved" })
     .eq("id", id);
 
-  loadReviews();
+  if (!error) {
+    loadReviews();
+  } else {
+    console.error(error);
+  }
 };
 
 const rejectReview = async (id: string) => {
-  await supabase
+  const { error } = await supabase
     .from("product_reviews")
-    .update({
-      status: "rejected"
-    })
+    .update({ status: "rejected" })
     .eq("id", id);
 
-  loadReviews();
+  if (!error) {
+    loadReviews();
+  } else {
+    console.error(error);
+  }
 };
 
-const replyReview = async () => {
-  if (!selectedReview || !developerReply.trim()) return;
+const [replyReviewId, setReplyReviewId] = useState<string | null>(null);
+const [replyText, setReplyText] = useState("");
 
-  await supabase
+const replyReview = async (reviewId: string) => {
+  if (!replyText.trim()) return;
+
+  const { error } = await supabase
     .from("review_replies")
     .insert({
-      review_id: selectedReview.id,
+      review_id: reviewId,
       author: "Lifehut Team",
-      text: developerReply,
+      text: replyText,
       is_admin: true
     });
 
-  setDeveloperReply("");
-  loadReviews();
+  if (!error) {
+    setReplyText("");
+    setReplyReviewId(null);
+    loadReviews();
+  } else {
+    console.error(error);
+  }
 };
 
   // Custom visual list for datalist option helper
@@ -1076,6 +1108,8 @@ Loading Reviews...
 
 {reviews.map((review)=>(
 
+<React.Fragment key={review.id}>
+
 <tr
 
 key={review.id}
@@ -1097,6 +1131,24 @@ className="border-t"
 {review.comment}
 
 </div>
+
+{review.replies?.length > 0 && (
+  <div className="mt-3 ml-4 border-l-2 border-blue-300 pl-3">
+    {review.replies.map((reply: any) => (
+      <div key={reply.id} className="mb-2">
+
+        <div className="font-semibold text-blue-700 text-xs">
+          {reply.author}
+        </div>
+
+        <div className="text-xs text-slate-600">
+          {reply.text}
+        </div>
+
+      </div>
+    ))}
+  </div>
+)}
 
 </td>
 
@@ -1150,9 +1202,54 @@ Reject
 
 </button>
 
+<button
+  onClick={() => setReplyReviewId(review.id)}
+  className="px-3 py-1 rounded bg-blue-600 text-white text-xs"
+>
+  Reply
+</button>
+
 </td>
 
 </tr>
+
+{replyReviewId === review.id && (
+<tr>
+  <td colSpan={6} className="bg-slate-50 p-4">
+
+    <textarea
+      value={replyText}
+      onChange={(e) => setReplyText(e.target.value)}
+      placeholder="Type your reply..."
+      rows={4}
+      className="w-full border rounded-lg p-3 text-sm"
+    />
+
+    <div className="flex gap-2 mt-3">
+
+      <button
+        onClick={() => replyReview(review.id)}
+        className="px-4 py-2 rounded bg-blue-600 text-white text-sm"
+      >
+        Send Reply
+      </button>
+
+      <button
+        onClick={()=>{
+          setReplyReviewId(null);
+          setReplyText("");
+        }}
+        className="px-4 py-2 rounded border text-sm"
+      >
+        Cancel
+      </button>
+
+    </div>
+
+  </td>
+</tr>
+)}
+</React.Fragment>
 
 ))}
 
