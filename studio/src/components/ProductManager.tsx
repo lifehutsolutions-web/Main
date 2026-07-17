@@ -681,6 +681,8 @@ const rejectReview = async (id: string) => {
 
 const [replyReviewId, setReplyReviewId] = useState<string | null>(null);
 const [replyText, setReplyText] = useState("");
+const [editingReplyId, setEditingReplyId] = useState<string | null>(null);
+const [editingReplyText, setEditingReplyText] = useState("");
 
 const replyReview = async (reviewId: string) => {
   if (!replyText.trim()) return;
@@ -700,6 +702,23 @@ const replyReview = async (reviewId: string) => {
     loadReviews();
   } else {
     console.error(error);
+  }
+};
+
+const updateReply = async (replyId: string) => {
+  if (!editingReplyText.trim()) return;
+
+  const { error } = await supabase
+    .from("review_replies")
+    .update({
+      text: editingReplyText
+    })
+    .eq("id", replyId);
+
+  if (!error) {
+    setEditingReplyId(null);
+    setEditingReplyText("");
+    loadReviews();
   }
 };
 
@@ -1137,13 +1156,57 @@ className="border-t"
     {review.replies.map((reply: any) => (
       <div key={reply.id} className="mb-2">
 
-        <div className="font-semibold text-blue-700 text-xs">
-          {reply.author}
-        </div>
+        <div className="flex justify-between items-center">
+  <div className="font-semibold text-blue-700 text-xs">
+    {reply.author}
+  </div>
 
-        <div className="text-xs text-slate-600">
-          {reply.text}
-        </div>
+  <button
+    onClick={() => {
+      setEditingReplyId(reply.id);
+      setEditingReplyText(reply.text);
+    }}
+    className="text-blue-600 text-xs hover:underline"
+  >
+    Edit
+  </button>
+</div>
+
+{editingReplyId === reply.id ? (
+  <>
+    <textarea
+      value={editingReplyText}
+      onChange={(e) => setEditingReplyText(e.target.value)}
+      rows={3}
+      className="w-full border rounded-lg p-2 mt-2 text-sm"
+    />
+
+    <div className="flex gap-2 mt-2">
+
+      <button
+        onClick={() => updateReply(reply.id)}
+        className="px-3 py-1 bg-green-600 text-white rounded text-xs"
+      >
+        Save
+      </button>
+
+      <button
+        onClick={() => {
+          setEditingReplyId(null);
+          setEditingReplyText("");
+        }}
+        className="px-3 py-1 border rounded text-xs"
+      >
+        Cancel
+      </button>
+
+    </div>
+  </>
+) : (
+  <div className="text-xs text-slate-600">
+    {reply.text}
+  </div>
+)}
 
       </div>
     ))}
