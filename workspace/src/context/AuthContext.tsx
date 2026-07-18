@@ -8,6 +8,7 @@ import { onAuthStateChanged, User as FirebaseUser, signOut, signInAnonymously } 
 import { doc, getDoc, setDoc, onSnapshot } from 'firebase/firestore';
 import { auth, db as fdb } from '../firebase';
 import { ContractorAuth, ClientAuth } from '../services/authService';
+import { NotificationService } from '../services/notifications/notificationService';
 
 export interface UserProfile {
   companyName?: string;
@@ -75,6 +76,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   // 1. Setup Auth state changed listener
   useEffect(() => {
+    NotificationService.initialize();
     const unsubscribe = onAuthStateChanged(auth, async (firebaseUser) => {
       setAuthLoading(true);
       if (!firebaseUser) {
@@ -114,8 +116,34 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             email: firebaseUser.email || '',
             role: role
           };
+          
+          if (role === 'Contractor') {
+            const now = new Date();
+            const expires = new Date();
+            expires.setDate(now.getDate() + 1); // 30-day trial launch offer
+            profileData.subscription = {
+              plan: 'Starter',
+              status: 'trial',
+              expiresAt: expires.toISOString(),
+              trialStartedAt: now.toISOString()
+            };
+          }
+
           const destRef = doc(fdb, role === 'Contractor' ? 'contractorUsers' : 'clientUsers', firebaseUser.uid);
           await setDoc(destRef, { ...profileData, createdAt: new Date().toISOString() }, { merge: true });
+        } else if (role === 'Contractor' && !profileData.subscription) {
+          // If they exist but don't have a subscription (legacy or migration)
+          const now = new Date();
+          const expires = new Date();
+          expires.setDate(now.getDate() + 1); // 30-day trial launch offer
+          profileData.subscription = {
+            plan: 'Starter',
+            status: 'trial',
+            expiresAt: expires.toISOString(),
+            trialStartedAt: now.toISOString()
+          };
+          const destRef = doc(fdb, 'contractorUsers', firebaseUser.uid);
+          await setDoc(destRef, { subscription: profileData.subscription }, { merge: true });
         }
 
         setUserRole(role);
@@ -199,7 +227,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         mobile: '+91 99999 88888',
         email: 'sandbox-contractor@lifehut.co',
         role: 'Contractor' as const,
-        createdAt: new Date().toISOString()
+        createdAt: new Date().toISOString(),
+        subscription: {
+          plan: 'Enterprise' as const,
+          status: 'active' as const,
+          expiresAt: new Date(Date.now() + 1000 * 60 * 60 * 24 * 365).toISOString() // 1 year
+        }
       };
       
       await setDoc(userRef, profile, { merge: true });
@@ -220,7 +253,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         mobile: '+91 99999 88888',
         email: 'sandbox-contractor@lifehut.co',
         role: 'Contractor' as const,
-        createdAt: new Date().toISOString()
+        createdAt: new Date().toISOString(),
+        subscription: {
+          plan: 'Enterprise' as const,
+          status: 'active' as const,
+          expiresAt: new Date(Date.now() + 1000 * 60 * 60 * 24 * 365).toISOString() // 1 year
+        }
       });
       setSelectedProjId('proj_green_villa');
       setAuthLoading(false);
@@ -272,7 +310,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       address: '102 Blue Heights, Cyber City',
       city: 'Hyderabad',
       state: 'Telangana',
-      pincode: '500081'
+      pincode: '500081',
+      subscription: {
+        plan: 'Enterprise' as const,
+        status: 'active' as const,
+        expiresAt: new Date(Date.now() + 1000 * 60 * 60 * 24 * 365).toISOString() // 1 year
+      }
     });
     setSelectedProjId('proj_green_villa');
   };

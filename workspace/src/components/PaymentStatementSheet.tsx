@@ -74,6 +74,23 @@ export default function PaymentStatementSheet({
         useCORS: true,
         logging: false,
         onclone: (clonedDoc: Document) => {
+          // Force light mode on cloned document to avoid any dark mode styling issues
+          clonedDoc.documentElement.classList.remove('dark');
+          clonedDoc.body.classList.remove('dark');
+
+          // Restyle the cloned preview target to look completely flat, borderless, and perfectly aligned
+          const clonedTarget = clonedDoc.getElementById('statement-preview-target');
+          if (clonedTarget) {
+            clonedTarget.style.width = '794px';
+            clonedTarget.style.maxWidth = '794px';
+            clonedTarget.style.padding = '30px';
+            clonedTarget.style.margin = '0';
+            clonedTarget.style.boxShadow = 'none';
+            clonedTarget.style.borderRadius = '0';
+            clonedTarget.style.border = 'none';
+            clonedTarget.style.backgroundColor = '#ffffff';
+          }
+
           const styles = clonedDoc.getElementsByTagName('style');
 
           for (let i = 0; i < styles.length; i++) {
@@ -364,7 +381,7 @@ export default function PaymentStatementSheet({
              `}</style>
 
              {/* Header */}
-             <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center border-b-[3px] border-[#0B2545] pb-4 mb-6 gap-4">
+             <div className="flex flex-row justify-between items-center border-b-[3px] border-[#0B2545] pb-4 mb-6 gap-4">
                <div>
                  <div className="text-xl sm:text-2xl font-black text-[#0B2545] flex items-center gap-2 font-sans">
                    <span className="bg-white border border-[#CBD1DA] p-1 rounded-lg shadow-xs flex items-center justify-center w-8 h-8 flex-shrink-0">
@@ -372,12 +389,12 @@ export default function PaymentStatementSheet({
                    </span>
                    Lifehut Workspace
                  </div>
-                 <div className="text-[9.5px] sm:text-[10px] text-[#0A84FF] mt-1.5 uppercase tracking-wider font-extrabold font-sans">
+                 <div className="text-[10px] text-[#0A84FF] mt-1.5 uppercase tracking-wider font-extrabold font-sans">
                    Project Management & Liaison System
                  </div>
                </div>
-               <div className="text-left sm:text-right w-full sm:w-auto">
-                 <div className="text-[10px] sm:text-[11.5px] font-bold text-white bg-[#0B2545] px-3.5 py-1.5 rounded-full inline-block tracking-wide font-sans">
+               <div className="text-right">
+                 <div className="text-[11px] font-bold text-white bg-[#0B2545] px-3.5 py-1.5 rounded-full inline-block tracking-wide font-sans">
                    PAYMENT LEDGER STATEMENT
                  </div>
                  <div className="text-[10px] text-[#5B6270] mt-2 font-medium">
@@ -387,39 +404,39 @@ export default function PaymentStatementSheet({
              </div>
 
              {/* Stakeholder and Project Details Grid */}
-             <div className="grid grid-cols-1 sm:grid-cols-2 gap-5 mb-6 bg-[#F7F8FA] p-4 sm:p-5 rounded-xl border border-[#E2E5EA]">
+             <div className="grid grid-cols-2 gap-5 mb-6 bg-[#F7F8FA] p-5 rounded-xl border border-[#E2E5EA]">
                <div>
                  <div className="text-[9px] font-bold text-[#E67E22] uppercase tracking-wider mb-2 font-sans">
                    PROJECT SITE DETAILS
                  </div>
-                 <div className="text-[14px] sm:text-[15px] font-extrabold text-[#0B2545] mb-1.5 font-sans">
+                 <div className="text-[14.5px] font-extrabold text-[#0B2545] mb-1.5 font-sans">
                    {project.name}
                  </div>
-                 <div className="text-[11px] sm:text-[12px] text-[#16191F] mb-1">
+                 <div className="text-[11.5px] text-[#16191F] mb-1">
                    <strong className="text-[#0B2545]">Type:</strong> {project.type} Site
                  </div>
-                 <div className="text-[10.5px] sm:text-[11.5px] text-[#5B6270] leading-relaxed">
+                 <div className="text-[11px] text-[#5B6270] leading-relaxed">
                    <strong className="text-[#0B2545]">Address:</strong> {project.address}
                  </div>
                </div>
-               <div className="border-t sm:border-t-0 sm:border-l border-dashed border-[#CBD1DA] pt-4 sm:pt-0 sm:pl-5">
+               <div className="border-l border-dashed border-[#CBD1DA] pl-5">
                  <div className="text-[9px] font-bold text-[#0A84FF] uppercase tracking-wider mb-2 font-sans">
                    LIAISON STAKEHOLDERS
                  </div>
-                 <div className="text-[11.5px] sm:text-[12.5px] text-[#16191F] mb-1">
+                 <div className="text-[12px] text-[#16191F] mb-1">
                    <strong className="text-[#0B2545]">Contractor:</strong> {contractorName}
                  </div>
-                 <div className="text-[11.5px] sm:text-[12.5px] text-[#16191F] mb-1">
+                 <div className="text-[12px] text-[#16191F] mb-1">
                    <strong className="text-[#0B2545]">Client:</strong> {project.clientName}
                  </div>
-                 <div className="text-[10.5px] sm:text-[11px] text-[#5B6270] break-all">
+                 <div className="text-[11px] text-[#5B6270] break-all">
                    <strong className="text-[#0B2545]">Project ID:</strong> <span className="font-mono font-bold text-[#0A84FF]">{project.id || 'N/A'}</span>
                  </div>
                </div>
              </div>
 
              {/* Metric KPI Widgets */}
-             <div className="grid grid-cols-1 sm:grid-cols-3 gap-3.5 mb-6">
+             <div className="grid grid-cols-3 gap-3.5 mb-6">
                <div className="bg-[#E6F1FB] border border-[#BEE0FF] rounded-xl p-3.5 border-l-[5px] border-[#0A84FF]">
                  <div className="text-[8.5px] font-bold text-[#0C447C] uppercase tracking-wider mb-1.5 font-sans">
                    TOTAL CONTRACT VALUE
@@ -452,18 +469,29 @@ export default function PaymentStatementSheet({
              </div>
 
              <div className="overflow-x-auto border border-[#E2E5EA] rounded-xl mb-6">
-               <table className="min-w-[650px] sm:min-w-full divide-y divide-[#E2E5EA] text-left text-[11px] sm:text-[11.5px] w-full">
+               <table 
+                 className="w-full text-left text-[11px] sm:text-[11.5px]"
+                 style={{ borderCollapse: 'separate', borderSpacing: 0, tableLayout: 'fixed' }}
+               >
+                 <colgroup>
+                   <col style={{ width: '5%' }} />
+                   <col style={{ width: '41%' }} />
+                   <col style={{ width: '15%' }} />
+                   <col style={{ width: '15%' }} />
+                   <col style={{ width: '14%' }} />
+                   <col style={{ width: '10%' }} />
+                 </colgroup>
                  <thead className="bg-[#0B2545] text-white">
                    <tr>
-                     <th className="px-3 py-2.5 font-bold text-center w-[50px] font-sans">S.NO</th>
-                     <th className="px-3 py-2.5 font-bold font-sans">MILESTONE PAYMENT STAGE</th>
-                     <th className="px-3 py-2.5 font-bold text-right w-[120px] font-sans">PAYABLE (₹)</th>
-                     <th className="px-3 py-2.5 font-bold text-right w-[120px] font-sans">RECEIVED (₹)</th>
-                     <th className="px-3 py-2.5 font-bold text-right w-[120px] font-sans">PENDING BALANCE (₹)</th>
-                     <th className="px-3 py-2.5 font-bold text-center w-[90px] font-sans">STATUS</th>
+                     <th className="px-2 py-2.5 font-bold text-center font-sans border-r border-[rgba(255,255,255,0.15)]" style={{ width: '5%' }}>S.NO</th>
+                     <th className="px-2 py-2.5 font-bold font-sans border-r border-[rgba(255,255,255,0.15)]" style={{ width: '41%' }}>MILESTONE PAYMENT STAGE</th>
+                     <th className="px-2 py-2.5 font-bold text-right font-sans border-r border-[rgba(255,255,255,0.15)]" style={{ width: '15%' }}>PAYABLE (₹)</th>
+                     <th className="px-2 py-2.5 font-bold text-right font-sans border-r border-[rgba(255,255,255,0.15)]" style={{ width: '15%' }}>RECEIVED (₹)</th>
+                     <th className="px-2 py-2.5 font-bold text-right font-sans border-r border-[rgba(255,255,255,0.15)]" style={{ width: '14%' }}>PENDING (₹)</th>
+                     <th className="px-2 py-2.5 font-bold text-center font-sans" style={{ width: '10%' }}>STATUS</th>
                    </tr>
                  </thead>
-                 <tbody className="divide-y divide-[#E2E5EA]" style={{ backgroundColor: '#ffffff' }}>
+                 <tbody style={{ backgroundColor: '#ffffff' }}>
                    {stages.map((stg, index) => {
                      const sNo = index + 1;
                      const payable = stg.payableAmount;
@@ -476,10 +504,10 @@ export default function PaymentStatementSheet({
 
                      return (
                        <tr key={`${stg.projectId || ''}_${stg.id}_${index}`} style={{ backgroundColor: isPaid ? '#F4FAF8' : '#ffffff' }}>
-                         <td className="px-3 py-3 text-center font-bold border-r border-[#E2E5EA]" style={{ color: '#64748B' }}>
+                         <td className="px-2 py-3 text-center font-bold border-r border-b border-[#E2E5EA]" style={{ color: '#64748B', width: '5%' }}>
                            {sNo}
                          </td>
-                         <td className="px-3 py-3 font-semibold border-r border-[#E2E5EA] font-sans" style={{ color: '#0F172A' }}>
+                         <td className="px-2 py-3 font-semibold border-r border-b border-[#E2E5EA] font-sans" style={{ color: '#0F172A', width: '41%' }}>
                            <div>{stg.stageName}</div>
                            {stg.paymentLog && stg.paymentLog.length > 0 && (
                              <div className="mt-1.5 flex flex-col gap-1">
@@ -492,16 +520,16 @@ export default function PaymentStatementSheet({
                              </div>
                            )}
                          </td>
-                         <td className="px-3 py-3 text-right font-bold font-mono text-[#0B2545] border-r border-[#E2E5EA]">
+                         <td className="px-2 py-3 text-right font-bold font-mono text-[#0B2545] border-r border-b border-[#E2E5EA]" style={{ width: '15%' }}>
                            {formatIndianNoCurrency(payable)}
                          </td>
-                         <td className="px-3 py-3 text-right font-bold font-mono border-r border-[#E2E5EA]" style={{ color: received > 0 ? '#085041' : '#94999E' }}>
+                         <td className="px-2 py-3 text-right font-bold font-mono border-r border-b border-[#E2E5EA]" style={{ color: received > 0 ? '#085041' : '#94999E', width: '15%' }}>
                            {received > 0 ? formatIndianNoCurrency(received) : '—'}
                          </td>
-                         <td className="px-3 py-3 text-right font-bold font-mono border-r border-[#E2E5EA]" style={{ color: balance > 0 ? '#E67E22' : '#94999E' }}>
+                         <td className="px-2 py-3 text-right font-bold font-mono border-r border-b border-[#E2E5EA]" style={{ color: balance > 0 ? '#E67E22' : '#94999E', width: '14%' }}>
                            {balance > 0 ? formatIndianNoCurrency(balance) : '—'}
                          </td>
-                         <td className="px-3 py-3 text-center">
+                         <td className="px-2 py-3 text-center border-b border-[#E2E5EA]" style={{ width: '10%' }}>
                            {isPaid ? (
                              <span className="bg-[#E1F5EE] text-[#085041] px-2 py-0.5 rounded text-[9px] font-extrabold border border-[#A3E2CD] font-sans">
                                PAID
@@ -518,26 +546,26 @@ export default function PaymentStatementSheet({
 
                    {/* Grand Total Row */}
                    <tr className="bg-[#F7F8FA] font-bold" style={{ borderTop: '2.5px solid #0B2545' }}>
-                     <td colSpan={2} className="px-3 py-3 text-xs uppercase text-[#0B2545] border-r border-[#E2E5EA] font-sans">
+                     <td colSpan={2} className="px-2 py-3 text-xs uppercase text-[#0B2545] border-r border-b border-[#E2E5EA] font-sans" style={{ width: '46%' }}>
                        GRAND TOTALS
                      </td>
-                     <td className="px-3 py-3 text-right font-mono text-xs text-[#0B2545] border-r border-[#E2E5EA]">
+                     <td className="px-2 py-3 text-right font-mono text-xs text-[#0B2545] border-r border-b border-[#E2E5EA]" style={{ width: '15%' }}>
                        {formatIndianNoCurrency(totalPayable)}
                      </td>
-                     <td className="px-3 py-3 text-right font-mono text-xs border-r border-[#E2E5EA]" style={{ color: '#085041' }}>
+                     <td className="px-2 py-3 text-right font-mono text-xs border-r border-b border-[#E2E5EA]" style={{ color: '#085041', width: '15%' }}>
                        {formatIndianNoCurrency(totalReceived)}
                      </td>
-                     <td className="px-3 py-3 text-right font-mono text-xs border-r border-[#E2E5EA]" style={{ color: '#E67E22' }}>
+                     <td className="px-2 py-3 text-right font-mono text-xs border-r border-b border-[#E2E5EA]" style={{ color: '#E67E22', width: '14%' }}>
                        {formatIndianNoCurrency(totalBalance)}
                      </td>
-                     <td className="px-3 py-3"></td>
+                     <td className="px-2 py-3 border-b border-[#E2E5EA]" style={{ width: '10%' }}></td>
                    </tr>
                  </tbody>
                </table>
              </div>
 
              {/* Footer and Signatures */}
-             <div className="mt-10 flex flex-col sm:flex-row justify-between items-start sm:items-end gap-6 border-t-2 border-[#0B2545] pt-5">
+             <div className="mt-10 flex flex-row justify-between items-end gap-6 border-t-2 border-[#0B2545] pt-5">
                <div className="max-w-md">
                  <p className="text-[9.5px] text-[#5B6270] leading-relaxed">
                    This is a secure, official ledger statement compiled from your Lifehut Workspace.
@@ -546,7 +574,7 @@ export default function PaymentStatementSheet({
                    Secure Key: LHW-PROJ_GRE-2026
                  </p>
                </div>
-               <div className="text-center w-full sm:w-[220px] border-t-2 border-[#0B2545] pt-2.5">
+               <div className="text-center w-[220px] border-t-2 border-[#0B2545] pt-2.5">
                  <div className="text-[12px] font-black text-[#0B2545] font-sans">
                    {contractorName}
                  </div>

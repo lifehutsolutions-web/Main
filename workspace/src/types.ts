@@ -24,6 +24,13 @@ export interface Project {
   contractorEmail?: string;
 }
 
+export interface PaymentLogEntry {
+  id: string;
+  amount: number;
+  date: string;
+  reference?: string;
+}
+
 export interface PaymentStage {
   id: string;
   projectId: string;
@@ -34,6 +41,7 @@ export interface PaymentStage {
   status: 'Paid' | 'Pending' | 'Overdue';
   paymentRequested?: boolean; // Payment request sent by contractor
   paymentRequestedDate?: string;
+  paymentLog?: PaymentLogEntry[];
 }
 
 export interface ExtraWork {
@@ -42,7 +50,7 @@ export interface ExtraWork {
   description: string;
   amount: number;
   date: string;
-  approvalStatus: 'Pending' | 'Approved' | 'Rejected';
+  approvalStatus: 'Pending' | 'Approved' | 'Rejected' | 'Revision Requested';
   clientComment?: string;
   photos: string[]; // Base64 or mock layout static placeholders
 }
@@ -89,4 +97,16 @@ export interface ChatMessage {
   attachmentName?: string;
   attachmentType?: string;
   attachmentData?: string;
+}
+
+export type PlanType = 'Starter' | 'Pro' | 'Business' | 'Enterprise';
+
+export interface Subscription {
+  plan: PlanType;
+  status: 'trial' | 'active' | 'expired' | 'free_partner';
+  expiresAt: string; // ISO String
+  trialStartedAt?: string; // ISO String
+  activatedAt?: string; // ISO String
+  promoCodeUsed?: string;
+  razorpayPaymentId?: string;
 }

@@ -14,6 +14,8 @@ import { ClientNotification } from '../services/notifications/clientNotification
 import { ContractorNotification } from '../services/notifications/contractorNotification';
 import * as XLSX from 'xlsx';
 import ExcelJS from 'exceljs';
+import { isSubscriptionValid, canCreateProject } from '../lib/subscription';
+import SubscriptionPortal from './SubscriptionPortal';
 import { 
   Building2, 
   Plus, 
@@ -57,7 +59,9 @@ import {
   Key,
   RefreshCw,
   Menu,
-  X
+  X,
+  Sparkles,
+  ShieldAlert
 } from 'lucide-react';
 
 interface ContractorPortalProps {
@@ -124,11 +128,12 @@ export default function ContractorPortal({
   onSelectProject,
   ownerName
 }: ContractorPortalProps) {
-  const { user, userProfile, permissionGuard, logout } = useAuth();
+  const { user, userProfile, isDemoMode, permissionGuard, logout } = useAuth();
   const displayOwnerName = ownerName || userProfile?.ownerName || user?.displayName || user?.email?.split('@')[0] || 'Contractor';
 
   // Navigation State
   const [activeTab, setActiveTab] = useState<'dashboard' | 'projects' | 'milestones' | 'expenses' | 'extraworks' | 'progress' | 'documents' | 'chat' | 'reports' | 'settings'>('dashboard');
+  const [activeSettingsSection, setActiveSettingsSection] = useState<'profile' | 'defaults' | 'notifications' | 'backup' | 'billing'>('profile');
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
   // Projects tab sub-view
@@ -137,6 +142,7 @@ export default function ContractorPortal({
 
   // Modal open flags
   const [showProjModal, setShowProjModal] = useState(false);
+  const [showUpgradeModal, setShowUpgradeModal] = useState(false);
   const [showEditProjModal, setShowEditProjModal] = useState(false);
   const [editProjId, setEditProjId] = useState<string | null>(null);
   const [isPinConfigured, setIsPinConfigured] = useState(false);
@@ -1327,6 +1333,14 @@ setIsCompressingPhotos(false);
   }, 0);
   const ovProfitLoss = ovCollected - ovTotalExpenses;
 
+  const isSubActive = isSubscriptionValid(userProfile?.subscription);
+
+  if (!isSubActive && !isDemoMode) {
+    return (
+      <SubscriptionPortal isBlockPage={true} />
+    );
+  }
+
   return (
     <div className="space-y-5" id="contractor-portal-dashboard">
       
@@ -1445,28 +1459,100 @@ setIsCompressingPhotos(false);
                       const Icon = tab.icon;
                       const isSelected = activeTab === tab.id;
                       return (
-                        <button
-                          key={tab.id}
-                          onClick={() => {
-                            setActiveTab(tab.id);
-                            setIsMobileMenuOpen(false);
-                          }}
-                          className={`w-full flex items-center justify-between py-2 px-2.5 rounded-lg text-[12px] font-semibold transition-all ${
-                            isSelected 
-                              ? 'bg-blue-50 text-blue-700 dark:bg-blue-950/30 dark:text-blue-300 font-bold' 
-                              : 'text-slate-600 hover:bg-slate-50 dark:text-slate-300 dark:hover:bg-slate-800/50'
-                          }`}
-                        >
-                          <div className="flex items-center gap-2.5">
-                            <Icon className={`w-4 h-4 ${isSelected ? 'text-blue-600 dark:text-blue-400' : 'text-slate-400'}`} />
-                            <span>{tab.label}</span>
-                          </div>
-                          {tab.badge !== undefined && tab.badge !== 0 && (
-                            <span className="px-1.5 py-0.5 rounded text-[9px] font-bold bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-300">
-                              {tab.badge}
-                            </span>
+                        <div key={tab.id} className="space-y-1">
+                          <button
+                            onClick={() => {
+                              setActiveTab(tab.id);
+                              if (tab.id !== 'settings') {
+                                setIsMobileMenuOpen(false);
+                              }
+                            }}
+                            className={`w-full flex items-center justify-between py-2 px-2.5 rounded-lg text-[12px] font-semibold transition-all ${
+                              isSelected 
+                                ? 'bg-blue-50 text-blue-700 dark:bg-blue-950/30 dark:text-blue-300 font-bold' 
+                                : 'text-slate-600 hover:bg-slate-50 dark:text-slate-300 dark:hover:bg-slate-800/50'
+                            }`}
+                          >
+                            <div className="flex items-center gap-2.5">
+                              <Icon className={`w-4 h-4 ${isSelected ? 'text-blue-600 dark:text-blue-400' : 'text-slate-400'}`} />
+                              <span>{tab.label}</span>
+                            </div>
+                            {tab.badge !== undefined && tab.badge !== 0 && (
+                              <span className="px-1.5 py-0.5 rounded text-[9px] font-bold bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-300">
+                                {tab.badge}
+                              </span>
+                            )}
+                          </button>
+                          {tab.id === 'settings' && isSelected && (
+                            <div className="pl-6 pr-2 py-1 space-y-1 bg-slate-50 dark:bg-slate-900/20 rounded-lg border border-slate-100/50 dark:border-slate-800/20">
+                              <button
+                                onClick={() => {
+                                  setActiveSettingsSection('profile');
+                                  setIsMobileMenuOpen(false);
+                                }}
+                                className={`w-full text-left py-1.5 px-2 rounded text-[11px] font-semibold flex items-center gap-2 transition-all ${
+                                  activeSettingsSection === 'profile'
+                                    ? 'bg-blue-600 text-white shadow-xs'
+                                    : 'text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800/50'
+                                }`}
+                              >
+                                <span>Company Profile</span>
+                              </button>
+                              <button
+                                onClick={() => {
+                                  setActiveSettingsSection('defaults');
+                                  setIsMobileMenuOpen(false);
+                                }}
+                                className={`w-full text-left py-1.5 px-2 rounded text-[11px] font-semibold flex items-center gap-2 transition-all ${
+                                  activeSettingsSection === 'defaults'
+                                    ? 'bg-blue-600 text-white shadow-xs'
+                                    : 'text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800/50'
+                                }`}
+                              >
+                                <span>Page & Document Settings</span>
+                              </button>
+                              <button
+                                onClick={() => {
+                                  setActiveSettingsSection('notifications');
+                                  setIsMobileMenuOpen(false);
+                                }}
+                                className={`w-full text-left py-1.5 px-2 rounded text-[11px] font-semibold flex items-center gap-2 transition-all ${
+                                  activeSettingsSection === 'notifications'
+                                    ? 'bg-blue-600 text-white shadow-xs'
+                                    : 'text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800/50'
+                                }`}
+                              >
+                                <span>Notification System</span>
+                              </button>
+                              <button
+                                onClick={() => {
+                                  setActiveSettingsSection('backup');
+                                  setIsMobileMenuOpen(false);
+                                }}
+                                className={`w-full text-left py-1.5 px-2 rounded text-[11px] font-semibold flex items-center gap-2 transition-all ${
+                                  activeSettingsSection === 'backup'
+                                    ? 'bg-blue-600 text-white shadow-xs'
+                                    : 'text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800/50'
+                                }`}
+                              >
+                                <span>Backup & Sync</span>
+                              </button>
+                              <button
+                                onClick={() => {
+                                  setActiveSettingsSection('billing');
+                                  setIsMobileMenuOpen(false);
+                                }}
+                                className={`w-full text-left py-1.5 px-2 rounded text-[11px] font-semibold flex items-center gap-2 transition-all ${
+                                  activeSettingsSection === 'billing'
+                                    ? 'bg-blue-600 text-white shadow-xs'
+                                    : 'text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800/50'
+                                }`}
+                              >
+                                <span>Billing & Subscription</span>
+                              </button>
+                            </div>
                           )}
-                        </button>
+                        </div>
                       );
                     })}
                   </nav>
@@ -1537,19 +1623,74 @@ setIsCompressingPhotos(false);
                 const Icon = tab.icon;
                 const isSelected = activeTab === tab.id;
                 return (
-                  <button
-                    key={tab.id}
-                    onClick={() => setActiveTab(tab.id)}
-                    className={`lh-nav-item w-full ${isSelected ? 'active' : ''}`}
-                  >
-                    <div className="flex items-center gap-2.5">
-                      <Icon className="w-4 h-4" />
-                      <span>{tab.label}</span>
-                    </div>
-                    {tab.badge !== undefined && tab.badge !== 0 && (
-                      <span className="lh-badge lh-badge-neutral">{tab.badge}</span>
+                  <div key={tab.id} className="space-y-1">
+                    <button
+                      onClick={() => setActiveTab(tab.id)}
+                      className={`lh-nav-item w-full ${isSelected ? 'active' : ''}`}
+                    >
+                      <div className="flex items-center gap-2.5">
+                        <Icon className="w-4 h-4" />
+                        <span>{tab.label}</span>
+                      </div>
+                      {tab.badge !== undefined && tab.badge !== 0 && (
+                        <span className="lh-badge lh-badge-neutral">{tab.badge}</span>
+                      )}
+                    </button>
+                    {tab.id === 'settings' && isSelected && (
+                      <div className="pl-6 pr-2 py-1 space-y-1 bg-slate-50 dark:bg-slate-900/40 rounded-lg border border-slate-100/50 dark:border-slate-800/40">
+                        <button
+                          onClick={() => setActiveSettingsSection('profile')}
+                          className={`w-full text-left py-1.5 px-2.5 rounded-md text-[11px] font-bold flex items-center gap-2 transition-all ${
+                            activeSettingsSection === 'profile'
+                              ? 'bg-blue-600 text-white shadow-xs'
+                              : 'text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800'
+                          }`}
+                        >
+                          <span>Company Profile</span>
+                        </button>
+                        <button
+                          onClick={() => setActiveSettingsSection('defaults')}
+                          className={`w-full text-left py-1.5 px-2.5 rounded-md text-[11px] font-bold flex items-center gap-2 transition-all ${
+                            activeSettingsSection === 'defaults'
+                              ? 'bg-blue-600 text-white shadow-xs'
+                              : 'text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800'
+                          }`}
+                        >
+                          <span>Page & Document Settings</span>
+                        </button>
+                        <button
+                          onClick={() => setActiveSettingsSection('notifications')}
+                          className={`w-full text-left py-1.5 px-2.5 rounded-md text-[11px] font-bold flex items-center gap-2 transition-all ${
+                            activeSettingsSection === 'notifications'
+                              ? 'bg-blue-600 text-white shadow-xs'
+                              : 'text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800'
+                          }`}
+                        >
+                          <span>Notification System</span>
+                        </button>
+                        <button
+                          onClick={() => setActiveSettingsSection('backup')}
+                          className={`w-full text-left py-1.5 px-2.5 rounded-md text-[11px] font-bold flex items-center gap-2 transition-all ${
+                            activeSettingsSection === 'backup'
+                              ? 'bg-blue-600 text-white shadow-xs'
+                              : 'text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800'
+                          }`}
+                        >
+                          <span>Backup & Sync</span>
+                        </button>
+                        <button
+                          onClick={() => setActiveSettingsSection('billing')}
+                          className={`w-full text-left py-1.5 px-2.5 rounded-md text-[11px] font-bold flex items-center gap-2 transition-all ${
+                            activeSettingsSection === 'billing'
+                              ? 'bg-blue-600 text-white shadow-xs'
+                              : 'text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800'
+                          }`}
+                        >
+                          <span>Billing & Subscription</span>
+                        </button>
+                      </div>
                     )}
-                  </button>
+                  </div>
                 );
               })}
             </nav>
@@ -3088,7 +3229,7 @@ setIsCompressingPhotos(false);
           })()}
 
           {activeTab === 'settings' && (
-            <SettingsPage />
+            <SettingsPage activeSection={activeSettingsSection} setActiveSection={setActiveSettingsSection} />
           )}
 
         </div>
@@ -3096,103 +3237,156 @@ setIsCompressingPhotos(false);
       </div>
 
       {/* ===================== NEW PROJECT MODAL ===================== */}
-      {showProjModal && (
-        <div className="fixed inset-0 lh-modal-backdrop flex items-center justify-center p-4 z-50">
-          <div className="lh-modal p-5 max-w-sm w-full max-h-[90vh] overflow-y-auto">
-            <div className="flex items-center justify-between pb-2.5 mb-3" style={{ borderBottom: '1px solid var(--lh-border)' }}>
-              <h3 className="text-[13px] font-semibold" style={{ color: 'var(--lh-text-primary)' }}>New project</h3>
-              <button onClick={() => setShowProjModal(false)} className="text-sm font-bold" style={{ color: 'var(--lh-text-tertiary)' }}>✕</button>
-            </div>
-            
-            <form onSubmit={handleCreateProject} className="space-y-3">
-              <div>
-                <label className="lh-label">Project name</label>
-                <input
-                  type="text" required placeholder="e.g. Rahul Sharma Green Villa"
-                  value={newProj.name} onChange={(e) => setNewProj({ ...newProj, name: e.target.value })}
-                  className="lh-input"
-                />
+      {showProjModal && (() => {
+        const { allowed: creationAllowed, limit: projectLimit, plan: activePlan } = canCreateProject(projects.length, userProfile?.subscription);
+        return (
+          <div className="fixed inset-0 lh-modal-backdrop flex items-center justify-center p-4 z-50">
+            <div className="lh-modal p-5 max-w-sm w-full max-h-[90vh] overflow-y-auto">
+              <div className="flex items-center justify-between pb-2.5 mb-3" style={{ borderBottom: '1px solid var(--lh-border)' }}>
+                <h3 className="text-[13px] font-semibold" style={{ color: 'var(--lh-text-primary)' }}>New project</h3>
+                <button onClick={() => setShowProjModal(false)} className="text-sm font-bold" style={{ color: 'var(--lh-text-tertiary)' }}>✕</button>
               </div>
-              <div>
-                <label className="lh-label">Client full name</label>
-                <input
-                  type="text" required placeholder="e.g. Rahul Sharma"
-                  value={newProj.clientName} onChange={(e) => setNewProj({ ...newProj, clientName: e.target.value })}
-                  className="lh-input"
-                />
-              </div>
-              <div>
-                <label className="lh-label">Client mobile number</label>
-                <input
-                  type="text" required placeholder="e.g. +91 99880 11223"
-                  value={newProj.phone} onChange={(e) => setNewProj({ ...newProj, phone: e.target.value })}
-                  className="lh-input"
-                />
-              </div>
-              <div>
-                <label className="lh-label">Client email <span style={{ fontWeight: 400, textTransform: 'none' }}>(optional)</span></label>
-                <input
-                  type="email" placeholder="e.g. rahul@sharma-ventures.com"
-                  value={newProj.email} onChange={(e) => setNewProj({ ...newProj, email: e.target.value })}
-                  className="lh-input"
-                />
-              </div>
-              <div>
-                <label className="lh-label">Site address</label>
-                <input
-                  type="text" required placeholder="e.g. Plot 44-B, JP Nagar Block 5, Bangalore"
-                  value={newProj.address} onChange={(e) => setNewProj({ ...newProj, address: e.target.value })}
-                  className="lh-input"
-                />
-              </div>
-              <div className="grid grid-cols-2 gap-2.5">
-                <div>
-                  <label className="lh-label">Project type</label>
-                  <select
-                    value={newProj.type} onChange={(e) => setNewProj({ ...newProj, type: e.target.value as any })}
-                    className="lh-select"
+              
+              {!creationAllowed ? (
+                <div className="space-y-4 text-center py-3">
+                  <div className="w-11 h-11 rounded-full bg-orange-50 border border-orange-100 flex items-center justify-center text-[#E67E22] mx-auto">
+                    <ShieldAlert className="w-5 h-5 animate-bounce" />
+                  </div>
+                  <div className="space-y-1.5">
+                    {(!userProfile?.subscription || userProfile.subscription.status === 'trial' || userProfile.subscription.status === 'expired') ? (
+                      <>
+                        <h4 className="font-display font-semibold text-sm text-slate-900">Subscription Required</h4>
+                        <p className="text-[11.5px] leading-relaxed text-slate-500">
+                          For new customers, an active paid subscription is required to create your first project. Please choose a workspace plan below.
+                        </p>
+                      </>
+                    ) : (
+                      <>
+                        <h4 className="font-display font-semibold text-sm text-slate-900">Project Limit Reached</h4>
+                        <p className="text-[11.5px] leading-relaxed text-slate-500">
+                          Your current <strong className="text-blue-600">{activePlan} Plan</strong> is limited to <strong className="text-slate-800">{projectLimit} active projects</strong>. You've currently used all slots.
+                        </p>
+                      </>
+                    )}
+                  </div>
+                  <button
+                    onClick={() => {
+                      setShowProjModal(false);
+                      setShowUpgradeModal(true);
+                    }}
+                    className="w-full py-2.5 rounded-xl bg-blue-600 hover:bg-blue-700 text-white text-xs font-semibold flex items-center justify-center gap-1.5 transition-all shadow-xs cursor-pointer"
                   >
-                    <option value="Residential">Residential</option>
-                    <option value="Commercial">Commercial</option>
-                    <option value="Renovation">Renovation</option>
-                  </select>
+                    <Sparkles className="w-4 h-4" />
+                    Upgrade Workspace Plan
+                  </button>
                 </div>
-                <div>
-                  <label className="lh-label">Total value (₹)</label>
-                  <input
-                    type="number" required
-                    inputMode="decimal"
-                    value={newProj.contractValue} onChange={(e) => setNewProj({ ...newProj, contractValue: Number(e.target.value) })}
-                    className="lh-input"
-                  />
-                </div>
-              </div>
-              <div className="grid grid-cols-2 gap-2.5">
-                <div>
-                  <label className="lh-label">Start date</label>
-                  <input
-                    type="date"
-                    value={newProj.startDate} onChange={(e) => setNewProj({ ...newProj, startDate: e.target.value })}
-                    className="lh-input"
-                  />
-                </div>
-                <div>
-                  <label className="lh-label">Target date</label>
-                  <input
-                    type="date"
-                    value={newProj.expectedEndDate} onChange={(e) => setNewProj({ ...newProj, expectedEndDate: e.target.value })}
-                    className="lh-input"
-                  />
-                </div>
-              </div>
+              ) : (
+                <form onSubmit={handleCreateProject} className="space-y-3">
+                  <div>
+                    <label className="lh-label">Project name</label>
+                    <input
+                      type="text" required placeholder="e.g. Rahul Sharma Green Villa"
+                      value={newProj.name} onChange={(e) => setNewProj({ ...newProj, name: e.target.value })}
+                      className="lh-input"
+                    />
+                  </div>
+                  <div>
+                    <label className="lh-label">Client full name</label>
+                    <input
+                      type="text" required placeholder="e.g. Rahul Sharma"
+                      value={newProj.clientName} onChange={(e) => setNewProj({ ...newProj, clientName: e.target.value })}
+                      className="lh-input"
+                    />
+                  </div>
+                  <div>
+                    <label className="lh-label">Client mobile number</label>
+                    <input
+                      type="text" required placeholder="e.g. +91 99880 11223"
+                      value={newProj.phone} onChange={(e) => setNewProj({ ...newProj, phone: e.target.value })}
+                      className="lh-input"
+                    />
+                  </div>
+                  <div>
+                    <label className="lh-label">Client email <span style={{ fontWeight: 400, textTransform: 'none' }}>(optional)</span></label>
+                    <input
+                      type="email" placeholder="e.g. rahul@sharma-ventures.com"
+                      value={newProj.email} onChange={(e) => setNewProj({ ...newProj, email: e.target.value })}
+                      className="lh-input"
+                    />
+                  </div>
+                  <div>
+                    <label className="lh-label">Site address</label>
+                    <input
+                      type="text" required placeholder="e.g. Plot 44-B, JP Nagar Block 5, Bangalore"
+                      value={newProj.address} onChange={(e) => setNewProj({ ...newProj, address: e.target.value })}
+                      className="lh-input"
+                    />
+                  </div>
+                  <div className="grid grid-cols-2 gap-2.5">
+                    <div>
+                      <label className="lh-label">Project type</label>
+                      <select
+                        value={newProj.type} onChange={(e) => setNewProj({ ...newProj, type: e.target.value as any })}
+                        className="lh-select"
+                      >
+                        <option value="Residential">Residential</option>
+                        <option value="Commercial">Commercial</option>
+                        <option value="Renovation">Renovation</option>
+                      </select>
+                    </div>
+                    <div>
+                      <label className="lh-label">Total value (₹)</label>
+                      <input
+                        type="number" required
+                        inputMode="decimal"
+                        value={newProj.contractValue} onChange={(e) => setNewProj({ ...newProj, contractValue: Number(e.target.value) })}
+                        className="lh-input"
+                      />
+                    </div>
+                  </div>
+                  <div className="grid grid-cols-2 gap-2.5">
+                    <div>
+                      <label className="lh-label">Start date</label>
+                      <input
+                        type="date"
+                        value={newProj.startDate} onChange={(e) => setNewProj({ ...newProj, startDate: e.target.value })}
+                        className="lh-input"
+                      />
+                    </div>
+                    <div>
+                      <label className="lh-label">Target date</label>
+                      <input
+                        type="date"
+                        value={newProj.expectedEndDate} onChange={(e) => setNewProj({ ...newProj, expectedEndDate: e.target.value })}
+                        className="lh-input"
+                      />
+                    </div>
+                  </div>
 
-              <button
-                type="submit"
-                className="lh-btn lh-btn-primary lh-btn-lg w-full mt-2"
-              >
-                Create project & milestones
-              </button>
-            </form>
+                  <button
+                    type="submit"
+                    className="lh-btn lh-btn-primary lh-btn-lg w-full mt-2"
+                  >
+                    Create project & milestones
+                  </button>
+                </form>
+              )}
+            </div>
+          </div>
+        );
+      })()}
+
+      {/* ===================== UPGRADE PLAN MODAL ===================== */}
+      {showUpgradeModal && (
+        <div className="fixed inset-0 lh-modal-backdrop flex items-center justify-center p-4 z-50 overflow-y-auto">
+          <div className="bg-white rounded-2xl border border-slate-200 max-w-4xl w-full p-6 relative shadow-2xl animate-slide-up max-h-[90vh] overflow-y-auto">
+            <button 
+              onClick={() => setShowUpgradeModal(false)}
+              className="absolute top-4 right-4 w-8 h-8 rounded-full hover:bg-slate-100 flex items-center justify-center font-bold text-slate-500 z-10 cursor-pointer text-sm"
+            >
+              ✕
+            </button>
+            <SubscriptionPortal onClose={() => setShowUpgradeModal(false)} />
           </div>
         </div>
       )}

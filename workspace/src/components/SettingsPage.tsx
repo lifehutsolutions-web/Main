@@ -26,10 +26,19 @@ import { fetchAll, saveAll, resetDB } from '../data';
 import { ClientNotification } from '../services/notifications/clientNotification';
 import { ContractorNotification } from '../services/notifications/contractorNotification';
 import * as XLSX from 'xlsx';
+import SubscriptionPortal from './SubscriptionPortal';
 
-export default function SettingsPage() {
+interface SettingsPageProps {
+  activeSection?: 'profile' | 'defaults' | 'notifications' | 'backup' | 'billing';
+  setActiveSection?: (section: 'profile' | 'defaults' | 'notifications' | 'backup' | 'billing') => void;
+}
+
+export default function SettingsPage({ activeSection: propActiveSection, setActiveSection: propSetActiveSection }: SettingsPageProps = {}) {
   const { user, userRole, userProfile, isDemoMode, updateUserProfile } = useAuth();
-  const [activeSection, setActiveSection] = useState<'profile' | 'defaults' | 'notifications' | 'backup'>('profile');
+  const [localActiveSection, setLocalActiveSection] = useState<'profile' | 'defaults' | 'notifications' | 'backup' | 'billing'>('profile');
+
+  const activeSection = propActiveSection || localActiveSection;
+  const setActiveSection = propSetActiveSection || setLocalActiveSection;
 
   // Form states for Company Profile
   const [companyName, setCompanyName] = useState(userProfile?.companyName || '');
@@ -273,54 +282,23 @@ export default function SettingsPage() {
       )}
 
       {/* Settings Layout */}
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-5 items-start">
-        
-        {/* Left mini-navigation menu */}
-        <div className="lg:col-span-3 lh-panel rounded-xl p-3.5 space-y-1.5">
-          <button
-            onClick={() => setActiveSection('profile')}
-            className={`w-full text-left px-3.5 py-2.5 rounded-lg text-xs font-semibold flex items-center gap-2.5 transition-colors ${
-              activeSection === 'profile' ? 'bg-[var(--lh-blue)] text-white' : 'text-[var(--lh-text-secondary)] hover:bg-[var(--lh-surface-muted)]'
-            }`}
-          >
-            <Building2 className="w-4 h-4" />
-            <span>Company Profile</span>
-          </button>
-
-          <button
-            onClick={() => setActiveSection('defaults')}
-            className={`w-full text-left px-3.5 py-2.5 rounded-lg text-xs font-semibold flex items-center gap-2.5 transition-colors ${
-              activeSection === 'defaults' ? 'bg-[var(--lh-blue)] text-white' : 'text-[var(--lh-text-secondary)] hover:bg-[var(--lh-surface-muted)]'
-            }`}
-          >
-            <FileSpreadsheet className="w-4 h-4" />
-            <span>Page & Document Settings</span>
-          </button>
-
-          <button
-            onClick={() => setActiveSection('notifications')}
-            className={`w-full text-left px-3.5 py-2.5 rounded-lg text-xs font-semibold flex items-center gap-2.5 transition-colors ${
-              activeSection === 'notifications' ? 'bg-[var(--lh-blue)] text-white' : 'text-[var(--lh-text-secondary)] hover:bg-[var(--lh-surface-muted)]'
-            }`}
-          >
-            <Bell className="w-4 h-4" />
-            <span>Notification System</span>
-          </button>
-
-          <button
-            onClick={() => setActiveSection('backup')}
-            className={`w-full text-left px-3.5 py-2.5 rounded-lg text-xs font-semibold flex items-center gap-2.5 transition-colors ${
-              activeSection === 'backup' ? 'bg-[var(--lh-blue)] text-white' : 'text-[var(--lh-text-secondary)] hover:bg-[var(--lh-surface-muted)]'
-            }`}
-          >
-            <RefreshCw className="w-4 h-4" />
-            <span>Backup & Sync</span>
-          </button>
-        </div>
-
-        {/* Right content panels */}
-        <div className="lg:col-span-9 lh-panel rounded-xl p-6">
+      <div className="lh-panel rounded-xl p-6">
           
+          {/* SECTION: BILLING & SUBSCRIPTION */}
+          {activeSection === 'billing' && (
+            <div className="space-y-4" id="settings-billing-section">
+              <div>
+                <h4 className="text-sm font-semibold mb-1" style={{ color: 'var(--lh-text-primary)' }}>Billing & Subscription</h4>
+                <p className="text-[11.5px]" style={{ color: 'var(--lh-text-secondary)' }}>
+                  Manage your workspace subscription tier, view project limits, and apply premium codes.
+                </p>
+              </div>
+              <div className="pt-2 border-t border-[var(--lh-border)]">
+                <SubscriptionPortal />
+              </div>
+            </div>
+          )}
+
           {/* SECTION 1: COMPANY PROFILE */}
           {activeSection === 'profile' && (
             <form onSubmit={handleSaveProfile} className="space-y-4">
@@ -753,7 +731,6 @@ export default function SettingsPage() {
             </div>
           )}
 
-        </div>
       </div>
     </div>
   );
