@@ -1,0 +1,1695 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+
+<meta charset="UTF-8">
+
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+<title>Lifehut Resources</title>
+
+<meta name="description" content="Expert guides, AI insights and business resources from Lifehut Solutions.">
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+
+<style>
+
+*{
+margin:0;
+padding:0;
+box-sizing:border-box;
+}
+
+body{
+
+font-family:'Inter',sans-serif;
+
+background:#F8FAFC;
+
+color:#0F172A;
+
+overflow-x:hidden;
+
+}
+
+.hero{
+
+position:relative;
+
+padding:110px 20px 90px;
+
+overflow:hidden;
+
+background:
+linear-gradient(180deg,#ffffff 0%,#f8fbff 100%);
+
+}
+
+.hero-content{
+
+max-width:920px;
+
+margin:auto;
+
+text-align:center;
+
+position:relative;
+
+z-index:2;
+
+}
+
+.badge{
+
+display:inline-block;
+
+padding:10px 20px;
+
+border-radius:100px;
+
+background:#EFF6FF;
+
+color:#2563EB;
+
+font-weight:700;
+
+font-size:13px;
+
+letter-spacing:.08em;
+
+margin-bottom:28px;
+
+}
+
+.hero h1{
+
+font-size:60px;
+
+font-weight:800;
+
+line-height:1.1;
+
+margin-bottom:25px;
+
+}
+
+.hero p{
+
+max-width:760px;
+
+margin:auto;
+
+font-size:20px;
+
+line-height:1.8;
+
+color:#475569;
+
+margin-bottom:50px;
+
+}
+
+.search-box{
+
+display:flex;
+
+justify-content:center;
+
+gap:12px;
+
+margin-bottom:45px;
+
+flex-wrap:wrap;
+
+}
+
+.search-box input{
+
+width:520px;
+
+max-width:100%;
+
+padding:18px 22px;
+
+border-radius:18px;
+
+border:1px solid #CBD5E1;
+
+font-size:16px;
+
+outline:none;
+
+transition:.25s;
+
+background:white;
+
+}
+
+.search-box input:focus{
+
+border-color:#2563EB;
+
+box-shadow:0 0 0 5px rgba(37,99,235,.08);
+
+}
+
+.search-box button{
+
+padding:18px 30px;
+
+border:none;
+
+border-radius:18px;
+
+background:#2563EB;
+
+color:white;
+
+font-weight:700;
+
+cursor:pointer;
+
+transition:.25s;
+
+}
+
+.search-box button:hover{
+
+transform:translateY(-2px);
+
+}
+
+.category-row{
+
+display:flex;
+
+justify-content:center;
+
+gap:12px;
+
+flex-wrap:wrap;
+
+}
+
+.category-row button{
+
+padding:12px 22px;
+
+border-radius:999px;
+
+border:none;
+
+background:white;
+
+box-shadow:0 4px 15px rgba(0,0,0,.06);
+
+cursor:pointer;
+
+font-weight:600;
+
+transition:.25s;
+
+}
+
+.category-row button:hover{
+
+transform:translateY(-2px);
+
+}
+
+.category-row .active{
+
+background:#2563EB;
+
+color:white;
+
+}
+
+.floating-icons span{
+
+position:absolute;
+
+font-size:30px;
+
+opacity:.08;
+
+filter:blur(.6px);
+
+user-select:none;
+
+animation:float 12s ease-in-out infinite;
+
+}
+
+.floating-icons span:nth-child(1){
+
+top:90px;
+
+left:8%;
+
+}
+
+.floating-icons span:nth-child(2){
+
+top:160px;
+
+right:12%;
+
+}
+
+.floating-icons span:nth-child(3){
+
+top:330px;
+
+left:15%;
+
+}
+
+.floating-icons span:nth-child(4){
+
+top:420px;
+
+right:18%;
+
+}
+
+.floating-icons span:nth-child(5){
+
+top:520px;
+
+left:30%;
+
+}
+
+.floating-icons span:nth-child(6){
+
+top:230px;
+
+left:48%;
+
+}
+
+.floating-icons span:nth-child(7){
+
+top:500px;
+
+right:35%;
+
+}
+
+.floating-icons span:nth-child(8){
+
+top:120px;
+
+left:72%;
+
+}
+
+@keyframes float{
+
+0%{transform:translateY(0px);}
+50%{transform:translateY(-14px);}
+100%{transform:translateY(0px);}
+
+}
+
+@media(max-width:768px){
+
+.hero{
+
+padding:80px 20px;
+
+}
+
+.hero h1{
+
+font-size:42px;
+
+}
+
+.hero p{
+
+font-size:17px;
+
+}
+
+}
+
+.featured-section{
+
+padding:90px 20px;
+
+max-width:1200px;
+
+margin:auto;
+
+}
+
+.section-title{
+
+text-align:center;
+
+margin-bottom:50px;
+
+}
+
+.section-title h2{
+
+font-size:38px;
+
+font-weight:800;
+
+margin-bottom:12px;
+
+}
+
+.section-title p{
+
+font-size:17px;
+
+color:#64748B;
+
+}
+
+.featured-card{
+
+display:grid;
+
+grid-template-columns:1.15fr 1fr;
+
+background:white;
+
+border-radius:28px;
+
+overflow:hidden;
+
+box-shadow:0 18px 45px rgba(15,23,42,.08);
+
+transition:.35s;
+
+}
+
+.featured-card:hover{
+
+transform:translateY(-5px);
+
+}
+
+.featured-image{
+
+position:relative;
+
+min-height:420px;
+
+background:
+linear-gradient(135deg,#2563EB,#1E40AF);
+
+display:flex;
+
+align-items:center;
+
+justify-content:center;
+
+}
+
+.featured-image img{
+
+width:100%;
+
+height:100%;
+
+object-fit:cover;
+
+position:absolute;
+
+top:0;
+
+left:0;
+
+}
+
+.featured-image::before{
+
+content:"</>";
+
+font-size:130px;
+
+font-weight:800;
+
+color:white;
+
+opacity:.08;
+
+}
+
+.featured-label{
+
+position:absolute;
+
+top:24px;
+
+left:24px;
+
+background:white;
+
+color:#2563EB;
+
+padding:8px 16px;
+
+border-radius:999px;
+
+font-size:13px;
+
+font-weight:700;
+
+}
+
+.featured-content{
+
+padding:55px;
+
+display:flex;
+
+flex-direction:column;
+
+justify-content:center;
+
+}
+
+.featured-category{
+
+display:inline-block;
+
+margin-bottom:16px;
+
+font-size:13px;
+
+font-weight:700;
+
+color:#2563EB;
+
+text-transform:uppercase;
+
+letter-spacing:.08em;
+
+}
+
+.featured-content h3{
+
+font-size:34px;
+
+line-height:1.25;
+
+margin-bottom:22px;
+
+font-weight:800;
+
+}
+
+.featured-content p{
+
+font-size:17px;
+
+line-height:1.9;
+
+color:#475569;
+
+margin-bottom:28px;
+
+}
+
+.featured-meta{
+
+display:flex;
+
+gap:28px;
+
+font-size:14px;
+
+color:#64748B;
+
+margin-bottom:35px;
+
+}
+
+.featured-button{
+
+display:inline-flex;
+
+align-items:center;
+
+justify-content:center;
+
+width:max-content;
+
+padding:16px 30px;
+
+background:#2563EB;
+
+color:white;
+
+text-decoration:none;
+
+border-radius:18px;
+
+font-weight:700;
+
+transition:.3s;
+
+}
+
+.featured-button:hover{
+
+background:#1D4ED8;
+
+transform:translateY(-2px);
+
+}
+
+@media(max-width:960px){
+
+.featured-card{
+
+grid-template-columns:1fr;
+
+}
+
+.featured-image{
+
+min-height:280px;
+
+}
+
+.featured-content{
+
+padding:35px;
+
+}
+
+.featured-content h3{
+
+font-size:28px;
+
+}
+
+}
+
+.latest-section{
+
+max-width:1200px;
+
+margin:auto;
+
+padding:30px 20px 100px;
+
+}
+
+.article-grid{
+
+display:grid;
+
+grid-template-columns:repeat(3,1fr);
+
+gap:30px;
+
+margin-top:50px;
+
+}
+
+.article-card{
+
+background:white;
+
+border-radius:24px;
+
+overflow:hidden;
+
+box-shadow:0 12px 30px rgba(15,23,42,.06);
+
+transition:.35s;
+
+cursor:pointer;
+
+}
+
+.article-card:hover{
+
+transform:translateY(-8px);
+
+box-shadow:0 25px 60px rgba(15,23,42,.12);
+
+}
+
+.article-cover{
+
+height:220px;
+
+background:linear-gradient(135deg,#2563EB,#60A5FA);
+
+position:relative;
+
+}
+
+.article-cover::before{
+
+content:"</>";
+
+position:absolute;
+
+top:50%;
+
+left:50%;
+
+transform:translate(-50%,-50%);
+
+font-size:80px;
+
+font-weight:800;
+
+color:white;
+
+opacity:.08;
+
+}
+
+.article-content{
+
+padding:28px;
+
+}
+
+.article-category{
+
+font-size:12px;
+
+font-weight:700;
+
+color:#2563EB;
+
+text-transform:uppercase;
+
+letter-spacing:.08em;
+
+}
+
+.article-content h3{
+
+margin:18px 0;
+
+font-size:24px;
+
+line-height:1.35;
+
+}
+
+.article-content p{
+
+color:#64748B;
+
+line-height:1.8;
+
+font-size:15px;
+
+}
+
+.article-footer{
+
+margin-top:28px;
+
+display:flex;
+
+justify-content:space-between;
+
+align-items:center;
+
+font-size:14px;
+
+}
+
+.article-footer a{
+
+color:#2563EB;
+
+font-weight:700;
+
+text-decoration:none;
+
+}
+
+@media(max-width:1024px){
+
+.article-grid{
+
+grid-template-columns:repeat(2,1fr);
+
+}
+
+}
+
+@media(max-width:768px){
+
+.article-grid{
+
+grid-template-columns:1fr;
+
+}
+
+}
+
+.popular-section{
+
+max-width:1200px;
+
+margin:auto;
+
+padding:30px 20px 100px;
+
+}
+
+.category-grid{
+
+display:grid;
+
+grid-template-columns:repeat(3,1fr);
+
+gap:28px;
+
+margin-top:45px;
+
+}
+
+.category-card{
+
+background:white;
+
+padding:35px;
+
+border-radius:24px;
+
+text-decoration:none;
+
+color:#0F172A;
+
+box-shadow:0 12px 30px rgba(15,23,42,.05);
+
+transition:.35s;
+
+}
+
+.category-card:hover{
+
+transform:translateY(-6px);
+
+box-shadow:0 22px 50px rgba(15,23,42,.12);
+
+}
+
+.category-icon{
+
+width:64px;
+
+height:64px;
+
+border-radius:18px;
+
+display:flex;
+
+align-items:center;
+
+justify-content:center;
+
+font-size:30px;
+
+background:#EFF6FF;
+
+margin-bottom:25px;
+
+}
+
+.category-card h3{
+
+font-size:22px;
+
+margin-bottom:14px;
+
+}
+
+.category-card p{
+
+color:#64748B;
+
+line-height:1.8;
+
+font-size:15px;
+
+}
+
+@media(max-width:1024px){
+
+.category-grid{
+
+grid-template-columns:repeat(2,1fr);
+
+}
+
+}
+
+@media(max-width:768px){
+
+.category-grid{
+
+grid-template-columns:1fr;
+
+}
+
+}
+
+.newsletter-section{
+
+max-width:1200px;
+
+margin:auto;
+
+padding:20px 20px 100px;
+
+}
+
+.newsletter-card{
+
+background:
+linear-gradient(135deg,#2563EB,#3B82F6);
+
+border-radius:32px;
+
+padding:70px;
+
+text-align:center;
+
+color:white;
+
+box-shadow:0 30px 80px rgba(37,99,235,.25);
+
+position:relative;
+
+overflow:hidden;
+
+}
+
+.newsletter-card::before{
+
+content:"";
+
+position:absolute;
+
+width:420px;
+
+height:420px;
+
+border-radius:50%;
+
+background:rgba(255,255,255,.06);
+
+top:-180px;
+
+right:-120px;
+
+}
+
+.newsletter-card::after{
+
+content:"";
+
+position:absolute;
+
+width:260px;
+
+height:260px;
+
+border-radius:50%;
+
+background:rgba(255,255,255,.05);
+
+bottom:-120px;
+
+left:-80px;
+
+}
+
+.newsletter-badge{
+
+display:inline-block;
+
+padding:10px 22px;
+
+border-radius:999px;
+
+background:rgba(255,255,255,.15);
+
+font-size:13px;
+
+font-weight:700;
+
+letter-spacing:.08em;
+
+margin-bottom:28px;
+
+backdrop-filter:blur(12px);
+
+}
+
+.newsletter-card h2{
+
+font-size:44px;
+
+margin-bottom:20px;
+
+font-weight:800;
+
+position:relative;
+
+z-index:2;
+
+}
+
+.newsletter-card p{
+
+max-width:720px;
+
+margin:auto;
+
+font-size:18px;
+
+line-height:1.8;
+
+opacity:.95;
+
+margin-bottom:42px;
+
+position:relative;
+
+z-index:2;
+
+}
+
+.newsletter-form{
+
+display:flex;
+
+justify-content:center;
+
+gap:16px;
+
+flex-wrap:wrap;
+
+position:relative;
+
+z-index:2;
+
+}
+
+.newsletter-form input{
+
+width:440px;
+
+max-width:100%;
+
+padding:18px 24px;
+
+border:none;
+
+border-radius:18px;
+
+font-size:16px;
+
+outline:none;
+
+}
+
+.newsletter-form button{
+
+padding:18px 34px;
+
+border:none;
+
+border-radius:18px;
+
+background:white;
+
+color:#2563EB;
+
+font-weight:700;
+
+cursor:pointer;
+
+transition:.3s;
+
+}
+
+.newsletter-form button:hover{
+
+transform:translateY(-2px);
+
+}
+
+.newsletter-note{
+
+margin-top:26px;
+
+font-size:14px;
+
+opacity:.85;
+
+position:relative;
+
+z-index:2;
+
+}
+
+@media(max-width:768px){
+
+.newsletter-card{
+
+padding:50px 28px;
+
+}
+
+.newsletter-card h2{
+
+font-size:32px;
+
+}
+
+.newsletter-card p{
+
+font-size:16px;
+
+}
+
+}
+
+.footer{
+
+background:#0F172A;
+
+color:white;
+
+margin-top:80px;
+
+}
+
+.footer-container{
+
+max-width:1200px;
+
+margin:auto;
+
+padding:70px 20px;
+
+display:grid;
+
+grid-template-columns:1.2fr 2fr;
+
+gap:70px;
+
+}
+
+.footer-brand h2{
+
+font-size:30px;
+
+margin-bottom:20px;
+
+}
+
+.footer-brand p{
+
+line-height:1.9;
+
+color:#CBD5E1;
+
+}
+
+.footer-links{
+
+display:grid;
+
+grid-template-columns:repeat(3,1fr);
+
+gap:40px;
+
+}
+
+.footer-links h4{
+
+margin-bottom:18px;
+
+font-size:18px;
+
+}
+
+.footer-links a{
+
+display:block;
+
+margin-bottom:12px;
+
+text-decoration:none;
+
+color:#CBD5E1;
+
+transition:.25s;
+
+}
+
+.footer-links a:hover{
+
+color:white;
+
+padding-left:5px;
+
+}
+
+.footer-bottom{
+
+border-top:1px solid rgba(255,255,255,.08);
+
+text-align:center;
+
+padding:22px;
+
+color:#94A3B8;
+
+font-size:14px;
+
+}
+
+@media(max-width:900px){
+
+.footer-container{
+
+grid-template-columns:1fr;
+
+}
+
+.footer-links{
+
+grid-template-columns:1fr;
+
+}
+
+}
+
+</style>
+
+</head>
+
+<body>
+
+<header class="hero">
+
+<div class="floating-icons">
+
+<span>💻</span>
+<span>⚙️</span>
+<span>☁️</span>
+<span>🧠</span>
+<span>📱</span>
+<span>🌐</span>
+<span>🗄️</span>
+<span>📈</span>
+
+</div>
+
+<div class="hero-content">
+
+<div class="badge">
+
+LIFEHUT RESOURCES
+
+</div>
+
+<h1>
+
+Learn. Build. Grow.
+
+</h1>
+
+<p>
+
+Expert guides, practical tutorials, AI insights, and business resources
+to help entrepreneurs and companies build better digital products.
+
+</p>
+
+<div class="search-box">
+
+<input
+type="text"
+placeholder="Search articles..."
+>
+
+<button>
+
+Search
+
+</button>
+
+</div>
+
+<div class="category-row">
+
+<button class="active">All</button>
+
+<button>Website</button>
+
+<button>AI</button>
+
+<button>Marketing</button>
+
+<button>Construction</button>
+
+<button>Interior</button>
+
+<button>Workspace</button>
+
+<button>Studio</button>
+
+</div>
+
+</div>
+
+</header>
+
+<section class="featured-section">
+
+<div class="section-title">
+
+<h2>Featured Article</h2>
+
+<p>
+Our latest expert insight to help your business grow smarter.
+</p>
+
+</div>
+
+<div class="featured-card">
+
+<div class="featured-image">
+    <img
+src="../assets/images/resources/featured-placeholder.webp"
+alt="Featured Article"
+>
+
+<div class="featured-label">
+Featured
+</div>
+
+</div>
+
+<div class="featured-content">
+
+<span class="featured-category">
+
+Website Development
+
+</span>
+
+<h3>
+
+How Much Does a Professional Business Website Cost in India?
+
+</h3>
+
+<p>
+
+Discover the actual cost of building a professional website, common pricing mistakes, hidden expenses, and how to choose the right solution for your business.
+
+</p>
+
+<div class="featured-meta">
+
+<span>📅 Jul 2026</span>
+
+<span>⏱ 8 min read</span>
+
+</div>
+
+<a href="#" class="featured-button">
+
+Read Article →
+
+</a>
+
+</div>
+
+</div>
+
+</section>
+
+<section class="latest-section">
+
+<div class="section-title">
+
+<h2>Latest Articles</h2>
+
+<p>
+
+Fresh insights from Lifehut experts.
+
+</p>
+
+</div>
+
+<div class="article-grid">
+
+<div class="article-card">
+
+<div class="article-cover"></div>
+
+<div class="article-content">
+
+<span class="article-category">
+
+AI
+
+</span>
+
+<h3>
+
+AI Automation for Small Businesses
+
+</h3>
+
+<p>
+
+Learn how AI can save hours every week and improve business productivity.
+
+</p>
+
+<div class="article-footer">
+
+<span>6 min read</span>
+
+<a href="#">
+
+Read →
+
+</a>
+
+</div>
+
+</div>
+
+</div>
+
+<div class="article-card">
+
+<div class="article-cover"></div>
+
+<div class="article-content">
+
+<span class="article-category">
+
+Website
+
+</span>
+
+<h3>
+
+How to Choose the Perfect Domain Name
+
+</h3>
+
+<p>
+
+A complete guide to selecting a memorable and SEO-friendly domain.
+
+</p>
+
+<div class="article-footer">
+
+<span>5 min read</span>
+
+<a href="#">
+
+Read →
+
+</a>
+
+</div>
+
+</div>
+
+</div>
+
+<div class="article-card">
+
+<div class="article-cover"></div>
+
+<div class="article-content">
+
+<span class="article-category">
+
+Marketing
+
+</span>
+
+<h3>
+
+Website vs Facebook Page
+
+</h3>
+
+<p>
+
+Which platform actually generates more sales for small businesses?
+
+</p>
+
+<div class="article-footer">
+
+<span>7 min read</span>
+
+<a href="#">
+
+Read →
+
+</a>
+
+</div>
+
+</div>
+
+</div>
+
+</div>
+
+</section>
+
+<section class="popular-section">
+
+<div class="section-title">
+
+<h2>
+
+Explore Categories
+
+</h2>
+
+<p>
+
+Find articles based on your interests.
+
+</p>
+
+</div>
+
+<div class="category-grid">
+
+<a href="#" class="category-card">
+
+<div class="category-icon">💻</div>
+
+<h3>Website</h3>
+
+<p>Website design, development, hosting and performance.</p>
+
+</a>
+
+<a href="#" class="category-card">
+
+<div class="category-icon">🤖</div>
+
+<h3>Artificial Intelligence</h3>
+
+<p>Automation, productivity and AI business tools.</p>
+
+</a>
+
+<a href="#" class="category-card">
+
+<div class="category-icon">📈</div>
+
+<h3>Digital Marketing</h3>
+
+<p>SEO, social media and online business growth.</p>
+
+</a>
+
+<a href="#" class="category-card">
+
+<div class="category-icon">🏗️</div>
+
+<h3>Construction</h3>
+
+<p>Construction workflow, estimation and project planning.</p>
+
+</a>
+
+<a href="#" class="category-card">
+
+<div class="category-icon">🏡</div>
+
+<h3>Interior Design</h3>
+
+<p>Modern interior design ideas and business tips.</p>
+
+</a>
+
+<a href="#" class="category-card">
+
+<div class="category-icon">🏢</div>
+
+<h3>Real Estate</h3>
+
+<p>Property marketing and real estate business insights.</p>
+
+</a>
+
+</div>
+
+</section>
+
+<section class="newsletter-section">
+
+<div class="newsletter-card">
+
+<span class="newsletter-badge">
+
+Stay Updated
+
+</span>
+
+<h2>
+
+Never Miss a Valuable Insight
+
+</h2>
+
+<p>
+
+Receive practical business tips, AI automation guides, website strategies, and exclusive resources directly in your inbox.
+
+</p>
+
+<div class="newsletter-form">
+
+<input
+type="email"
+placeholder="Enter your email address"
+>
+
+<button>
+
+Notify Me
+
+</button>
+
+</div>
+
+<div class="newsletter-note">
+
+No spam. Unsubscribe anytime.
+
+</div>
+
+</div>
+
+</section>
+
+<footer class="footer">
+
+<div class="footer-container">
+
+<div class="footer-brand">
+
+<h2>Lifehut Resources</h2>
+
+<p>
+
+Helping businesses grow with practical technology, AI, digital marketing and business resources.
+
+</p>
+
+</div>
+
+<div class="footer-links">
+
+<div>
+
+<h4>Resources</h4>
+
+<a href="#">Latest Articles</a>
+
+<a href="#">Popular Topics</a>
+
+<a href="#">AI Guides</a>
+
+<a href="#">Website Guides</a>
+
+</div>
+
+<div>
+
+<h4>Products</h4>
+
+<a href="#">Lifehut Studio</a>
+
+<a href="#">Lifehut Workspace</a>
+
+<a href="#">Smart Quote</a>
+
+</div>
+
+<div>
+
+<h4>Company</h4>
+
+<a href="/">Home</a>
+
+<a href="/about">About</a>
+
+<a href="/contact">Contact</a>
+
+</div>
+
+</div>
+
+</div>
+
+<div class="footer-bottom">
+
+© 2026 Lifehut Solutions. All Rights Reserved.
+
+</div>
+
+</footer>
+
+</body>
+
+</html>
