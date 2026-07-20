@@ -1042,7 +1042,7 @@ app.get("/api/comments/:productId", (req, res) => {
           comment: `Absolutely brilliant template! The code quality for ${productName} is spectacular. Extremely clean Tailwind structure, easy to customize colors with standard tokens, and the Vite configuration works perfectly out-of-the-box. Highly recommended for any Indian developers or SaaS founders!`,
           tag: "Verified Purchase",
           timestamp: new Date(Date.now() - 3 * 24 * 3600 * 1000).toISOString(),
-          helpfulVotes: 12,
+          helpful_Votes: 12,
           replies: [
             {
               id: `r_seed_1_1_${productId}`,
@@ -1061,7 +1061,7 @@ app.get("/api/comments/:productId", (req, res) => {
           comment: `Perfect for my portfolio launch. Layout is modern and responsive. I love the interactive elements and page transitions. Just one suggestion: please add Svelte versions of the components in the future roadmap!`,
           tag: "Verified Purchase",
           timestamp: new Date(Date.now() - 7 * 24 * 3600 * 1000).toISOString(),
-          helpfulVotes: 5,
+          helpful_Votes: 5,
           replies: []
         },
         {
@@ -1072,7 +1072,7 @@ app.get("/api/comments/:productId", (req, res) => {
           comment: `Is the UPI/Razorpay payment workflow integrated directly in the source code or do we need external routing? Asking because I need a self-hosted checkout page.`,
           tag: "Pre-Sale Question",
           timestamp: new Date(Date.now() - 12 * 24 * 3600 * 1000).toISOString(),
-          helpfulVotes: 2,
+          helpful_Votes: 2,
           replies: [
             {
               id: `r_seed_3_1_${productId}`,
@@ -1113,7 +1113,7 @@ app.post("/api/comments/:productId", (req, res) => {
       comment,
       tag: tag || "Visitor",
       timestamp: new Date().toISOString(),
-      helpfulVotes: 0,
+      helpful_Votes: 0,
       replies: []
     };
     comments.unshift(newComment);
@@ -1133,9 +1133,9 @@ app.post("/api/comments/:productId/:commentId/vote", (req, res) => {
     if (!comment) {
       return res.status(404).json({ error: "Comment not found." });
     }
-    comment.helpfulVotes = (comment.helpfulVotes || 0) + 1;
+    comment.helpful_Votes = (comment.helpful_Votes || 0) + 1;
     fs.writeFileSync(COMMENTS_FILE, JSON.stringify(comments, null, 2));
-    res.json({ success: true, helpfulVotes: comment.helpfulVotes });
+    res.json({ success: true, helpful_Votes: comment.helpful_Votes });
   } catch (error: any) {
     res.status(500).json({ error: error.message });
   }

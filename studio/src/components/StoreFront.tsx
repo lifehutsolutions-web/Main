@@ -919,9 +919,9 @@ export default function StoreFront({
             </div>
             <div>
               <h4 className="text-xs font-bold text-white uppercase tracking-wider mb-4">Company</h4>
-              <a href="https://www.lifehutsolutions.com" target="_blank" rel="noopener noreferrer" className="block text-xs hover:text-white mb-2.5">Lifehut Solutions</a>
               <a href="https://www.lifehutsolutions.com" target="_blank" rel="noopener noreferrer" className="block text-xs hover:text-white mb-2.5">About Us</a>
-              <a href="https://www.lifehutsolutions.com" target="_blank" rel="noopener noreferrer" className="block text-xs hover:text-white mb-2.5">Inquire Quote</a>
+              <a href="https://www.workspace.lifehutsolutions.com" target="_blank" rel="noopener noreferrer" className="block text-xs hover:text-white mb-2.5">Lifehut Workspace</a>
+              <a href="https://www.lifehutsolutions.com/smart-quote" target="_blank" rel="noopener noreferrer" className="block text-xs hover:text-white mb-2.5">Lifehut Smart Quote</a>
             </div>
           </div>
 
